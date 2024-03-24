@@ -16,7 +16,7 @@ when i installed Ollama, i tried its built-in console chat interface but quickly
 1. these things are either too big
 2. or i'm too lazy to check all the code to ensure they do not send my local chats somewhere
 3. i want to have it my way - that is for desktop and keyboard, not for mobile phones.
-4. i want it to have a convenient interface with keyboard interface and no unnecessary whistles.
+4. i want it to have a convenient keyboard driven interface and no unnecessary whistles.
  
 ## What:
 I've spent several days to code this thing. My goals were:
