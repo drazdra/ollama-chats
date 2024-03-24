@@ -86,21 +86,29 @@ Now, let me list the features this thing has:
 11.	If you do not have any installed models, it will suggest you to pull a model from ollama's library. Note: the page itself does not load anything, it just uses Ollama's functionality, and kindly asks Ollama to download a new model from its safe library. Ollama has that feature.
 12.	Let's talk about lower menu:
     
-12.1. Settings: allows you to specify all parameters that Ollama allows to specify. For your convenience i've copied explanations from Ollama docs, these are shown if you mouse over parameter names. Default values are shown to the right. If the parameter value is left empty, Ollama uses values from its modelfile, or default ones if modelfile doesn't have these. Parameters are applied upon each request, and according to Ollama's docs, they should change the rules on the fly.
+#### 12.1. Settings: 
+allows you to specify all parameters that Ollama allows to specify. For your convenience i've copied explanations from Ollama docs, these are shown if you mouse over parameter names. Default values are shown to the right. If the parameter value is left empty, Ollama uses values from its modelfile, or default ones if modelfile doesn't have these. Parameters are applied upon each request, and according to Ollama's docs, they should change the rules on the fly.
    	
-12.2. Pull: you can pull new models easily, just enter model's name from ollama.com/library and that's it. For example: "stablelm2:1.6b-zephyr", or just "stablelm2". Once the download is over, you will return to the main interface. Don't forget to choose the newly pulled model in the models list, it's not done automatically.
+#### 12.2. Pull: 
+you can pull new models easily, just enter model's name from ollama.com/library and that's it. For example: "stablelm2:1.6b-zephyr", or just "stablelm2". Once the download is over, you will return to the main interface. Don't forget to choose the newly pulled model in the models list, it's not done automatically.
  
-12.3. Reload models: you might install models manually in the console, in that case you can update the list by clicking this button.
+#### 12.3. Reload models:
+you might install models manually in the console, in that case you can update the list by clicking this button.
  
-12.4. system prompt: well, this is an obvious one. It's a system prompt for your model, where you can inform it that its life purpose is being a rose pony.
+#### 12.4. system prompt:
+well, this is an obvious one. It's a system prompt for your model, where you can inform it that its life purpose is being a rose pony.
  
-12.5. Instr: that's a trick you may use to help AI figure out what you want. It does a very simple thing - it injects one more message on behalf of AI with the text you enter here. So, you should write it from the point of view of the AI's character. For example: "(IMPORTANT!! in my next message, i should remember that i'm in a forest right now!)". That might save some nerve cells during the chat. That message is not added to the chat log and does not disappear on the next turn but injected every time. It's convenient to use it to summarize things  			 for AI as a reminder, so it doesn't loose track.. that much. Of course you can update it during the chat, to reflect what's going on in your RPG.
+#### 12.5. Instr:
+that's a trick you may use to help AI figure out what you want. It does a very simple thing - it injects one more message on behalf of AI with the text you enter here. So, you should write it from the point of view of the AI's character. For example: "(IMPORTANT!! in my next message, i should remember that i'm in a forest right now!)". That might save some nerve cells during the chat. That message is not added to the chat log and does not disappear on the next turn but injected every time. It's convenient to use it to summarize things for AI as a reminder, so it doesn't loose track.. that much. Of course you can update it during the chat, to reflect what's going on in your RPG.
  
-12.6. Prune: sometimes chats grow big.. and there are hundreds of garbage replies you don't care of. If you wish to keep only the current version of your chat, that is, ONLY the replies you can see on your screen when scrolling, then you can click "prune" and everything else will be deleted. You chat will seem as if all replies were like this from the very first attempt. It's better to save, before doing this.
+#### 12.6. Prune: 
+sometimes chats grow big.. and there are hundreds of garbage replies you don't care of. If you wish to keep only the current version of your chat, that is, ONLY the replies you can see on your screen when scrolling, then you can click "prune" and everything else will be deleted. You chat will seem as if all replies were like this from the very first attempt. It's better to save, before doing this.
  
-12.7. Save: yes, you can save the chat, if you wish. the page saves everything and sends it to you as a file to download. It's not stored anywhere else. If you know what you are doing, you can always extract the replies and do local finetuning based on your good chats. The page does not provide interface for finetuning, that's something out of the scope of this thing.
+#### 12.7. Save: 
+yes, you can save the chat, if you wish. the page saves everything and sends it to you as a file to download. It's not stored anywhere else. If you know what you are doing, you can always extract the replies and do local finetuning based on your good chats. The page does not provide interface for finetuning, that's something out of the scope of this thing.
  
-12.8. Load: yes, again, you can load your old chat from a saved file and continue any time. Of course, if you have saved it earlier :).
+#### 12.8. Load:
+yes, again, you can load your old chat from a saved file and continue any time. Of course, if you have saved it earlier :).
  			 
 ### Enjoy!
 
