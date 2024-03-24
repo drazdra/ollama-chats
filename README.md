@@ -31,7 +31,7 @@ And here we are. Whole thing is less than 30KB right now, that's including the
 excerpts from Ollama documentation and html code. The only imported thing is Vue
 which is a great web framework, probably used by millions of people, so it's pretty safe.
 In other words, if you are paranoid, you can check the code in 15 minutes and ensure
-you are totally safe with it. It's a very easy thing to just install and enjoy Ollama in seconds, if you already have web-server installed.
+you are totally safe with it. If you already have a web-server running this thing is a matter of seconds.
 
 ## Installation:
 There is not much to install, it's a single index.html file.
