@@ -387,6 +387,7 @@ input[type="file"] {
 
 				if((document.activeElement.tagName=='TEXTAREA'&&document.activeElement.value.length)||this.turn===0) return;
 				if(document.activeElement.tagName=='INPUT') return;
+				if(document.activeElement.className.includes('msgText')) return;
 
 				if (event.keyCode===39) {
 					this.listmsgs(1,this.turn);
