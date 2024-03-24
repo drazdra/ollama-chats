@@ -1,0 +1,940 @@
+<html>
+<head>
+<!-- this is a code of: https://github.com/drazdra/ollama-chats -->
+<script type="importmap">
+	{
+		"imports": {
+			"vue": 		"https://unpkg.com/vue@3/dist/vue.esm-browser.prod.js"
+		}
+	}
+</script>
+<style>
+* {
+	font-size: 14px;
+	font-family: Helvetica, Arial;
+	color: #e5e5e5;
+}
+body {
+	background-color: #141414;
+	color: silver;
+}
+#app {
+	width: 100%;
+}
+textarea {
+	text-size: 16px;
+	background-color: black;
+	color: white;
+	width: 100%;
+	box-sizing: border-box;
+	border-color: silver;
+	border-radius: 5px;
+}
+textarea:focus {
+	outline: silver solid 1px;
+	border-color: silver;
+}
+#chat {
+	width: 800px;
+	border-width: 1 0 1 0;
+	margin: auto;
+	border-spacing: 0 15px;
+	height: 100%;
+}
+#chat td {
+	border-width: 0px;
+	vertical-align: top;
+	border-radius: 7px;
+	padding: 7 10 5 10;
+}
+#chat td:nth-child(1) {
+	text-align: center;
+}
+#chat .nicku {
+	font-size: 16px;
+	float: left;
+	font-style: italic;
+	clear: none;
+	background-color: 101010;
+	padding: 10 10 10 10;
+	margin: 0 7 7 0;
+	border-radius: 10px;
+	border-style: double;
+  border-width: 1px;
+  border-color: silver;
+}
+#chat .nickai {
+	font-size: 16px;
+	float: right;
+	clear: none;
+	font-style: italic;
+	background-color: 101010;
+	padding: 10 10 10 10;
+	margin: 0 0 7 7;
+	border-radius: 10px;
+	border-style: double;
+  border-width: 1px;
+  border-color: silver;
+}
+#chat .msgText {
+	padding: 11 4 1 4;
+}
+#chat .lastmsg {
+	height: 150px;
+}
+#chat .msg {
+	height: auto;
+}
+#nicks span:nth-child(1) {
+	float: left;
+}
+#nicks *:nth-child(2) {
+	float: right;
+}
+#chat td:nth-child(1) {
+	text-align: center;
+}
+#chat .row {
+	background-color: #252525;
+}
+#chat .next {
+	vertical-align: middle;
+	min-width: 20px;
+	font-weight: bold;
+	text-align: center;
+	border-radius: 10px;
+	border-style: double;
+  border-width: 1px;
+  border-color: silver;
+  padding: 2 2 2 2;
+}
+#chat .prev {
+	vertical-align: middle;
+	min-width: 20px;
+	font-weight: bold;
+	text-align: right;
+	border-radius: 10px;
+	border-style: double;
+  border-width: 1px;
+  border-color: silver;
+  padding: 2 2 2 2;
+}
+input {
+	text-size: 16px;
+	background-color: black;
+	color: white;
+	box-sizing: border-box;
+	border-color: silver;
+	border-width: 0 0 1 0;
+}
+select {
+	text-size: 16px;
+	background-color: black;
+	color: white;
+	box-sizing: border-box;
+	border-color: silver;
+	border-width: 0 0 1 0;
+	margin: 15 15 15 15;
+}
+input[type="file"] {
+	display: none;
+}
+#loadlabel {
+  display: inline-block;
+  cursor: pointer;
+}
+.rating {
+	float: right;
+	margin: 7 7 7 7;
+}
+.rating * {
+	font-size: 21px;
+}
+.litp {
+	color: lime;
+}
+.litn {
+	color: red;
+}
+#sets {
+	max-width: 500px;
+	width: 500px;
+}
+#sets .def {
+	white-space: nowrap;
+}
+#sets .val {
+	width: 100%;
+}
+#sets .title {
+	width: 100px;
+}
+</style>
+</head>
+<body style="" >
+	<div id="app" >
+		<table id='chat' border=1 height='100%'>
+			<template v-if='this.connection'>
+				<tr>
+					<td colspan='3'  id='nicks'>
+						<span>Nick: <input v-model='nick'/></span>
+						<span>Partner: <input v-model='nickai'/></span>
+						<br><br>
+					</td>
+				</tr>
+				<template v-for="(i,index) in turns">
+					<tr v-if='index<=turn&&i.branch>=0'>
+						<template v-if='index>0&&index<=turn'>
+							<td class='prev' @click='listmsgs(0,index)'>
+								<span v-show='i.branches[i.branch].msg!=0'>
+									&lt;<br>
+									{{i.branches[i.branch].msg}}
+								</span>
+							</td>
+							<td width='100%' :class='index===turn?"lastmsg":"msg"' class='row'>
+								<div :class='i.role==="user"?"nicku":"nickai"'>
+									{{i.branches[i.branch].msgs[i.branches[i.branch].msg].nick}} #{{i.branches[i.branch].msg+1}}:
+								</div>
+								<div class='msgText' @blur="edit($event,index)" contenteditable='true' :tabindex='10+index'>
+									{{ 
+										i.branches[i.branch].msgs[i.branches[i.branch].msg].content??(i.role==='user'?"..input new variant into the prompt, please..":"..wait for it..")
+									}}
+								</div>
+								<div class='rating'>
+									<span :class='this.msga(index).rating===0&&"litn"' @click='rating(index,0)'>--</span>
+									 / 
+									<span :class='this.msga(index).rating===1&&"litp"' @click='rating(index,1)'>++</span>
+								</div>
+							</td>
+							<td class='next' @click='listmsgs(1,index)'>
+								<span v-if="!i.branches[i.branch].msgs[i.branches[i.branch].msg].side">
+									><br>
+									{{i.branches[i.branch].msgs.length-i.branches[i.branch].msg>1?i.branches[i.branch].msgs.length-i.branches[i.branch].msg-1:">"}}<br>
+								</span>
+							</td>
+						</template>
+					</tr>
+				</template>
+				<tr v-if='this.pullHide==1'>
+					<td colspan=3>
+						<textarea rows='5' tabindex='5' id='prompt' placeholder='Prompt'
+							v-model="prompt" 
+							@keyup.enter='send($event,1,null)'
+						></textarea>
+						<textarea v-if='!instrHide' rows=10 @input='edit($event,-1)' @blur='edit($event,-1)'>{{instr.length?instr:"You can specify special reminder here for the ai on the situation. It will be injected as a last message belonging to the AI, but won't stay in the chat log. I use things like: '(Important! in my next message i need to consider that i am at .... and i am ...)' "}}</textarea>
+						<textarea v-if='!syshide' rows=10 @input='edit($event,0)' @blur='edit($event,0)'>{{system.length?system:"Edit this to override the system prompt with this text. Empty means the system uses default system prompt (from modelfile)"}}</textarea>
+						model: <select v-model="this.model">
+							<template v-for="i in this.models">
+								<option :value='i.n'>{{i.n}} ({{i.ps}} {{i.q}})</option>
+							</template>
+						</select>
+						<div v-if='!settingsHide' align='center'>
+							<table style='' id='sets'>
+								<tr>
+									<td colspan='3' style='text-align: justify'>
+										These can be changed any time and will override the model's settings,
+										if the value is empty, then the model's own configuration is used
+										(the one specified in modelfile). You can mouseover the parameter's
+										name to see the explanation from the docs.
+										<br><br>
+									</td>
+								</tr>
+									<tr>
+										<td class='title'>URL</td>
+										<td class='val'><input style='width:100%' v-model='this.url'/></td>
+										<td class='def'>def: http://127.0.0.1:11434</td>
+									</tr>
+								<template v-for='(i,ind) in settings'>
+									<tr>
+										<td class='title' :title='i.d'>{{ind}}</td>
+										<td class='val'><input style='width:100%' v-model='i.v'/></td>
+										<td class='def'>def: {{i.def}}</td>
+									</tr>
+								</template>
+							</table>
+						</div>
+					</td>
+				</tr>
+				<tr v-else>
+					<td colspan='3'>
+						<template v-if='!this.working'>
+							<div v-if='!this.models.length'>
+								There are no models installed, please install the models in the console
+								or install it through this interface. 
+							</div>
+							To install a model enter your preferred model's name, as it's at 
+							<a href='https://ollama.com/library' target='new'>https://ollama.com/library</a>
+							and click "pull".<br><br>
+							<input v-model='modelPull'/> <span @click='this.pull()'>pull</span>
+							<br><br>
+							<div v-if='this.connectionErr.length'>
+								Error: {{this.connectionErr}}
+							</div>
+						</template>
+						<template v-else>
+							Pulling model: {{this.modelPull}}<br><br>
+							<template v-for='i in this.mpull'>
+								<div>
+									{{i.status}} 
+									<span v-if='i.total'>
+										{{i.done}} / {{i.total}}
+									</span>
+								</div><br>
+							</template>
+						</template>
+					</td>
+				</tr>
+				<tr>
+					<td colspan=3>
+						<span @click='this.sets()'>settings</span> |
+						<span @click='this.pullHide=!this.pullHide'>pull</span> |
+						<span @click='this.list()'>reload models</span> |
+						<span @click='this.syshide=!this.syshide'>system prompt</span> |
+						<span @click='this.instrHide=!this.instrHide'>instr</span> | 
+
+						<span @click='this.prune()'>prune</span> | 
+						<span>
+							<label for="load" id="loadlabel">load</label>
+							<input id='load' type='file' @change='this.load($event)'/>
+						</span> | 
+						<span @click='this.save()'>save</span> | 
+					</td>
+				</tr>
+			</template>
+			<template v-else>
+				<tr>
+					<td>
+						<input v-model='url'/><br>
+						<template v-if='this.connectionErr.length'>
+							<br>
+							<span @click='this.list()'>Re-try</span><br><br>
+							{{this.connectionErr}}
+						</template>
+					</td>
+				</tr>
+			</template>
+		</table>
+	</div>
+<script type="module">
+	import { createApp,reactive, computed, ref, nextTick } from 'vue';
+	window.app=createApp({
+		data() {
+			return {
+				message:'',
+				prompt:	'',
+				turns: [
+					{
+						"role":'root',
+						'branch':0,
+						'branches':[{msg:0,msgs:[{
+								"content":	'',
+								"nick":	'',
+							}]}],
+						'tree':{0:{ 0:0 }},//parent's branch:{selected msg:local branch growing from that msg}
+					},
+				],
+				model:	'',
+				models: [],
+				system: '',
+				syshide:1,
+				instr:	'',
+				instrHide:1,
+				settingsHide: 1,
+				settings: {
+					temperature:		{v:'',t:'n',def:0.8,d:'The temperature of the model. Increasing the temperature will make the model answer more creatively. (Default: 0.8)'},
+					mirostat:				{v:'',t:'n',def:0,d:'Enable Mirostat sampling for controlling perplexity. (default: 0, 0 = disabled, 1 = Mirostat, 2 = Mirostat 2.0)'},
+					mirostat_eta:		{v:'',t:'n',def:0.1,d:'Influences how quickly the algorithm responds to feedback from the generated text. A lower learning rate will result in slower adjustments, while a higher learning rate will make the algorithm more responsive. (Default: 0.1)'},
+					mirostat_tau:		{v:'',t:'n',def:5,d:'Controls the balance between coherence and diversity of the output. A lower value will result in more focused and coherent text. (Default: 5.0)'},
+					num_ctx:				{v:'',t:'n',def:2048,d:'Sets the size of the context window used to generate the next token. (Default: 2048)'},
+					num_gqa:				{v:'',t:'n',def:'',d:'The number of GQA groups in the transformer layer. Required for some models, for example it is 8 for llama2:70b'},
+					num_gpu:				{v:'',t:'n',def:'',d:'The number of layers to send to the GPU(s). On macOS it defaults to 1 to enable metal support, 0 to disable.'},
+					num_thread:			{v:'',t:'n',def:'',d:'Sets the number of threads to use during computation. By default, Ollama will detect this for optimal performance. It is recommended to set this value to the number of physical CPU cores your system has (as opposed to the logical number of cores).'},
+					repeat_last_n:	{v:'',t:'n',def:64,d:'Sets how far back for the model to look back to prevent repetition. (Default: 64, 0 = disabled, -1 = num_ctx)'},
+					repeat_penalty:	{v:'',t:'n',def:1.1,d:'Sets how strongly to penalize repetitions. A higher value (e.g., 1.5) will penalize repetitions more strongly, while a lower value (e.g., 0.9) will be more lenient. (Default: 1.1)'},
+					seed:						{v:'',t:'n',def:0,d:'Sets the random number seed to use for generation. Setting this to a specific number will make the model generate the same text for the same prompt. (Default: 0)'},
+					stop:						{v:'',t:'s',def:'AI assistant:',d:'Sets the stop sequences to use. When this pattern is encountered the LLM will stop generating text and return. Multiple stop patterns may be set by specifying multiple separate stop parameters in a modelfile.'},
+					tfs_z:					{v:'',t:'n',def:1,d:'Tail free sampling is used to reduce the impact of less probable tokens from the output. A higher value (e.g., 2.0) will reduce the impact more, while a value of 1.0 disables this setting. (default: 1)'},
+					num_predict:		{v:'',t:'n',def:128,d:'Maximum number of tokens to predict when generating text. (Default: 128, -1 = infinite generation, -2 = fill context)'},
+					top_k:					{v:'',t:'n',def:40,d:'Reduces the probability of generating nonsense. A higher value (e.g. 100) will give more diverse answers, while a lower value (e.g. 10) will be more conservative. (Default: 40)'},
+					top_p:					{v:'',t:'n',def:0.9,d:'Works together with top-k. A higher value (e.g., 0.95) will lead to more diverse text, while a lower value (e.g., 0.5) will generate more focused and conservative text. (Default: 0.9)'}
+				},
+				stream:	true,
+				nick:		'Me',
+				nickai:	'AI',
+				turn:		0,
+				cancel:	0,
+				working:0,
+				connection: 0,
+				url: "http://127.0.0.1:11434",
+				connectionErr: '',
+				modelPull: 'stablelm2',
+				pullHide: 1,
+				mpull: [],
+			}
+		},
+		computed: {
+		},
+		created() {
+		},
+		mounted() {
+			console.log('mounting');
+			this.list();
+			window.addEventListener("keydown",(event)=>{
+				if (event.keyCode==27) {
+					this.cancel=1;
+					return;
+				}
+
+				if((document.activeElement.tagName=='TEXTAREA'&&document.activeElement.value.length)||this.turn===0) return;
+				if(document.activeElement.tagName=='INPUT') return;
+
+				if (event.keyCode===39) {
+					this.listmsgs(1,this.turn);
+				} else if (event.keyCode===37) {
+					this.listmsgs(0,this.turn);
+				} 
+			});
+			console.log('mounted')
+		},
+		methods: {
+			pull() {
+				this.working=1;
+				this.connectionErr='';
+				
+				fetch(this.url+"/api/pull",{
+					"method": "POST",
+					"body": JSON.stringify({
+						'name':	this.modelPull,
+					})
+				}).then(r=>{
+					if(!r.ok) {
+						throw new Error('connection error')
+						this.working=0;
+						return;
+					}
+					return r.body;
+				}).then(r=>{
+					console.log('dissecting response');
+					const t				=this;
+					const decoder	=new TextDecoder('utf-8');
+					const reader	=r.getReader();
+					let res				='';
+					let buf				='';
+					this.mpull=[{status:''}];
+					
+					reader.read().then(function processText({done,value}) {
+						if(done) {
+							console.log(`Stream complete:`+JSON.stringify(res));
+							return res;
+							t.cancel=0;
+						}
+						if(t.cancel) {
+							console.log('cancelling');
+							reader.releaseLock();
+							r.cancel();
+							t.cancel=0;
+							return;
+						}
+						buf					+=decoder.decode(value);
+						const chnks	=	buf.split('\n');
+						console.log(buf);
+
+						//it seems that ollama never sends partial messages, but let's have it just in case
+						buf=chnks.pop()??''; 
+
+						for (const ch of chnks) {
+							try { res=JSON.parse(ch) } catch (error) { console.error(`error: ${error}`) }
+							if(res.status!=t.mpull[t.mpull.length-1].status) {
+								t.mpull.push({'status':res.status});
+							}
+							let p=t.mpull[t.mpull.length-1];
+							if(res.status&&res.total) {
+								p.total	=res.total;
+								p.done	=res.completed;
+							}
+						}
+						return reader.read().then(processText);
+					}).then(r=>{
+						console.log(`model pull attempt is finished`);
+						t.working=0;
+						t.cancel=0;
+						if(r.status=='success') {
+							this.connectionErr='';
+							this.pullHide=1;
+							this.list();
+						} else if(r.error&&r.error.length) {
+							this.connectionErr=r.error;
+						} else {
+							console.log('strange reply after pull end');
+						}
+					}).catch((error)=>{
+						this.connectionErr=error;
+						console.error(`network error ${this.connectionErr}`);
+						this.working=0;
+						t.cancel=0;
+						return;
+					});
+				})
+			},
+			sets() {
+				this.settingsHide=!this.settingsHide;
+			},
+			prune() {
+				if(
+					confirm("Are you sure you wish to permanently erase everything but the currently seen message? this will erase all the alternative chat records. Proceed?")
+					&&
+					confirm("Are you really sure?")
+				) {
+					for(const i in this.turns) {
+						if(i==0) continue;
+						console.log(`pruning ${i}`)
+						let tmp=this.brancha(i);
+						this.turns[i].branch=0;
+						this.turns[i].branches=[];
+						this.turns[i].branches.push(tmp);
+						tmp=this.msga(i);
+						this.turns[i].branches[0].msg=0;
+						this.turns[i].branches[0].msgs=[];
+						this.turns[i].branches[0].msgs=[tmp];
+						this.treeu(i)
+						console.log(JSON.stringify(this.turns[i].branches))
+					}
+				}
+			},
+			rating(i,v) {
+				this.msga(i).rating=v;
+			},
+			save() {
+				let name=`${this.nick}-${this.nickai}`;
+				name=name.replace(/[^\w0-9\.-]/gi,'');
+				name.match(/^(.{1,64})/); 
+				name=`chat.${name}.${Date().toString()}.json`;
+				
+				const blob=new Blob([JSON.stringify(this.$data)],{ type: "text/json" });
+				const l		=document.createElement("a");
+				l.download						=name;
+				l.href 								=window.URL.createObjectURL(blob);
+				l.dataset.downloadurl	=["text/json",l.download,l.href].join(":");
+
+				l.dispatchEvent(
+					new MouseEvent("click",{
+						view: window,
+						bubbles: true,
+						cancelable: true,
+					})
+				)
+				l.remove()
+			},
+			load(e) {
+				let fr=new FileReader(e);
+				let t=this;
+				function parse() {
+					console.log('loaded');
+					const d=JSON.parse(fr.result);
+					for(let i in d) {
+						t[i]=d[i]
+					}
+					t.working	=0;
+					t.cancel	=0;
+				}
+				console.log(e.target.files[0])
+				console.log(fr.addEventListener("load",parse))
+				fr.readAsText(e.target.files[0]);
+			},
+			send(e,m,i) {
+				if(e.key==='Enter'&&e.shiftKey) {
+					return;
+				}
+				this.chat(m,i);
+			},
+			async edit(e,i) {
+				console.log(e);
+				if(i===0) {
+					this.system=e.target.value.trim()??'';
+					return 1;
+				} else if(i===-1) {
+					this.instr=e.target.value.trim()??'';
+				}
+				this.msga(i).content=e.target.innerText;
+			},
+			msga(turn) {
+				let b=this.brancha(turn);
+				return b.msgs[b.msg];
+			},
+			branch(turn) {
+				return this.turns[turn].branch
+			},
+			brancha(turn) {
+		    return this.turns[turn].branches[this.branch(turn)];
+			},
+			branchNested(turn) {
+				console.log(`searching for nested branch at ${turn} for parent active message`);
+				const prev=turn-1;
+				const bprev=this.branch(prev);
+				const tr	=this.turns[turn].tree[bprev]; //tree[prev branch id]
+				console.log(`index value for parent branch ${bprev}: `+JSON.stringify(tr));
+				if(!tr) return [null,null];
+				const bn=tr[this.brancha(prev).msg]; //prev turn's branch/msg -> this branch id
+				console.log(`index value of a local branch for the active message in parent branch: ${bn}`);
+				if(bn==undefined) return [null,null];
+				return [bn,this.turns[turn].branches[bn]];
+			},
+			branchu(turn,msg) {
+				console.log(`updating active branches ${turn}`);
+				let turnIncomplete=this.turns.length;
+				for(let i=turn+1;i<this.turns.length;i++) {//>
+					console.log(`processing turn ${i}`);
+					let [bn,b]=this.branchNested(i);
+					if(bn==undefined||b.msgs[b.msg].content==undefined) {
+						turnIncomplete=i;
+						console.log(`leaving updating, setting turn:${turnIncomplete}`);
+						break;
+					}
+					console.log(`updating turn: ${i}, branch ${this.turns[i].branch} -> ${bn} (content: ${b.msgs[b.msg].content})`);
+					this.turns[i].branch=bn;
+				}
+				
+				for(let i=turnIncomplete;i<this.turns.length;i++) {//>
+					console.log(`dropping branch for turn ${i}`);
+					this.turns[i].branch=-1;
+				}
+				this.turn=turnIncomplete-1;
+				console.log(`branchu sets turns to ${this.turn}`);
+			},
+			treeu(turn) {
+				console.log(`updating index tree at ${turn}`);
+				let prev=this.turns[turn-1];
+				console.log(`parent branch: `+JSON.stringify(prev.branches[prev.branch]));
+				if(!this.turns[turn].tree[prev.branch]) this.turns[turn].tree[prev.branch]={};
+				this.turns[turn].tree[prev.branch][prev.branches[prev.branch].msg]=this.turns[turn].branch;
+			},
+			listmsgs(m,turn) {
+				console.log(`listing ${m} - turn ${turn}`);
+				let b=this.brancha(turn);
+				console.log(`active msg= ${b.msg}`);
+				if(m==0) {
+					if(b.msg>0) {
+						b.msg--;
+						this.branchu(turn);
+					}
+				} else if (m==1) {
+					if(b.msg<(b.msgs.length-1)) { //>
+						b.msg++;
+						this.branchu(turn);
+					} else {
+						if(this.working) {
+							console.log('working right now, leaving');
+							return;
+						}
+						this.chat(2,turn);
+						this.branchu(turn);
+					}
+				}
+				this.scroll();
+			},
+			scroll() {
+				document.getElementById('prompt').scrollIntoView({ behavior:'smooth',block:"end",inline:"nearest" });
+			},
+			turnwhose(turn) {
+				console.log(`searching for whose turn is at ${turn}`);
+				let prev	=this.turns[turn-1];
+				let ai		=prev.role=='user'?1:0;
+				console.log(`new turn type is ai: ${ai}`);
+				return ai;
+			},
+			turnnew(turn) {
+				turn++;
+				console.log(`generating new turn #${turn}`);
+				if(this.turns[turn]) {
+					console.log(`next turn is already there, skipping creation of the turn`);
+				} else {
+					console.log(`the turn ${turn} doesn't exist, let's create it`);
+					let ai=this.turnwhose(turn)
+						this.turns.push({
+							'role':	(ai?'assistant':'user'),
+							'branches':[],
+							'branch':0,
+							'tree':{},
+					});
+					this.turns[this.turns.length-1].tree[this.turns[turn-1].branch]={};
+				}
+				this.turn=turn;
+				console.log(`set turn to ${turn}`);
+				console.log(`initialize the first branch at turn ${turn}`);
+				this.turnnewbranch(turn);
+	
+				console.log('current turn: '+JSON.stringify(this.turns[turn]));
+			},
+			turnnewbranch(turn) {
+				console.log(`adding new branch at ${turn}`)
+				if(!this.turns[turn]) return;
+					const prev	=this.turns[turn-1];
+					const prevm =prev.branches[prev.branch].msg;
+					let bnew	=0;
+					let b			='';
+					if(!this.turns[turn].tree[prev.branch]) bnew=1;
+					if(!bnew) {
+						b			=this.turns[turn].tree[prev.branch][prevm];
+						bnew	=(b&&this.turns[turn].branches[b])?0:1;
+					}
+				if(!bnew) {
+					console.log(`branch for the msg ${prevm} in turn ${turn} already exists: ${b}`);
+				} else {
+					console.log(`creating new branch at turn ${turn}`)
+					this.turns[turn].branches.push(this.branchTmpl(turn));
+					b=this.turns[turn].branches.length-1;
+				}
+				this.turns[turn].branch=b;
+				console.log(`new branch id: ${b}`);
+				console.log(`created branch in ${turn} `+JSON.stringify(this.turns[turn].branches[this.turns[turn].branch]));
+				if(bnew) this.treeu(turn);
+			},
+			branchTmpl(turn) {
+				console.log(`adding branch to turn ${turn}`);
+				return { msg:0,msgs:[this.msgTmpl(turn)] }
+			},
+			msgTmpl(turn) {
+				let ai=this.turnwhose(turn);
+				return {
+					'content':	null,
+					'nick':			(ai?this.nickai:this.nick),
+				}
+			},
+			msgNew(turn) {
+				console.log(`adding new message to turn ${turn}`);
+				let b=this.brancha(turn)
+				b.msgs.push(this.msgTmpl(turn));
+				b.msg=b.msgs.length-1;
+				this.turnnewbranch(turn+1);
+			},
+			async chatSend (turn,branch,msg,msgs) {
+				if(this.working) {
+					console.log('working right now, leaving');
+					return;
+				}
+				let opt={};
+				for(const i in this.settings) {
+					if(!this.settings[i].v.length) continue;
+					console.log(`${i}=${this.settings[i].v}`)
+					if(this.settings[i].t==='n') {
+						opt[i]=this.settings[i].v*1;
+					} else {
+						opt[i]=this.settings[i].v+'';
+					}
+				}
+				console.log(`turn=${turn},branch=${branch},msg=${msg},msgs=`+JSON.stringify(msgs)+` opts=`+JSON.stringify(opt));
+				this.working=1;
+				fetch(this.url+"/api/chat",{
+					"method": "POST",
+					"body": JSON.stringify({
+						'model':		this.model,
+						'messages':	msgs,
+						'stream':		this.stream,
+						'options':	opt
+					})
+				}).then(response=>{
+					console.error(response);
+					if(!response.ok) {
+						console.error(`network error: ${response.error}`);
+						t.working=0;
+						return;
+					}
+					return response.body;
+				}).then(r=>{
+					console.log('dissecting response');
+					const t				=this;
+					const tmp			=t.turns[turn];
+					const b				=tmp.branches[branch].msgs[msg];
+					b.content			='';
+					const decoder	=new TextDecoder('utf-8');
+					const reader	=r.getReader();
+					let res				='';
+					let buf				='';
+					this.scroll();
+					reader.read().then(function processText({done,value}) {
+						if(done) {
+							console.log(`Stream complete:`+JSON.stringify(res));
+							t.cancel=0;
+							return;
+						}
+						if(t.cancel) {
+							console.log('cancelling');
+							reader.releaseLock();
+							r.cancel();
+							t.cancel=0;
+							return res;
+						}
+						buf					+=decoder.decode(value);
+						const chnks	=	buf.split('\n');
+						console.log(buf);
+						//it seems that ollama never sends partial messages, but let's have it just in case
+						buf=chnks.pop()??''; 
+						for (const ch of chnks) {
+							try { res=JSON.parse(ch) } catch (error) { console.error(`error: ${error}`) }
+							b.content+=res.message.content;
+						}
+						return reader.read().then(processText);
+					}).then(r=>{
+						console.log(`chat received`);
+						t.working=0;
+					});
+				})
+			},
+			lastturn(turn) {
+				console.log(`is ${turn} last turn? (total (+1): ${this.turns.length}`);
+				if (turn==(this.turns.length-1)) return 1;
+					if (this.turns[turn+1].branch==-1) return 1;
+				return 0;
+			},
+			chatForAi(turn) {
+				let ms=[]
+				console.log(`building list of chat for ai, up to ${turn}`);
+				if(this.system.length) {
+					ms.push({
+						'content':	this.system,
+						'role':			'system',
+					});
+				}
+				for(let i=1;i<=turn;i++) { //>
+					let tmp	=this.turns[i];
+					let b		=this.brancha(i);
+					ms.push({
+						'content':	b.msgs[b.msg].content,
+						'role':			tmp.role,
+					});
+				}
+				if(this.instr.length) {
+					ms.push(
+						{
+							'content':	`(Important! I must reply with this in mind: ${this.instr})`,
+							'role':			'assistant',
+						},{
+							'content':	`..`,
+							'role':			'user',
+						}
+					);
+				}
+				console.log('request: '+JSON.stringify(ms));
+				return ms;
+			},
+			chat(m,turn) {
+				if(this.working) {
+					console.log('can not do chat, working already');
+					return;
+				}
+				console.log(`chat ${m}-${turn}`);
+				if(!turn) {
+					turn=this.turn;
+					console.log(`turn is not defined, getting current one ${turn}`);
+				}
+				const side=this.brancha(turn).msgs[this.brancha(turn).msg]['side']?1:0;
+				console.log(`chat at turn ${turn}`);
+
+				let ms	=[];
+				if(m===1) {
+					console.log('user is sending new msg');
+					if(side) {
+						console.log(`it's a user side message, turn--`);
+						turn--;
+					}
+
+					console.log("try to create a next turn/branch in case it's not there");
+					if(!side) {
+						this.turnnew(turn);
+						let b=this.brancha(turn+1);
+						b.msgs[b.msg].content=this.prompt;
+					} else {
+						let b=this.brancha(turn+1);
+						b.msgs[b.msg].content=this.prompt;
+						b.msgs[b.msg]['side']=0;
+					}
+					turn++;
+					ms=this.chatForAi(turn);
+					this.turnnew(turn);
+					turn++;
+					this.prompt='';
+				} else if (m===2) {
+					console.log('user is asking for a new side message');
+					this.prompt='';
+					let b=this.brancha(turn);
+					this.msgNew(turn);
+					if(this.turns[turn].role==='user') {
+						b.msgs[b.msg]['side']=1;
+						console.log(`user is asking for a new own message at ${turn}`);
+						turn=this.turn=turn-1;
+						console.log(`resetting turn to ${this.turn}`);
+						return;
+					} else {
+						console.log(`user is asking for a new ai message`);
+						ms=this.chatForAi(turn-1);
+					}
+				}
+				this.chatSend(
+					turn,
+					this.turns[turn].branch,
+					this.brancha(turn).msg,
+					ms
+				);
+				return 1;
+			},
+			list() {
+				if(this.working) {
+					console.log('working right now, leaving');
+					return;
+				}
+				this.working=1;
+				console.log(`listing models`);
+				fetch(this.url+"/api/tags",{
+					"method": "GET",
+				}).then(r=>{
+					if(!r.ok) {
+						throw new Error('connection error')
+					}
+					return r.text();
+				}).then(r=>{
+					let res='';
+					try { res=JSON.parse(r) } catch (error) { console.error(`error: ${error}`) }
+					this.models=[];
+					const found=0;
+					let tmp=[];
+					for(const m of Object.keys(res.models).sort((a,b)=>{
+						return res.models[a].name.localeCompare(res.models[b].name.toLowerCase());
+					})) {
+						this.models.push({
+							n:	res.models[m].name,
+							mt:	res.models[m].modified_at,
+							s:	res.models[m].size,
+							ps:	res.models[m].details.parameter_size,
+							q:	res.models[m].details.quantization_level
+						});
+						if(this.model===m.name) found=1;
+					}
+					if(!this.models.length) {
+						this.working=0;
+						this.connection=1;
+						this.connectionErr='';
+						this.pullHide=0;
+						return;
+					}
+					if(!this.model.length||!found) {
+						this.model=this.models[0]['n'];
+					}
+					this.connectionErr='';
+					this.connection=1;
+					this.cancel=0;
+					this.working=0;
+				}).catch((error)=>{
+					this.connectionErr=`Error: ${error}`;
+					console.error(`network error ${this.connectionErr}`);
+					this.cancel=0;
+					this.working=0;
+					return;
+				});
+			}
+		}
+}).mount('#app')
+
+</script>
+<span id='dl'></span>
+</body>
+</html>
