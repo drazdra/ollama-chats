@@ -10,9 +10,7 @@ The reason for that is that Ollama's API is done via a local network server, and
 locally opened web pages (from disk) are not allowed to access network resources (for safety reasons), even if it's your local Ollama server. Thus, to make it work you need a local web-server software :).
 
 ## Why:
-Why this thing exists: when i installed Ollama, i tried its built-in console chat 
-interface but quickly realized it's nowhere enough to have fun, just enough to test 
-the thing..
+when i installed Ollama, i tried its built-in console chat interface but quickly realized it's nowhere enough to have fun, just enough to test the thing..
 
 ..then i looked up several existing interfaces and realized (again) that:
 1. these things are either too big
