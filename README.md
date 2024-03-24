@@ -5,7 +5,7 @@ Ollama chat client in Vue, everything you need to do your private text rpg in br
 This "project" is a single web page desktop interface for chatting with your local
 Ollama server. 
 
-It requires you to have installed a web-server software, like NGINX, Apache, etc.
+It requires you to have an installed web-server software, like NGINX, Apache, etc.
 The reason for that is that Ollama's API is done via a local network server, and 
 locally opened web pages (from disk) are not allowed to access network resources (for safety reasons), even if it's your local Ollama server. Thus, to make it work you need a local web-server software :).
 
