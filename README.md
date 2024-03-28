@@ -55,7 +55,7 @@ The file needs to connect to your local Ollama server and for your browser to al
 	    root /var/www/html/;
 	    index index.html;
 	    location / {
-	        try_files $uri $uri/ =404;.
+	        try_files $uri $uri/ =404;
 	    }
 	 }
    ```
