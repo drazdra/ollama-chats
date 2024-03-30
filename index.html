@@ -373,7 +373,7 @@ input[type="radio"] {
 						</span>
 						<textarea rows='5' tabindex='5000' id='prompt' placeholder='Prompt'
 							v-model="prompt" 
-							@keydown.enter.prevent='send($event,1,null)'
+							@keydown.enter='send($event,1,null)'
 						></textarea>
 						<br>
 						<span title='"Reply from:" selector. This selects the AI character that will generate a reply. You can have multiple personages talking to you. Every AI personage has its own instruction (instr) and system prompt. Click on the desired character here and then edit their system prompt by clicking "System prompt" below. Add more AI characters at the top.'>
