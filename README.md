@@ -1,5 +1,5 @@
-# ollama-chats
-Ollama chat client in Vue, everything you need to do your private text rpg in browser.
+# ollama-chats v1.1.
+Ollama chat client in Vue, everything you need to do your private text rpg in browser, with any amount of different characters.
 
 ## What this is..
 This "project" is a single web page desktop interface for chatting with your local
@@ -80,7 +80,7 @@ Now, let me list the features this thing has:
 5. You can stop AI reply if it takes too long or if it's obviously wrong. Just hit "Escape" button on your keyboard.
 6. You can see the number of every alternative reply, making it easy to remember which one you liked and return to it if no new ones are good.
 7. You can edit any of the old messages. To do that, just click on the text of a message you wish to edit and that's it, simply edit it in place. But pay attention, there is no way back once you click away from editing. Until then, you can use ctrl+z of your browser to revert things. Once you've edited, there is no more old version anywhere, AI will see only the edited version, you too. You can edit both your own and AI replies. So, if there is a minor mistake made by AI in an otherwise perfect answer, it's very easy to fix it and continue having fun.
-8. You can specify nicknames - yours and of AI. These nicknames are not used in any way, AI doesn't see them unless you use these in text, of course. The purpose of nicknames is to mark the messages visually, so you could know where your reply is and where AI speaks.
+8. You can specify nicknames - yours and of AI. These nicknames are used in prompts for AI if you have more than 2 users defined. Otherwise, AI doesn't see them and then the only purpose of nicknames is to mark the messages visually, so you could know where your reply is and where AI speaks.
 9.	You can rate the messages by clicking -- or ++. This rating does NOT affect anything at all. Ollama can't process such things on the fly. Why the rating is here?	Simple, if you are into finetuning, you can save your chat with ratings. Later, on your own, you may extract the dataset from the saved file (with your ratings) and  use it in your finetuning project. Obviously, it's out of scope of this thing, but the rating is here cos a lot of people do such things.
 10.	When you open the page, it pulls the list of locally available models and adds these to the list.	The list is under the prompt text area. You can easily choose the model you wish to get reply from. Yes, you can do it anytime within the chat. So, if your current model provides bad replies at some point, why not to change it to some other model and to go on?
 11.	If you do not have any installed models, it will suggest you to pull a model from ollama's library. Note: the page itself does not load anything, it just uses Ollama's functionality, and kindly asks Ollama to download a new model from its safe library. Ollama has that feature.
@@ -112,25 +112,72 @@ yes, again, you can load your old chat from a saved file and continue any time. 
  			 
 ### Enjoy!
 
+## Changes (v.1.1 2024.03.30):
+New version v1.1. (let's say previous one was v0). A lot of minor things was changed and a huge major change is introduced.
+New features:
+### Most important:
+Now it allows you to have so called "rooms", which means you can define as many characters as you wish to to chat with these, by choosing who speaks next. You can have conversations with any amount of people now!
+	
+#### Please note
+when you've >2 characters defined (including you), it switches to a different mode and the consistency of replies changes. i, personally, find that this multi-user mode provides much better results than regular chat mode, so i recomment to add a 3rd user even if you don't use it in the conversation. But you can try and decide what you like more :).
+
+#### New features:
+* You can add and remove any user controlled characters you speak for. For example, one is your	main hero, another one is "World" or "Narrator" to drop in changes in the world when something happens, like "Narrator: Suddenly a comet fell upon the head of a ..". And of course you can add any amount of just personages you speak for.
+
+* You can add and remove any amount of AI controlled characters. Every character has its own system prompt you define and its own instruction for the next turn that you define as well. You can have conversations between characters and with multiple characters over any situations you imagine in your rpg.
+
+* If you add more than 2 characters, chat changes the way it works internally, helping AI to differentiate who said what. You don't need to start every time with "Name:" and to force AI to do the same, it will work out of the box. I love it :).
+
+* Added configuration of the script features, a few parameters there:
+	-  hideEmptyOwn 0/1 which hides your empty messages, when you just click "enter" and wish to see how characters talk to each other or wish them to continue. So your empty messages won't litter the chat log. If you set this to 0, you will see these and it makes it possible to branch chat at any point if you wish.
+	- showEmptyOwnSide 0/1 that will force-show the empty own messages IF these are not the only ones at a turn. Single empty replies are still hidden. Showing these is useful if you have multiple own different replies at some turn and you wish to see these to compare the results of different attempts. If an empty one would be hidden, you wouldn't be able to scroll left/right at the turn like that. So, enabling it allows it.
+
+* Added "keep-alive" parameter for Ollama, controlling the time in seconds to offload the model from memory. they load so slowly that default 5 minutes is too little. you can set it to -1 to make it keep the model "forever" in memory.
+
+* When editing the reply in the chat log, "enter" now leaves the field, which is convenient. Shift+enter adds a line-break.
+
+* Chat log messages now show the line-breaks as they should.
+
+* Clicking "enter" upon radio buttons choosing who replies next sends the message. So there is no need to click back on the prompt with the mouse. You can just use "tab" button to move from prompt to the AI character selector, click space on the one you wish to answer and then hit enter. easy. Obviously "Shift-tab" moves you back and this way you can select your own character to reply for.
+
+* Clicking on "system prompt" or "instr" now scrolls to the opened text area for convenience.
+
+* An upgrade script for old version chats was written, so if you had a funny chat in the previous version, it should be fine to load it and get all the new features to continue it. It was irritating to write it :).
+
+* Enter button in the chat will not add a line-break anymore at the time of sending.
+
+* All sent messages are trimmed now, so useless line-breaks and spaces on the end are removed.
+
+* If you send an empty message, internally it's replaced with "Continue" prompt for AI, it's done to for to things: 
+	- avoid AI treating it like "oh, you are silent" which is irritating. 
+	- sometimes models reply with the same message to an empty one
+	- sometimes models just reply with an empty message to your empty message.
+
+* Multiple "design" improvements - colors, transitions, etc.
+		
+
+### For people who wish to parse the saved file:
 P.S. If you wish to parse the saved file for replies, here is structure:
 
-.turns -	an array that has all the messages data. each turn is next "line" of chat.
+.turns - an array that has all the messages data. each turn is next "line" of chat.
 
-.turns.branches - an array of branches, each branch is tied to a single message in a previous turn
+.turns[id].role - the turn belongs to a: "user" || "assistant"
 
-.turns.branch - id of the active branch holding messages for the active message in previous turn. it can be==-1, which means branch is inactive, user went by another branch
+.turns[id].branches - an array of branches, each branch is tied to a single message in a previous turn
+
+.turns[id].branch - id of the active branch holding messages for the active message in previous turn. it can be==-1, which means branch is inactive, user went by another branch
         
-.turns.branches.msgs - an array, holding all the replies for a given message in a previous turn.
+.turns[id].branches[id].msgs - an array, holding all the replies for a given message in a previous turn.
 
-.turns.branches.msg - id of the finally selected message in this branch
+.turns[id].branches[id].msg - id of the finally selected message in this branch
 
-.turns.tree - index to match previous messages to current branches, it's used to link previous turn's branch/msg to a current turn's branch. format is: 
+.turns[id].tree - index to match previous messages to current branches, it's used to link previous turn's branch/msg to a current turn's branch. format is: 
   
     [previous turn's branch id][msg id within previous turn's branch]=current turn's branch
 
-.turns.branches.msgs[id].content - message body
+.turns[id].branches[id].msgs[id].nick - name
 
-.turns.branches.msgs[id].role - user / assistant
+.turns[id].branches[id].msgs[id].content - message body
 
-.turns.branches.msgs[id].rating - 0 is bad, 1 is good, empty is no rating.
+.turns[id].branches[id].msgs[id].rating - 0 is bad, 1 is good, empty is no rating.
 					
