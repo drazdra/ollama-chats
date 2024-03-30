@@ -50,12 +50,18 @@ textarea:focus {
 #chat td:nth-child(1) {
 	text-align: center;
 }
+#chat #nicks {
+	text-align: left;
+}
+#chat #nicks input {
+	width: 95px;
+}
 #chat .nicku {
 	font-size: 16px;
-	float: left;
 	font-style: italic;
-	clear: none;
 	background-color: 101010;
+	clear: both;
+	float: left;
 	padding: 10 10 10 10;
 	margin: 0 7 7 0;
 	border-radius: 10px;
@@ -65,10 +71,10 @@ textarea:focus {
 }
 #chat .nickai {
 	font-size: 16px;
-	float: right;
-	clear: none;
 	font-style: italic;
 	background-color: 101010;
+	clear: both;
+	float: right;
 	padding: 10 10 10 10;
 	margin: 0 0 7 7;
 	border-radius: 10px;
@@ -78,18 +84,14 @@ textarea:focus {
 }
 #chat .msgText {
 	padding: 11 4 1 4;
+	white-space: pre-wrap;
 }
 #chat .lastmsg {
 	height: 150px;
 }
 #chat .msg {
 	height: auto;
-}
-#nicks span:nth-child(1) {
-	float: left;
-}
-#nicks *:nth-child(2) {
-	float: right;
+	border: 1px dashed transparent;	
 }
 #chat td:nth-child(1) {
 	text-align: center;
@@ -169,21 +171,132 @@ input[type="file"] {
 #sets .title {
 	width: 100px;
 }
+.nowrap * {
+	white-space: nowrap;
+}
+.nickDel {
+	color: red;
+}
+.nick {
+	white-space: nowrap;
+	padding: 5 0 5 0;
+	display: inline-block;
+}
+.right {
+	text-align: right;
+}
+.lnk, a {
+	text-decoration: underline;
+	color: mediumseagreen;
+}
+input[type="radio"] {
+	accent-color: green;
+}
+.msg:has(> .msgText[contenteditable]:focus) {
+
+}
+.msgText[contenteditable]:focus {
+  outline: 0px solid darkgreen;
+}
+.prev:hover,.next:hover,.msg:hover {
+  background-color: #002500;
+}
+#prompt {
+  padding: 11 7 11 7;
+  border-width: 1px;
+  outline: 0px;
+}
+#prompt:focus, #prompt:hover {
+  background-color: #002500;
+  outline: 0px;
+}
+* {
+//	transition: all 0.71s ease-out;
+}
+#howto {
+	text-align: justify;
+}
+.slide-fade-enter-active {
+  transition: all .2s ease;
+}
+.slide-fade-leave-active {
+  transition: all .2s;
+}
+.slide-fade-enter-from {
+  transform: translateY(7px);
+  opacity: 0;
+}
+.slide-fade-leave-to {
+  transform: translateY(-7px);
+  opacity: 0;
+}
+
+.ta-enter-active {
+  transition: opacity 0.71s ease;
+}
+.ta-leave-active {
+  transition: opacity 0.21s ease;
+}
+.ta-enter-from {
+  opacity: 0;
+  color: mediumseagreen;
+}
+.ta-leave-to {
+  opacity: 0;
+  color: mediumseagreen;
+}
+
+
 </style>
 </head>
 <body style="" >
 	<div id="app" >
 		<table id='chat' border=1 height='100%'>
+			<tr>
+				<td colspan='3'><a href='https://www.github.com/drazdra/ollama-chats' target='new'>Ollama-chats (v{{config.version.v}})</a></td>
+			</tr>
 			<template v-if='this.connection'>
 				<tr>
 					<td colspan='3'  id='nicks'>
-						<span>Nick: <input v-model='nick'/></span>
-						<span>Partner: <input v-model='nickai'/></span>
+						<table width='100%'>
+							<tr>
+								<td>Users ({{amountNicks['u']}}):</td>
+								<td width='100%'>
+									<template v-for='(i,index) in nicks'>
+										<template v-if='i.t=="u"'>
+											<span class='nick'>
+												({{index}})
+												<input v-model='i.n'/><template v-if='amountNicks["u"]>1'>(<span class='nickDel' @click='userDel(index)'>x</span>)</template>
+											</span>&nbsp;
+										</template>
+									</template>
+								</td>
+								<td class='nowrap right'><span>Add one more user:</span></td>
+								<td><input @keydown.enter='userAdd("u")' v-model='nick["n"]["u"]'/></td>
+								<td><span class='lnk' @click='userAdd("u")'>add</span></td>
+							</tr>
+							<tr>
+								<td>AIs ({{amountNicks['a']}}):</td>
+								<td>
+									<template v-for='(i,index) in nicks'>
+										<template v-if='i.t=="a"'>
+											<span class='nick'>
+												({{index}})
+												<input v-model='i.n'/><template v-if='amountNicks["a"]>1'>(<span class='nickDel' @click='userDel(index)'>x</span>)</template>
+											</span>&nbsp;
+										</template>
+									</template>
+								</td>
+								<td class='nowrap right'>Add one more AI:</td>
+								<td><input @keydown.enter='userAdd("a")' v-model='nick["n"]["a"]'/></td>
+								<td><span class='lnk' @click='userAdd("a")'>add</span></td>
+							</tr>
+						</table>
 						<br><br>
 					</td>
 				</tr>
 				<template v-for="(i,index) in turns">
-					<tr v-if='index<=turn&&i.branch>=0'>
+					<tr v-if='index<=turn&&i.branch>=0&&!(config.hideEmptyOwn.v&&(!config.showEmptyOwnSide.v||brancha(index).msg==0)&&i.role==="user"&&msga(index).side!=1&&(!msga(index).content||!msga(index).content.length))'>
 						<template v-if='index>0&&index<=turn'>
 							<td class='prev' @click='listmsgs(0,index)'>
 								<span v-show='i.branches[i.branch].msg!=0'>
@@ -191,20 +304,24 @@ input[type="file"] {
 									{{i.branches[i.branch].msg}}
 								</span>
 							</td>
-							<td width='100%' :class='index===turn?"lastmsg":"msg"' class='row'>
-								<div :class='i.role==="user"?"nicku":"nickai"'>
-									{{i.branches[i.branch].msgs[i.branches[i.branch].msg].nick}} #{{i.branches[i.branch].msg+1}}:
-								</div>
-								<div class='msgText' @blur="edit($event,index)" contenteditable='true' :tabindex='10+index'>
-									{{ 
-										i.branches[i.branch].msgs[i.branches[i.branch].msg].content??(i.role==='user'?"..input new variant into the prompt, please..":"..wait for it..")
-									}}
-								</div>
-								<div class='rating'>
-									<span :class='this.msga(index).rating===0&&"litn"' @click='rating(index,0)'>--</span>
-									 / 
-									<span :class='this.msga(index).rating===1&&"litp"' @click='rating(index,1)'>++</span>
-								</div>
+							<td width='100%' :class='"row "+index===turn?"lastmsg":"msg"'>
+								<transition name="slide-fade" mode="out-in">
+									<div  :key='i.branches[i.branch].msg'>
+										<div :class='i.role==="user"?"nicku":"nickai"'>
+											{{msga(index).nick}} #{{i.branches[i.branch].msg+1}}:
+										</div>
+										<div class='msgText' @blur="edit($event,index)" contenteditable='true' :tabindex='10000+index*1'>
+											{{ 
+												msga(index).content??(i.role==='user'?"..input new variant into the prompt, please..":"..wait for it..")
+											}}
+										</div>
+										<div class='rating'>
+											<span :class='this.msga(index).rating===0&&"litn"' @click='rating(index,0)'>--</span>
+											 / 
+											<span :class='this.msga(index).rating===1&&"litp"' @click='rating(index,1)'>++</span>
+										</div>
+									</div>
+								</transition>
 							</td>
 							<td class='next' @click='listmsgs(1,index)'>
 								<span v-if="!i.branches[i.branch].msgs[i.branches[i.branch].msg].side">
@@ -215,47 +332,7 @@ input[type="file"] {
 						</template>
 					</tr>
 				</template>
-				<tr v-if='this.pullHide==1'>
-					<td colspan=3>
-						<textarea rows='5' tabindex='5' id='prompt' placeholder='Prompt'
-							v-model="prompt" 
-							@keyup.enter='send($event,1,null)'
-						></textarea>
-						<textarea v-if='!instrHide' rows=10 @input='edit($event,-1)' @blur='edit($event,-1)'>{{instr.length?instr:"You can specify special reminder here for the ai on the situation. It will be injected as a last message belonging to the AI, but won't stay in the chat log. I use things like: '(Important! in my next message i need to consider that i am at .... and i am ...)' "}}</textarea>
-						<textarea v-if='!syshide' rows=10 @input='edit($event,0)' @blur='edit($event,0)'>{{system.length?system:"Edit this to override the system prompt with this text. Empty means the system uses default system prompt (from modelfile)"}}</textarea>
-						model: <select v-model="this.model">
-							<template v-for="i in this.models">
-								<option :value='i.n'>{{i.n}} ({{i.ps}} {{i.q}})</option>
-							</template>
-						</select>
-						<div v-if='!settingsHide' align='center'>
-							<table style='' id='sets'>
-								<tr>
-									<td colspan='3' style='text-align: justify'>
-										These can be changed any time and will override the model's settings,
-										if the value is empty, then the model's own configuration is used
-										(the one specified in modelfile). You can mouseover the parameter's
-										name to see the explanation from the docs.
-										<br><br>
-									</td>
-								</tr>
-									<tr>
-										<td class='title'>URL</td>
-										<td class='val'><input style='width:100%' v-model='this.url'/></td>
-										<td class='def'>def: http://127.0.0.1:11434</td>
-									</tr>
-								<template v-for='(i,ind) in settings'>
-									<tr>
-										<td class='title' :title='i.d'>{{ind}}</td>
-										<td class='val'><input style='width:100%' v-model='i.v'/></td>
-										<td class='def'>def: {{i.def}}</td>
-									</tr>
-								</template>
-							</table>
-						</div>
-					</td>
-				</tr>
-				<tr v-else>
+				<tr v-if='pState["pull"]' id='pull'>
 					<td colspan='3'>
 						<template v-if='!this.working'>
 							<div v-if='!this.models.length'>
@@ -284,30 +361,184 @@ input[type="file"] {
 						</template>
 					</td>
 				</tr>
+				<tr v-else>
+					<td colspan=3>
+						<span title='"Speak for" selector. This is selector of a character that will say the message you send. You can multiple manually controlled personages you speak for. For example your main "hero" and "Narrator" describing the changes of situation.'>
+							<template v-for='(i,index) in nicks'>
+								<template v-if='i.t=="u"'>
+									<input @keydown.enter.stop='send($event,1,null)' :tabindex='100+index*1' type='radio' :id='"sF"+index' :value='i.id' v-model='nick["u"]'/>
+									<label class='lnk' :for='"sF"+index'>({{index}}) {{i.n}}</label>&nbsp;
+								</template>
+							</template>
+						</span>
+						<textarea rows='5' tabindex='5000' id='prompt' placeholder='Prompt'
+							v-model="prompt" 
+							@keydown.enter.prevent='send($event,1,null)'
+						></textarea>
+						<br>
+						<span title='"Reply from:" selector. This selects the AI character that will generate a reply. You can have multiple personages talking to you. Every AI personage has its own instruction (instr) and system prompt. Click on the desired character here and then edit their system prompt by clicking "System prompt" below. Add more AI characters at the top.'>
+							<template v-for='(i,index) in nicks'>
+								<template v-if='i.t=="a"'>
+									<input @keydown.enter.prevent='send($event,1,null)' :tabindex='5500+index*1' type='radio' :id='"rF"+index' :value='i.id' v-model='nick["a"]'/>
+									<label class='lnk' :for='"rF"+index'>({{index}}) {{i.n}}</label>&nbsp;
+								</template>
+							</template>
+						</span>
+						<br><br>
+						<transition-group name='ta' mode="out-in" tag='span'>
+							<span v-show='pState["instr"]' :key='pState["instr"]'>
+							Instruction of ({{this.nick["a"]}}) {{this.nicks[this.nick["a"]].n}}:<br>
+								<textarea 
+									id='instr'
+									rows=10 
+									@blur='edit($event,-1,this.nick["a"])'
+									v-model='this.instr[this.nick["a"]]'
+									:placeholder='`You can specify special reminder here for (${this.nick["a"]}) ${this.nicks[this.nick["a"]].n} on the situation. It will be injected as a last message belonging to the AI, but will not stay in the chat log. I use things like: "I am thinking about doing .., as i am .., i see that.. i feel that.. etc"`'
+								></textarea>
+							</span>
+							<span v-show='pState["sys"]' :key='pState["sys"]'>
+								System Prompt of ({{this.nick["a"]}}) {{this.nicks[this.nick["a"]].n}}:<br>
+								<textarea 
+									id='sys' 
+									rows=10 
+									@blur='edit($event,0,this.nick["a"])' 
+									v-model='this.system[this.nick["a"]]'
+									:placeholder='`Edit this to override the system prompt of (${this.nick["a"]}) ${this.nicks[this.nick["a"]].n} with this text. Empty means the system uses default system prompt (from modelfile)`'
+								></textarea>
+							</span>
+						</transition>
+						<select v-model="this.model" class='lnk' >
+							<template v-for="i in this.models">
+								<option :value='i.n'>{{i.n}} ({{i.ps}} {{i.q}})</option>
+							</template>
+						</select>
+						<div v-show='pState["sets"]' align='center'>
+							<table style='' id='sets'>
+								<tr>
+									<td colspan='3' style='text-align: justify'>
+										These can be changed any time and will override the model's settings,
+										if the value is empty, then the model's own configuration is used
+										(the one specified in modelfile). You can mouseover the parameter's
+										name to see the explanation from the docs.
+										<br><br>
+									</td>
+								</tr>
+									<tr>
+										<td class='title'>URL</td>
+										<td class='val'><input style='width:100%' v-model='this.config.url.v'/></td>
+										<td class='def'>def: http://127.0.0.1:11434</td>
+									</tr>
+								<template v-for='j in [config,settings["req"],settings["options"]]'>
+									<template v-for='(i,ind) in j'>
+										<tr>
+											<td class='title' :title='i.d'>{{ind}}</td>
+											<td class='val'>
+												<template v-if='i.f==="ro"'>
+													{{i.v}}
+												</template>
+												<template v-else>
+													<template v-if='i.f==="cb"'>
+														<input type='checkbox' v-model='i.v'/>
+													</template>
+													<template v-else>
+														<input style='width:100%' v-model='i.v'/>
+													</template>
+												</template>
+											</td>
+											<td class='def'><span v-show='(i.def+"")!=""'>def: {{i.def}}</span></td>
+										</tr>
+									</template>
+								</template>
+							</table>
+						</div>
+						<div id='howto' v-if='pState["howto"]'>
+							<p>How to chat here, a short guide.</p>
+							<p>1.	At the top left rename your character, rename Ai character.</p>
+							<p>2.	At the top right add more characters if your rpg will have more people.</p>
+							<p>3.	Click "system prompt", a new text area opens. 
+									Write the definition of the first AI character into the system prompt.
+									like "You are..."</p>
+							<p>4.	If you have more than one AI character, under the prompt text area
+									you will see several radio buttons with the names you created.
+									By default the first one is chosen and you've already defined the system prompt
+									for this one. Now, click on the next radio button and system prompt
+									box will be cleared, as now it is a system prompt of the newly selected
+									character. Write a definition for this character. Repeat with all
+									AI characters you've created. You can update these anytime during
+									the chat.</p>
+							<p>5.	Click on "system prompt" link again to hide it.</p>
+							<p>6.	Click on "instr". It uses the same logic as system prompt and defines
+									instructions for each AI character. You can use it to push character
+									towards certain actions in a story. It should be written in first person.
+									For example: "i'm so jealous". or "i'm angry". or "i want to..".
+									Also you can use it for describing the location of personages, for whatever.
+									Use it throughout the chat process, changing accordingly.</p>
+							<p>7.	Click on instr to hide it, if it's unneeded.</p>
+							<p>8.	before start, check the settings and set the num_ctx param to a desired value.
+									It's a size of the context memory that AI remembers. 
+									Check other settings you may need, like temperature, etc.</p>
+							<p>9. 	below the "prompt" text area in a select list choose the model you wish to get reply from.
+									if you don't have models, you can click "pull" and download some.
+									Names of the models to pull you can see at ollama.com/library website.</p>
+							<p>10.	It's a good idea to click "Save" now to save your starting point of the game.</p>
+							<p>11.	Type in your first message. it's the best to start from introduction,
+									like "I'm ...describe yourself... walking/sitting/doing sth.	
+									Usually you can put into the system prompts how they are related to you. 
+									so the reply should make some sense, when they meet you.</p>
+							<p>12.	hit enter to send your first message.</p>
+							<p>13. once model is loaded, which may take time, the character will reply.</p>
+							<p>14. if you dislike the reply, just click "right" on keyboard or arrows</p>
+									on the right of the AI reply.
+									repeat until the reply is good.</p>
+							<p>15.	if the reply is nearly ideal but something is wrong, just click on the
+									reply of AI and edit that part yourself. Erasing of extra bs is a good idea,
+									as models love to litter with meaningless garbage, platitudes, etc.</p>
+							<p>16.	If you decide your own message is no good, you can edit it too. or, you can
+									create an alternative reply, by clicking the "right" arrows on the right
+									from your message. Then just type new prompt as usually and send it.</p>
+							<p>17.	It's a good idea to create user called "Narrator" and then to post from
+									his name world changes. like "That person went away". or "it started to rain".
+									or "You have noticed that..". etc. To send message from another user
+									just click on the respective radio button above the prompt text area and
+									hit enter.</p>
+							<p>18. You can choose which character replies next by clicking on the respective
+										radio button under the prompt box. You even can send empty messages,
+										to make them talk to each other. Empty messages are hidden by default,
+										so it looks like they just talk to each other, 	but you can change it in the settings.
+										If they don't want to talk to each other, use "instr" field with sth like
+										"now i should reply to.." or add some message from a Narrator.
+							<p>19.	repeat the process till the alarm clock is ringing, telling you it's time to wake up.
+											it's a good idea to set alarm clock in your phone to the evening time, so
+											you would remember you still have to sleep every day.</p>
+							<p>20.	enjoy.</p>
+						</div>
+					</td>
+				</tr>
 				<tr>
 					<td colspan=3>
-						<span @click='this.sets()'>settings</span> |
-						<span @click='this.pullHide=!this.pullHide'>pull</span> |
-						<span @click='this.list()'>reload models</span> |
-						<span @click='this.syshide=!this.syshide'>system prompt</span> |
-						<span @click='this.instrHide=!this.instrHide'>instr</span> | 
+						<span class='lnk' @click='pToggle("sets")'>settings</span> |
+						<span class='lnk' @click='pToggle("pull")'>pull</span> |
+						<span class='lnk' @click='list()'>reload models</span> |
+						<span class='lnk' @click='pToggle("sys")'>system prompt</span> |
+						<span class='lnk' @click='pToggle("instr")'>instr</span> | 
 
-						<span @click='this.prune()'>prune</span> | 
+						<span class='lnk' @click='this.prune()'>prune</span> | 
 						<span>
-							<label for="load" id="loadlabel">load</label>
-							<input id='load' type='file' @change='this.load($event)'/>
+							<label class='lnk' for="load" id="loadlabel">load</label>
+							<input id='load' type='file' @change='load($event)'/>
 						</span> | 
-						<span @click='this.save()'>save</span> | 
+						<span class='lnk' @click='save()'>save</span> | 
+						<span class='lnk' @click='pToggle("howto")'>how to chat</span> | 
 					</td>
 				</tr>
 			</template>
 			<template v-else>
 				<tr>
 					<td>
-						<input v-model='url'/><br>
+						<input v-model='this.config.url.v'/><br>
 						<template v-if='this.connectionErr.length'>
 							<br>
-							<span @click='this.list()'>Re-try</span><br><br>
+							<span class='lnk' @click='this.list()'>Re-try</span><br><br>
 							{{this.connectionErr}}
 						</template>
 					</td>
@@ -320,6 +551,7 @@ input[type="file"] {
 	window.app=createApp({
 		data() {
 			return {
+				def:{},
 				message:'',
 				prompt:	'',
 				turns: [
@@ -335,40 +567,69 @@ input[type="file"] {
 				],
 				model:	'',
 				models: [],
-				system: '',
-				syshide:1,
-				instr:	'',
-				instrHide:1,
-				settingsHide: 1,
+				pState: {
+					'sys':	0,
+					'instr':0,
+					'sets':	0,
+					'pull': 0,
+					'howto': 0,
+				},
+				system: {
+					'1':'',
+				},
+				instr:	{
+					'1':'',
+				},
+				config: {
+					version:			{ v:1.1,def:'',d:'UI version, just for information and upgrades','f':'ro' },
+					hideEmptyOwn:	{ v:true,def:1,d:'Hide own empty replies, the ones where you just clicked enter. Setting this to 0 can be useful if you wish to add alternative branch of conversation at the point of your empty reply. Otherwise these just irritate.','f':'cb' },
+					showEmptyOwnSide:{ v:true,def:1,d:'Show own empty "side" replies even if hideEmptyOwn is true. This allows you to see empty messages if you have created multiple replies at that given turn. But empty replies with no alternatives may still be hidden.','f':'cb' },
+					url: 					{	v:"http://127.0.0.1:11434",def:'http://127.0.0.1:11434',d:'URL of the Ollama service'},
+				},
 				settings: {
-					temperature:		{v:'',t:'n',def:0.8,d:'The temperature of the model. Increasing the temperature will make the model answer more creatively. (Default: 0.8)'},
-					mirostat:				{v:'',t:'n',def:0,d:'Enable Mirostat sampling for controlling perplexity. (default: 0, 0 = disabled, 1 = Mirostat, 2 = Mirostat 2.0)'},
-					mirostat_eta:		{v:'',t:'n',def:0.1,d:'Influences how quickly the algorithm responds to feedback from the generated text. A lower learning rate will result in slower adjustments, while a higher learning rate will make the algorithm more responsive. (Default: 0.1)'},
-					mirostat_tau:		{v:'',t:'n',def:5,d:'Controls the balance between coherence and diversity of the output. A lower value will result in more focused and coherent text. (Default: 5.0)'},
-					num_ctx:				{v:'',t:'n',def:2048,d:'Sets the size of the context window used to generate the next token. (Default: 2048)'},
-					num_gqa:				{v:'',t:'n',def:'',d:'The number of GQA groups in the transformer layer. Required for some models, for example it is 8 for llama2:70b'},
-					num_gpu:				{v:'',t:'n',def:'',d:'The number of layers to send to the GPU(s). On macOS it defaults to 1 to enable metal support, 0 to disable.'},
-					num_thread:			{v:'',t:'n',def:'',d:'Sets the number of threads to use during computation. By default, Ollama will detect this for optimal performance. It is recommended to set this value to the number of physical CPU cores your system has (as opposed to the logical number of cores).'},
-					repeat_last_n:	{v:'',t:'n',def:64,d:'Sets how far back for the model to look back to prevent repetition. (Default: 64, 0 = disabled, -1 = num_ctx)'},
-					repeat_penalty:	{v:'',t:'n',def:1.1,d:'Sets how strongly to penalize repetitions. A higher value (e.g., 1.5) will penalize repetitions more strongly, while a lower value (e.g., 0.9) will be more lenient. (Default: 1.1)'},
-					seed:						{v:'',t:'n',def:0,d:'Sets the random number seed to use for generation. Setting this to a specific number will make the model generate the same text for the same prompt. (Default: 0)'},
-					stop:						{v:'',t:'s',def:'AI assistant:',d:'Sets the stop sequences to use. When this pattern is encountered the LLM will stop generating text and return. Multiple stop patterns may be set by specifying multiple separate stop parameters in a modelfile.'},
-					tfs_z:					{v:'',t:'n',def:1,d:'Tail free sampling is used to reduce the impact of less probable tokens from the output. A higher value (e.g., 2.0) will reduce the impact more, while a value of 1.0 disables this setting. (default: 1)'},
-					num_predict:		{v:'',t:'n',def:128,d:'Maximum number of tokens to predict when generating text. (Default: 128, -1 = infinite generation, -2 = fill context)'},
-					top_k:					{v:'',t:'n',def:40,d:'Reduces the probability of generating nonsense. A higher value (e.g. 100) will give more diverse answers, while a lower value (e.g. 10) will be more conservative. (Default: 40)'},
-					top_p:					{v:'',t:'n',def:0.9,d:'Works together with top-k. A higher value (e.g., 0.95) will lead to more diverse text, while a lower value (e.g., 0.5) will generate more focused and conservative text. (Default: 0.9)'}
+					options: {
+						temperature:		{v:'',t:'n',def:0.8,d:'The temperature of the model. Increasing the temperature will make the model answer more creatively. (Default: 0.8)'},
+						mirostat:				{v:'',t:'n',def:0,d:'Enable Mirostat sampling for controlling perplexity. (default: 0, 0 = disabled, 1 = Mirostat, 2 = Mirostat 2.0)'},
+						mirostat_eta:		{v:'',t:'n',def:0.1,d:'Influences how quickly the algorithm responds to feedback from the generated text. A lower learning rate will result in slower adjustments, while a higher learning rate will make the algorithm more responsive. (Default: 0.1)'},
+						mirostat_tau:		{v:'',t:'n',def:5,d:'Controls the balance between coherence and diversity of the output. A lower value will result in more focused and coherent text. (Default: 5.0)'},
+						num_ctx:				{v:'',t:'n',def:2048,d:'Sets the size of the context window used to generate the next token. (Default: 2048)'},
+						num_gqa:				{v:'',t:'n',def:'',d:'The number of GQA groups in the transformer layer. Required for some models, for example it is 8 for llama2:70b'},
+						num_gpu:				{v:'',t:'n',def:'',d:'The number of layers to send to the GPU(s). On macOS it defaults to 1 to enable metal support, 0 to disable.'},
+						num_thread:			{v:'',t:'n',def:'',d:'Sets the number of threads to use during computation. By default, Ollama will detect this for optimal performance. It is recommended to set this value to the number of physical CPU cores your system has (as opposed to the logical number of cores).'},
+						repeat_last_n:	{v:'',t:'n',def:64,d:'Sets how far back for the model to look back to prevent repetition. (Default: 64, 0 = disabled, -1 = num_ctx)'},
+						repeat_penalty:	{v:'',t:'n',def:1.1,d:'Sets how strongly to penalize repetitions. A higher value (e.g., 1.5) will penalize repetitions more strongly, while a lower value (e.g., 0.9) will be more lenient. (Default: 1.1)'},
+						seed:						{v:'',t:'n',def:0,d:'Sets the random number seed to use for generation. Setting this to a specific number will make the model generate the same text for the same prompt. (Default: 0)'},
+						stop:						{v:'',t:'s',def:'AI assistant:',d:'Sets the stop sequences to use. When this pattern is encountered the LLM will stop generating text and return. Multiple stop patterns may be set by specifying multiple separate stop parameters in a modelfile.'},
+						tfs_z:					{v:'',t:'n',def:1,d:'Tail free sampling is used to reduce the impact of less probable tokens from the output. A higher value (e.g., 2.0) will reduce the impact more, while a value of 1.0 disables this setting. (default: 1)'},
+						num_predict:		{v:'',t:'n',def:128,d:'Maximum number of tokens to predict when generating text. (Default: 128, -1 = infinite generation, -2 = fill context)'},
+						top_k:					{v:'',t:'n',def:40,d:'Reduces the probability of generating nonsense. A higher value (e.g. 100) will give more diverse answers, while a lower value (e.g. 10) will be more conservative. (Default: 40)'},
+						top_p:					{v:'',t:'n',def:0.9,d:'Works together with top-k. A higher value (e.g., 0.95) will lead to more diverse text, while a lower value (e.g., 0.5) will generate more focused and conservative text. (Default: 0.9)'},
+					},
+					req: {
+						keep_alive:			{v:900,t:'n',def:"300",d:'Time to keep model cached in memory, a number in seconds, any negative number will keep the model loaded in memory, 0 will unload the model immediately after generating a response.'},
+					}
 				},
 				stream:	true,
-				nick:		'Me',
-				nickai:	'AI',
+				nick: {
+					u:0,
+					a:1,
+					n:{
+						u:'',
+						a:'',
+					}
+				},
+				amountNicks: { 'u':1, a:1, t:2 },
+				nicks: {
+					0:{	t:'u',n:'Me',id:0	},
+					1:{	t:'a',n:'AI',id:1	},
+				},
 				turn:		0,
 				cancel:	0,
 				working:0,
 				connection: 0,
-				url: "http://127.0.0.1:11434",
+				
 				connectionErr: '',
 				modelPull: 'stablelm2',
-				pullHide: 1,
 				mpull: [],
 			}
 		},
@@ -386,8 +647,16 @@ input[type="file"] {
 				}
 
 				if((document.activeElement.tagName=='TEXTAREA'&&document.activeElement.value.length)||this.turn===0) return;
-				if(document.activeElement.tagName=='INPUT') return;
-				if(document.activeElement.className.includes('msgText')) return;
+				if(document.activeElement.tagName=='INPUT') {
+					return;
+				}
+				
+				if(document.activeElement.className.includes('msgText')) {
+					if(event.key==='Enter'&&!event.shiftKey) {
+						document.activeElement.blur();
+					}
+					return;
+				}
 
 				if (event.keyCode===39) {
 					this.listmsgs(1,this.turn);
@@ -398,11 +667,48 @@ input[type="file"] {
 			console.log('mounted')
 		},
 		methods: {
+			async pToggle(id,v) {
+				if(v==undefined) v=!this.pState[id];
+				console.log(`toggling ${id} to ${v}`);
+				this.pState[id]=v;
+				if(this.pState[id]!=1) return;
+				await nextTick();
+				this.scroll(id);
+			},
+			userDel(i) {
+				const t=this.nicks[i].t;
+				if(this.amountNicks[t]<=1) { //>
+					alert("Can't delete the last one");
+					return;
+				}
+				for(const j in this.nicks) {
+					const n=this.nicks[j];
+					console.log(`comparing nick ${j} with ${i}`);
+					if(j==i||this.nicks[i].t!=n.t) continue;
+						console.log(`found matching role user ${n.n} with id ${n.id}`);
+						this.nick[n.t]=n.id;
+						break;
+					}
+				if(confirm(`Are you sure you wish to delete character ${this.nicks[i].n}? It won't affect the existing chat but will delete nick and its system and instruction messages.`)) {
+					this.amountNicks[t]--;
+					this.system[this.nicks[i].id]='';
+					this.instr[this.nicks[i].id]	='';
+					delete this.nicks[i];
+				}
+			},
+			userAdd(t) {
+				const id=this.amountNicks['t']++;
+				this.amountNicks[t]++;
+				this.nicks[id]		=	{ t:t,n:this.nick["n"][t],'id':id };
+				this.system[id]		='';
+				this.instr[id]		='';
+				this.nick['n'][t]	=''
+			},
 			pull() {
 				this.working=1;
 				this.connectionErr='';
 				
-				fetch(this.url+"/api/pull",{
+				fetch(this.config.url.v+"/api/pull",{
 					"method": "POST",
 					"body": JSON.stringify({
 						'name':	this.modelPull,
@@ -461,7 +767,7 @@ input[type="file"] {
 						t.cancel=0;
 						if(r.status=='success') {
 							this.connectionErr='';
-							this.pullHide=1;
+							this.pToggle('pull',0);
 							this.list();
 						} else if(r.error&&r.error.length) {
 							this.connectionErr=r.error;
@@ -476,9 +782,6 @@ input[type="file"] {
 						return;
 					});
 				})
-			},
-			sets() {
-				this.settingsHide=!this.settingsHide;
 			},
 			prune() {
 				if(
@@ -503,10 +806,18 @@ input[type="file"] {
 				}
 			},
 			rating(i,v) {
+				if(this.msga(i).rating===v) {
+					this.msga(i).rating="";
+					return;
+				}
 				this.msga(i).rating=v;
 			},
 			save() {
-				let name=`${this.nick}-${this.nickai}`;
+				let name='';
+				for(const i in this.nicks) {
+					name+=this.nicks[i].n+'-';
+				}
+				name=name.slice(0,-1);
 				name=name.replace(/[^\w0-9\.-]/gi,'');
 				name.match(/^(.{1,64})/); 
 				name=`chat.${name}.${Date().toString()}.json`;
@@ -526,20 +837,90 @@ input[type="file"] {
 				)
 				l.remove()
 			},
+			updateAddParams(d,p) {
+				if(!d.hasOwnProperty[p]) {
+					console.log(`loaded file doesn't have whole section ${p}, importing`);
+					d[p]=this['def'][p];
+					return;
+				}
+				for(let i in this['def'][p]) {
+					console.log(`checking property ${i}`)
+					if(d[p].hasOwnProperty(i)) {
+						console.log(`skipping param ${i}, already exists in loaded file`);
+					} else {
+						console.log(`adding param ${i} to loaded file`);
+						d[p][i]=this['def'].config[i]
+					}
+				}
+			},
 			load(e) {
 				let fr=new FileReader(e);
-				let t=this;
-				function parse() {
-					console.log('loaded');
-					const d=JSON.parse(fr.result);
+				let t	=this;
+				let d;
+				for(const i in this.$data) {
+					if(i==='def') continue;
+					this.def[i]=this[i];
+				}
+				
+				function parse(d) {
+					if(!d) {
+						console.log('parsing loaded file');
+						d=JSON.parse(fr.result);
+						delete d.def;
+					} else {
+						console.log(`recursive updating`);
+					}
+					console.log(JSON.stringify(d))
+					
+					if(!d['config']) { //updating from version 0->1
+						t.updateAddParams(d,'config');
+						t.updateAddParams(d,'settings');
+						d.nicks={
+							0:{	't':'u','n':d.nick,'id':0	},
+							1:{	't':'a','n':d.nickai,'id':1	}
+						};
+						delete d.nick;
+						delete d.nickai;
+						t.updateAddParams(d,'nick');
+						d.config.url.v=d.url;
+						delete d.url;
+						
+						t.system['1']	=d.system; delete d.system;
+						t.instr['1']	=d.instr; delete d.instr;
+						
+						t.updateAddParams(d,'system');
+						t.updateAddParams(d,'instr');
+						t.updateAddParams(d,'amountNicks');
+						t.updateAddParams(d,'pState');
+						for (const i in d.pState) {
+							d.pState[i]=0;
+						}
+						delete d.sysHide;
+						delete d.instrHide;
+						delete d.pullHide;
+						delete d.setingsHide;
+						delete d.settings; //just delete old settings )
+						t.updateAddParams(d,'settings');
+						
+						parse(d);
+						return;
+					} else if (d.config.version.v==1) {
+						delete d.settings; //just delete old settings )
+						t.updateAddParams(d,'settings');
+						d.config.version.v=t.config.version.v;
+						parse(d);
+						return;
+					}
+					
 					for(let i in d) {
 						t[i]=d[i]
 					}
 					t.working	=0;
 					t.cancel	=0;
+					t.list();
 				}
 				console.log(e.target.files[0])
-				console.log(fr.addEventListener("load",parse))
+				console.log(fr.addEventListener("load",function() { parse(d) }))
 				fr.readAsText(e.target.files[0]);
 			},
 			send(e,m,i) {
@@ -548,15 +929,17 @@ input[type="file"] {
 				}
 				this.chat(m,i);
 			},
-			async edit(e,i) {
+			async edit(e,i,u) {
 				console.log(e);
 				if(i===0) {
-					this.system=e.target.value.trim()??'';
+					console.log(`setting system prompt for ${u}`);
+					this.system[u]=e.target.value.trim()??'';
 					return 1;
 				} else if(i===-1) {
-					this.instr=e.target.value.trim()??'';
+					this.instr[u]=e.target.value.trim()??'';
+					return 1;
 				}
-				this.msga(i).content=e.target.innerText;
+				this.msga(i).content=e.target.innerText.trim()??'';
 			},
 			msga(turn) {
 				let b=this.brancha(turn);
@@ -618,10 +1001,12 @@ input[type="file"] {
 						b.msg--;
 						this.branchu(turn);
 					}
+					return;
 				} else if (m==1) {
 					if(b.msg<(b.msgs.length-1)) { //>
 						b.msg++;
 						this.branchu(turn);
+						return;
 					} else {
 						if(this.working) {
 							console.log('working right now, leaving');
@@ -629,12 +1014,17 @@ input[type="file"] {
 						}
 						this.chat(2,turn);
 						this.branchu(turn);
+						this.scroll();
 					}
 				}
-				this.scroll();
 			},
-			scroll() {
-				document.getElementById('prompt').scrollIntoView({ behavior:'smooth',block:"end",inline:"nearest" });
+			scroll(id) {
+				console.log(`scroll to ${id}`);
+				if(!id) {
+					document.getElementById('prompt').scrollIntoView({ behavior:'smooth',block:"end",inline:"nearest" });
+				} else {
+					document.getElementById(id).scrollIntoView({ behavior:'smooth',block:"end",inline:"nearest" });
+				}
 			},
 			turnwhose(turn) {
 				console.log(`searching for whose turn is at ${turn}`);
@@ -643,7 +1033,7 @@ input[type="file"] {
 				console.log(`new turn type is ai: ${ai}`);
 				return ai;
 			},
-			turnnew(turn) {
+			turnnew(turn,u) {
 				turn++;
 				console.log(`generating new turn #${turn}`);
 				if(this.turns[turn]) {
@@ -662,11 +1052,11 @@ input[type="file"] {
 				this.turn=turn;
 				console.log(`set turn to ${turn}`);
 				console.log(`initialize the first branch at turn ${turn}`);
-				this.turnnewbranch(turn);
+				this.turnnewbranch(turn,u);
 	
 				console.log('current turn: '+JSON.stringify(this.turns[turn]));
 			},
-			turnnewbranch(turn) {
+			turnnewbranch(turn,u) {
 				console.log(`adding new branch at ${turn}`)
 				if(!this.turns[turn]) return;
 					const prev	=this.turns[turn-1];
@@ -682,7 +1072,7 @@ input[type="file"] {
 					console.log(`branch for the msg ${prevm} in turn ${turn} already exists: ${b}`);
 				} else {
 					console.log(`creating new branch at turn ${turn}`)
-					this.turns[turn].branches.push(this.branchTmpl(turn));
+					this.turns[turn].branches.push(this.branchTmpl(turn,u));
 					b=this.turns[turn].branches.length-1;
 				}
 				this.turns[turn].branch=b;
@@ -690,54 +1080,64 @@ input[type="file"] {
 				console.log(`created branch in ${turn} `+JSON.stringify(this.turns[turn].branches[this.turns[turn].branch]));
 				if(bnew) this.treeu(turn);
 			},
-			branchTmpl(turn) {
+			branchTmpl(turn,u) {
 				console.log(`adding branch to turn ${turn}`);
-				return { msg:0,msgs:[this.msgTmpl(turn)] }
+				return { msg:0,msgs:[this.msgTmpl(turn,u)] }
 			},
-			msgTmpl(turn) {
+			msgTmpl(turn,u) {
 				let ai=this.turnwhose(turn);
 				return {
 					'content':	null,
-					'nick':			(ai?this.nickai:this.nick),
+					'nick':			this.nicks[u].n,
 				}
 			},
-			msgNew(turn) {
+			msgNew(turn,u,u2) {
 				console.log(`adding new message to turn ${turn}`);
 				let b=this.brancha(turn)
-				b.msgs.push(this.msgTmpl(turn));
+				b.msgs.push(this.msgTmpl(turn,u));
 				b.msg=b.msgs.length-1;
-				this.turnnewbranch(turn+1);
+				this.turnnewbranch(turn+1,u2);
+			},
+			options() {
+				const opt=this.opt2hash(0);
+				opt['options']=this.opt2hash(1);
+				return opt;
+			},
+			opt2hash(m) {
+				let opt={};
+				const sets=m==1?this.settings.options:this.settings.req;
+				for(const i in sets) {
+					console.log(`processing settings param ${i}=${sets[i].v}`);
+					if(!(sets[i].v+'').length) continue;
+					console.log(`${i}=${sets[i].v}`)
+					if(sets[i].t==='n') {
+						opt[i]=sets[i].v*1;
+					} else {
+						opt[i]=sets[i].v+'';
+					}
+				}
+				return opt;
 			},
 			async chatSend (turn,branch,msg,msgs) {
 				if(this.working) {
 					console.log('working right now, leaving');
 					return;
 				}
-				let opt={};
-				for(const i in this.settings) {
-					if(!this.settings[i].v.length) continue;
-					console.log(`${i}=${this.settings[i].v}`)
-					if(this.settings[i].t==='n') {
-						opt[i]=this.settings[i].v*1;
-					} else {
-						opt[i]=this.settings[i].v+'';
-					}
-				}
-				console.log(`turn=${turn},branch=${branch},msg=${msg},msgs=`+JSON.stringify(msgs)+` opts=`+JSON.stringify(opt));
+				let opt=this.options();
 				this.working=1;
-				fetch(this.url+"/api/chat",{
+				opt['model']			=this.model;
+				opt['messages']		=msgs;
+				opt['stream']			=this.stream;
+				console.log(`turn=${turn},branch=${branch},opts=`+JSON.stringify(opt));
+				
+				fetch(this.config.url.v+"/api/chat",{
 					"method": "POST",
-					"body": JSON.stringify({
-						'model':		this.model,
-						'messages':	msgs,
-						'stream':		this.stream,
-						'options':	opt
-					})
+					"body": JSON.stringify(opt)
 				}).then(response=>{
 					console.error(response);
 					if(!response.ok) {
 						console.error(`network error: ${response.error}`);
-						t.working=0;
+						this.working=0;
 						return;
 					}
 					return response.body;
@@ -777,7 +1177,7 @@ input[type="file"] {
 						return reader.read().then(processText);
 					}).then(r=>{
 						console.log(`chat received`);
-						t.working=0;
+						this.working=0;
 					});
 				})
 			},
@@ -787,33 +1187,53 @@ input[type="file"] {
 					if (this.turns[turn+1].branch==-1) return 1;
 				return 0;
 			},
-			chatForAi(turn) {
+			chatForAi(turn,m,u) {
 				let ms=[]
 				console.log(`building list of chat for ai, up to ${turn}`);
-				if(this.system.length) {
+				if(this.system[this.nick['a']].length) {
 					ms.push({
-						'content':	this.system,
+						'content':	this.system[this.nick['a']],
 						'role':			'system',
 					});
 				}
-				for(let i=1;i<=turn;i++) { //>
-					let tmp	=this.turns[i];
-					let b		=this.brancha(i);
+
+				if(m) {
+					console.log("room mode, let's concatenate everything");
+					let chat='';
+					for(let i=1;i<=turn;i++) { //>
+						let tmp	=this.turns[i];
+						let b		=this.brancha(i);
+						chat+=(`${b.msgs[b.msg].nick}: `+(b.msgs[b.msg].content.length?b.msgs[b.msg].content:'continue')+`\n\n`);
+					}
+					chat+=`(task: now it's your turn to reply as ${this.nicks[u].n}.`
+					if(this.instr[u].length) {
+						chat+=`Important, these are your thoughts to consider in reply: ${this.instr[u]}`;
+					}
+					chat+=`)\n\n${this.nicks[u].n}: `;
 					ms.push({
-						'content':	b.msgs[b.msg].content,
-						'role':			tmp.role,
+						'content':	chat,
+						'role':			'user',
 					});
-				}
-				if(this.instr.length) {
-					ms.push(
-						{
-							'content':	`(Important! I must reply with this in mind: ${this.instr})`,
-							'role':			'assistant',
-						},{
-							'content':	`..`,
-							'role':			'user',
-						}
-					);
+				} else {
+					for(let i=1;i<=turn;i++) { //>
+						let tmp	=this.turns[i];
+						let b		=this.brancha(i);
+						ms.push({
+							'content':	b.msgs[b.msg].content.length?b.msgs[b.msg].content:'continue',
+							'role':			tmp.role,
+						});
+					}
+					if(this.instr[u].length) {
+						ms.push(
+							{
+								'content':	`(Important! I must reply with this in mind: ${this.instr[u]})`,
+								'role':			'assistant',
+							},{
+								'content':	'continue',
+								'role':			'user',
+							}
+						);
+					}
 				}
 				console.log('request: '+JSON.stringify(ms));
 				return ms;
@@ -831,7 +1251,11 @@ input[type="file"] {
 				const side=this.brancha(turn).msgs[this.brancha(turn).msg]['side']?1:0;
 				console.log(`chat at turn ${turn}`);
 
-				let ms	=[];
+				const rooms	=(this.amountNicks['a']+this.amountNicks['u'])>2;
+				let ms			=[];
+
+				console.log(`reply for user ${this.nick['u']} (${this.nicks[this.nick['u']].n})`);
+				
 				if(m===1) {
 					console.log('user is sending new msg');
 					if(side) {
@@ -841,33 +1265,34 @@ input[type="file"] {
 
 					console.log("try to create a next turn/branch in case it's not there");
 					if(!side) {
-						this.turnnew(turn);
+						this.turnnew(turn,this.nick['u']);
 						let b=this.brancha(turn+1);
-						b.msgs[b.msg].content=this.prompt;
+						b.msgs[b.msg].content=this.prompt.trim();
 					} else {
 						let b=this.brancha(turn+1);
-						b.msgs[b.msg].content=this.prompt;
+						b.msgs[b.msg].content=this.prompt.trim();
 						b.msgs[b.msg]['side']=0;
 					}
 					turn++;
-					ms=this.chatForAi(turn);
-					this.turnnew(turn);
+					ms=this.chatForAi(turn,rooms,this.nick['a']);
+					this.turnnew(turn,this.nick['a']);
 					turn++;
 					this.prompt='';
 				} else if (m===2) {
 					console.log('user is asking for a new side message');
 					this.prompt='';
 					let b=this.brancha(turn);
-					this.msgNew(turn);
 					if(this.turns[turn].role==='user') {
+						this.msgNew(turn,this.nick['u'],this.nick['a']);
 						b.msgs[b.msg]['side']=1;
 						console.log(`user is asking for a new own message at ${turn}`);
 						turn=this.turn=turn-1;
 						console.log(`resetting turn to ${this.turn}`);
 						return;
 					} else {
+						this.msgNew(turn,this.nick['a'],this.nick['u']);
 						console.log(`user is asking for a new ai message`);
-						ms=this.chatForAi(turn-1);
+						ms=this.chatForAi(turn-1,rooms,this.nick['a']);
 					}
 				}
 				this.chatSend(
@@ -885,7 +1310,7 @@ input[type="file"] {
 				}
 				this.working=1;
 				console.log(`listing models`);
-				fetch(this.url+"/api/tags",{
+				fetch(this.config.url.v+"/api/tags",{
 					"method": "GET",
 				}).then(r=>{
 					if(!r.ok) {
@@ -911,10 +1336,11 @@ input[type="file"] {
 						if(this.model===m.name) found=1;
 					}
 					if(!this.models.length) {
+						console.log('no models found');
 						this.working=0;
 						this.connection=1;
 						this.connectionErr='';
-						this.pullHide=0;
+						this.pToggle('pull',1);
 						return;
 					}
 					if(!this.model.length||!found) {
