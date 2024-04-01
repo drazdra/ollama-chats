@@ -74,6 +74,9 @@ The file needs to connect to your local Ollama server and for your browser to al
 8. Access http://127.0.0.1/index.html in your browser
 9. If you see some error, like file not found, etc, it means you've misconfigured nginx or file ownership/permissions.
 10. If you configured your web server correctly, that's it.
+
+#### Alternative web-server alternative written with GO, if you are a GO fan, check this out :). The mod by Farwish is here: https://github.com/farwish/ollama-chats/tree/main/go
+it's a way to run the page in GO written web-server, if you like GO and know what you are doing (i.e. can read and trust the GO code), instead of nginx you can take a look at this project. Thanks to Farwish for this :).
  
 ## Features:
 Now, let me list the features this thing has:
