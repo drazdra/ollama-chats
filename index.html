@@ -1239,6 +1239,7 @@ input[type="radio"] {
 				return ms;
 			},
 			chat(m,turn) {
+				event.preventDefault();
 				if(this.working) {
 					console.log('can not do chat, working already');
 					return;
