@@ -7,8 +7,10 @@ Ollama server.
 
 It looks like this:
 
-![image](https://github.com/drazdra/ollama-chats/assets/133811709/c6287fd2-47db-440c-8566-887e8d7fd384)
-![image](https://github.com/drazdra/ollama-chats/assets/133811709/e8523c9b-e34e-4ec3-a55f-c8649aa6d447)
+![image](https://github.com/drazdra/ollama-chats/assets/133811709/23d1fa2c-5b84-4b6d-a3ec-6fca90a152ab)
+![image](https://github.com/drazdra/ollama-chats/assets/133811709/545dad85-7263-42f8-b79e-aeacc4cc4a65)
+![image](https://github.com/drazdra/ollama-chats/assets/133811709/64d89353-3c76-41a6-925e-7e91ae919426)
+![image](https://github.com/drazdra/ollama-chats/assets/133811709/ae5f3580-fc6d-4567-98db-ae3acb722475)
 
 It requires you to have an installed web-server software, like NGINX, Apache, etc.
 The reason for that is that Ollama's API is done via a local network server, and 
