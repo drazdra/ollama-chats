@@ -49,7 +49,7 @@ If you don't, you can install Nginx in some minutes.
 There is not much to install, it's a single index.html file.
 The file needs to connect to your local Ollama server and you have 2 choices for that:
 * you need to have some web-server
-* you can configure ollama to allow anybody on the network to connect to it. i do not recommend that, for obvious reasons.
+* you can configure ollama to allow any Origin header, but you would need to either edit starting script to modify environment variable or to run it from terminal after changing the env there. As it still runs only on your local 127.0.0.1 local address, others won't be able to connect to it. 
 
 If you have a web-server, there is not much to say, just put "index.html" from this project into any of your web folders, rename it as you wish if needed and access in browser.
  
