@@ -62,7 +62,7 @@ You will need to edit ollama.service. i use Nano editor, replace it with what yo
 * Save it: F2, y, enter.
 * systemctl daemon-reload
 * service ollama restart
-* open the index.html from my project in your browser and enjoy.
+* open the index.html from my project in your browser and enjoy. Normally you should download the file to your local disk and open it there, but if you wish just to try you can also open it here: https://drazdra.github.io/ollama-chats/
 
   
 ##### On Windows:
@@ -188,7 +188,7 @@ when you've >2 characters defined (including you), it switches to a different mo
 * Multiple "design" improvements - colors, transitions, etc.
 		
 
-## Changes (v.1.5 2024.03.05):
+## Changes (v.1.5 2024.03.08):
 New version v1.5. (versions 1.2-1.4 were not published), several major changes and a lot of smaller ones.
 
 ###New features:
@@ -242,6 +242,14 @@ New version v1.5. (versions 1.2-1.4 were not published), several major changes a
 
 * Several minor outdated bugs were updated to a new improved ones.
 
+## Changes (v.1.6 2024.03.09):
+New version v1.6, it's a minor release.
+
+* Main new feature: Quick settings. now you can configure which parameters you wish to have at hand next to models list and then you can change them without searching in the long list. By default the most important ones are there. You always can disable quick settings if you don't like them :).
+
+* Minor improvement in cleaning garbage in replies.
+
+* Bottom menu removes functional button numbers when you switch off these in the settings.
 
 ### For people who wish to parse the saved file:
 P.S. If you wish to parse the saved file for replies, here is structure:

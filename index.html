@@ -233,10 +233,26 @@ select {
 	vertical-align: middle;
 }
 #sets .val {
-	width: 200px;
+	width: 180px;
 	border-image: linear-gradient(to right, #141414, #306530, #306030, #143514) 3/0px 0px 2px 0px;
 	padding: 0px;
 	margin: 7 10 5 10;
+	vertical-align: middle;
+}
+#sets input {
+	border-image: linear-gradient(to right, #141414, #306530, #306030, #143514) 3/0px 0px 2px 0px;
+}
+#sets .setsQ {
+	border-image: linear-gradient(to right, #141414, #306530, #306030, #143514) 3/0px 0px 2px 0px;
+	width: 20px;
+	padding: 0px;
+	vertical-align: middle;
+}
+#setsQ input {
+	width: 30px;
+	border-image: linear-gradient(to right, #141414, #306530, #306030, #143514) 3/0px 0px 2px 0px;
+	padding: 0px;
+	margin: 2 2 2 2;
 	vertical-align: middle;
 }
 #sets .val input {
@@ -620,11 +636,23 @@ Ctrl+right or right click will generate a new message trying to use the messages
 					</tr>
 					</tbody>
 				</table>
+				
 				<select v-model="this.model" class='models'>
 					<template v-for="(i,ind) in this.models">
 						<option :value='ind'>{{i.n}} ({{i.ps}} {{i.q}})</option>
 					</template>
 				</select>
+
+				<span id='setsQ' v-if='config.setsQ.v'>
+					<template v-for='j of [config,settings.options,settings.req]'>
+						<template v-for='(i,ind) of j'>
+							<template v-if='i.q===true'>
+								<fields :n='ind' :i='i' n-show='1'/>
+							</template>
+						</template>
+					</template>
+				</span>
+				
 				<div v-show='pState["sets"]' align='center'>
 					<table style='' id='sets'>
 						<tr>
@@ -638,7 +666,7 @@ Ctrl+right or right click will generate a new message trying to use the messages
 						<template v-for='j in [{break:"config"},config,{break:"ollama"},settings["req"],{break:"ollama-options"},settings["options"]]'>
 							<template v-if='j.break'>
 								<tr>
-									<td class='header center' :colspan='3'>
+									<td class='header center' colspan='2'>
 										<p class='green'>
 										<template v-if='j.break=="config"'>
 											script configuration
@@ -651,6 +679,7 @@ Ctrl+right or right click will generate a new message trying to use the messages
 										</template>
 										</p>
 									</td>
+									<td class='header center'><p class='green'>q.access</p></td>
 								</tr>
 							</template>
 							<template v-else v-for='(i,ind) in j'>
@@ -664,26 +693,8 @@ Ctrl+right or right click will generate a new message trying to use the messages
 											Default: <span v-show='(i.def+"")!=""'>{{i.def}}</span>
 										</div>
 									</td>
-									<td class='val'>
-										<template v-if='i.f==="ro"'>
-											{{i.v}}
-										</template>
-										<template v-else>
-											<template v-if='i.f==="cb"'>
-												<input type='checkbox' v-model='i.v'/>
-											</template>
-											<template v-else-if='i.f==="mis"'>
-												<template v-for='(j,jind) in i.v'> 
-													<span class='nobreak'>{{jind+1}}: 
-														<input class='understroke' type='input' v-model='i.v[jind]'/>
-													</span><br>
-												</template>
-											</template>
-											<template v-else>
-												<input style='width:100%' v-model='i.v'/>
-											</template>
-										</template>
-									</td>
+									<td class='val'><fields :n='i.name?i.name:ind' :i='i'/></td>
+									<td class='setsQ'><input v-if='i.q!==null' type='checkbox' v-model='i.q'/></td>
 									<td v-if='!config.setsDescrShow.v' class='def left'><span v-show='(i.def+"")!=""'>def: {{i.def}}</span></td>
 								</tr>
 							</template>
@@ -792,11 +803,34 @@ Ctrl+right or right click will generate a new message trying to use the messages
 </table>
 </div>
 <div id='tmplNick' class='tmpl'><span>({{id}}) {{name}}</span></div>
-<div id='tmplMenuN' class='tmpl'><span class='menuHK'>{{k}}&nbsp;</span>{{t}}</div>
+<div id='tmplMenuN' class='tmpl'><span v-show='config.fKeys.v' class='menuHK'>{{k}}&nbsp;</span>{{t}}</div>
+<div id='tmplField' class='tmpl'>
+	<div style='display:inline-block'>
+	<template v-if='nShow'>{{i.qn??n}}: </template>
+	<template v-if='i.f==="ro"'>
+		{{i.v}}
+	</template>
+	<template v-else>
+		<template v-if='i.f==="cb"'>
+			<input :title='n+": "+i.d' type='checkbox' v-model='i.v'/>
+		</template>
+		<template v-else-if='i.f==="mis"'>
+			<template v-for='(k,kind) in i.v'> 
+				<span class='nobreak'>{{kind+1}}: 
+					<input :title='n+": "+i.d' class='understroke' type='input' v-model='i.v[kind]'/>
+				</span><br>
+			</template>
+		</template>
+		<template v-else>
+			<input :title='n+": "+i.d' v-model='i.v'/>
+		</template>
+	</template>
+	</div>
+</div>
 
 <script type="module">
 
-import { createApp,reactive, computed, ref, nextTick } from 'vue';
+import { createApp,reactive,computed,ref,nextTick,inject,provide } from 'vue';
 
 
 window.app=createApp({
@@ -820,8 +854,8 @@ window.app=createApp({
 			model:	'',
 			models: [],
 			pState: {
-				'sys':	0,
-				'instr':0,
+				'sys':	1,
+				'instr':1,
 				'sets':	0,
 				'pull': 0,
 				'howto': 0,
@@ -833,53 +867,53 @@ window.app=createApp({
 				'1':'',
 			},
 			config: {
-				version:						{ name:'Version', v:1.5,def:'',d:'UI version, just for information and upgrades','f':'ro' },
-				themeWhite:					{ name:'Invert colors',v:false,d:"Inverted colors, if you are weird person preferring white backgrounds, you may check this. But it looks scary, beware.",def:false,f:'cb' },
-				setsDescrShow:			{ name:"Show descriptions for configuration values",v:true,d:"Enables showing descriptions for each parameter below parameter's name, otherwise shows only as a tooltip.",def:true,f:'cb' },
-				rooms:							{ name:'Use single prompt to send the chat',v:true,def:true,d:"If true, all messages are concatenated and sent to AI as one big prompt, AI will take all the chat as a single input prompt generated by user. If it's off, chat is sent as a set of messages, then AI can see which messages were created by AI and which ones by user. Which one is better depends on the model.",f:'cb'},
-				replyWithRating:		{	name:'Use rating to instruct model',v:true,d:"Should attempt to instruct model to use the existing rated messages as style examples for replies. Some models react well, some do not. If you didn't rate any answers in the current branch, nothing is changed in the prompt, so if you don't use the rating and do not wish to pollute the prompt, no need to switch it off.",def:true, f:'cb' },
-				otherAiAsUser:			{ name:'Other AI personages are "users" for AI',v:true,d:"When multi-message mode is used to send chat log to AI (that is single-message format is off) mark messages of other AI characters as created by the user. If you have 3 personages, only the current character's messages are marked for AI as AI generated ones. Experimental thing, i think the reaction will be model dependant.",def:true,f:'cb'},
+				version:						{ name:'Version', v:1.6,def:'',d:'UI version, just for information and upgrades','f':'ro',q:null },
+				themeWhite:					{ name:'Invert colors',v:false,d:"Inverted colors, if you are weird person preferring white backgrounds, you may check this. But it looks scary, beware.",def:false,f:'cb',q:false,qn:'clrs'},
+				setsDescrShow:			{ name:"Show descriptions for configuration values",v:true,d:"Enables showing descriptions for each parameter below parameter's name, otherwise shows only as a tooltip.",def:true,f:'cb',q:null},
+				rooms:							{ name:'Use single prompt to send the chat',v:true,def:true,d:"If true, all messages are concatenated and sent to AI as one big prompt, AI will take all the chat as a single input prompt generated by user. If it's off, chat is sent as a set of messages, then AI can see which messages were created by AI and which ones by user. Which one is better depends on the model.",f:'cb',q:false,qn:'sngl'},
+				replyWithRating:		{	name:'Use rating to instruct model',v:true,d:"Should attempt to instruct model to use the existing rated messages as style examples for replies. Some models react well, some do not. If you didn't rate any answers in the current branch, nothing is changed in the prompt, so if you don't use the rating and do not wish to pollute the prompt, no need to switch it off.",def:true, f:'cb',q:false,qn:'rate' },
+				otherAiAsUser:			{ name:'Other AI personages are "users" for AI',v:true,d:"When multi-message mode is used to send chat log to AI (that is single-message format is off) mark messages of other AI characters as created by the user. If you have 3 personages, only the current character's messages are marked for AI as AI generated ones. Experimental thing, i think the reaction will be model dependant.",def:true,f:'cb',q:false,qn:'ai usr'},
 
-				hideEmptyOwn:				{ name:'Hide own empty replies',v:true,def:1,d:'Hide own empty replies (the ones where you just clicked enter). Setting this to false can be useful if you wish to branch a conversation at a turn of your empty reply. Otherwise these just irritate.','f':'cb' },
+				hideEmptyOwn:				{ name:'Hide own empty replies',v:true,def:1,d:'Hide own empty replies (the ones where you just clicked enter). Setting this to false can be useful if you wish to branch a conversation at a turn of your empty reply. Otherwise these just irritate.','f':'cb',q:false,qn:'no emp' },
 				showEmptyOwnSide:		{ name:'Force show own empty replies when there are side-replies',v:true,def:true,d:`Show own empty replies if there are alternative side-replies available, even if hideEmptyOwn is true. Otherwise you wouldn't be able to see prev/next branches if you've sent an empty message, because there would be no 'crossroads' message shown.`,'f':'ro' },
 
-				resClean:						{ name:'Auto-clean reply from junk',v:true,d:"Should the reply be auto-cleaned of 'Name: ' and other known garbage.",def:true,f:'cb' },
-				resBufCleanSize:		{ name:'Buffer size before printing reply',v:10,d:"Buffer size that should be filled before it starts showing your the reply. It's needed to prevent jerking of the reply when we clean it from the litter of names and other marks.",def:10,f:'' },
+				resClean:						{ name:'Auto-clean reply from junk',v:true,d:"Should the reply be auto-cleaned of 'Name: ' and other known garbage.",def:true,f:'cb',q:false,qn:'cln' },
+				resBufCleanSize:		{ name:'Buffer size before printing reply',v:10,d:"Buffer size that should be filled before it starts showing your the reply. It's needed to prevent jerking of the reply when we clean it from the litter of names and other marks.",def:10,f:'',q:null},
 
-				fKeys:							{ name:'Enable F1-F10 keyboard keys for menu',v:true,d:"Allows you to access the bottom menu functions with F1-F10 keys of your keyboard. You can disable it if you don't want to lose 'F5' for page reloading, etc",def:true,f:'cb'},
-				msgFontSize: 				{ name:'Font size of the message text',v:'14px',d:'Font size of the message text. As it modifies the inline style and not the css itself, it might be slow on big chats and slow computers.',def:'14px',f:''},
-				taFontSize: 				{ name:'Font size of the input text areas',v:'14px',d:'Font size of the text in prompt, instr and system prompt text areas.',def:'14px',f:''},
-				url: 								{	name:'URL',v:"http://127.0.0.1:11434",def:'http://127.0.0.1:11434',d:'URL of the Ollama service'},
-				urlProxy:						{ name:'Default url to search for proxy',v:'http://127.0.0.1/ollama_proxy',d:'If you run Ollama server on another computer it will not allow you a connection, unless you configure the variable "OLLAMA_ORIGINS=url_of_the_ui_page", however instead of changing that variable in your os, you can configure reverse proxy server that replaces your IP with a local one while proxying your request. This parameter defines the address of such server (read readme for more data). The script first tries to connect to the URL you specified above and then also tries this one. If it starts with "http://", it will use it as is, otherwise will try to use the IP from the main url.',def:'http://127.0.0.1/ollama_proxy',f:''},
-				tokensCount:				{ name:'Show token counts reported by ollama',v:false,d:'Show the count of tokens in messages. As it\'s broken in Ollama, disabled by default. Stores tokens per model as these differ.',def:"false as it's broken in Ollama.", f:'cb' },
-				sysNick:						{ name:'System nick instructing model',v:'World',d:"Sometimes we inject special messages into the stuff sent to AI. For example, bad and good examples. To do that we need to have some name of the user sending it. We could do it on behalf of AI but it's less flexible. This is the nick of that 'special person' that injects hidden messages for AI.",def:'World', f:'' },
+				fKeys:							{ name:'Enable F1-F10 keyboard keys for menu',v:true,d:"Allows you to access the bottom menu functions with F1-F10 keys of your keyboard. You can disable it if you don't want to lose 'F5' for page reloading, etc",def:true,f:'cb',q:false,qn:'Fs'},
+				setsQ:							{ name:'Show quick settings',v:true,d:"Shows fields for quick access to settings that you often mayy change. You can configure which one are in the list in settings.",def:true,f:'cb',q:null },
+				msgFontSize: 				{ name:'Font size of the message text',v:'14px',d:'Font size of the message text. As it modifies the inline style and not the css itself, it might be slow on big chats and slow computers.',def:'14px',f:'',q:null},
+				taFontSize: 				{ name:'Font size of the input text areas',v:'14px',d:'Font size of the text in prompt, instr and system prompt text areas.',def:'14px',f:'',q:null},
+				url: 								{	name:'URL',v:"http://127.0.0.1:11434",def:'http://127.0.0.1:11434',d:'URL of the Ollama service',q:null},
+				urlProxy:						{ name:'Default url to search for proxy',v:'http://127.0.0.1/ollama_proxy',d:'If you run Ollama server on another computer it will not allow you a connection, unless you configure the variable "OLLAMA_ORIGINS=url_of_the_ui_page", however instead of changing that variable in your os, you can configure reverse proxy server that replaces your IP with a local one while proxying your request. This parameter defines the address of such server (read readme for more data). The script first tries to connect to the URL you specified above and then also tries this one. If it starts with "http://", it will use it as is, otherwise will try to use the IP from the main url.',def:'http://127.0.0.1/ollama_proxy',f:'',q:null},
+				tokensCount:				{ name:'Show token counts reported by ollama',v:false,d:'Show the count of tokens in messages. As it\'s broken in Ollama, disabled by default. Stores tokens per model as these differ.',def:"false as it's broken in Ollama.", f:'cb',q:false,qn:'tkns' },
+				sysNick:						{ name:'System nick instructing model',v:'World',d:"Sometimes we inject special messages into the stuff sent to AI. For example, bad and good examples. To do that we need to have some name of the user sending it. We could do it on behalf of AI but it's less flexible. This is the nick of that 'special person' that injects hidden messages for AI.",def:'World', f:'',q:false,qn:'s-nick' },
 
-				instrWithSideRating:{ name:'Stil use "instr" for side-replies when side-rating is on ',v:true,d:"Shoud your instruction (instr) be used when you request side-message with rated examples (ctrl+right). Instruction may interefere with the examples as AI gets confused with what you want from it, there are bad examples, good examples and also an instruction for new reply, not mentioning the context. You may switch this off. It has effect only when you request for rated side-replies, otherwise this setting is not used.",def:true, f:'cb' },
-				badExForSideReply:	{ name:'Use that many -ed side replies for new ones',v:3,d:'When you ask for one more side message from AI clicking ">", you just get a reply generated on the context above. But if you click "ctrl+right", your rated messages are shown to AI as examples. However, showing many negative ones may have the opposite effect as AI just starts copying them. This number defines how many random bad messages from your last turn should be given to AI as an example of how it shouldn\'t talk. Also, setting this high will result in a serious reduction of context window memory. 0 means disable.',def:"3", f:'' },
-				goodExForSideReply:	{ name:'Use that many +ed side replies for new ones',v:3,d:'Same as above, but for messages with good rating. Unlike with bad messages it is ok to have a lot of these but remember it eats the context memory. Unless you have unlimited vram, don\'t set this high. 0 means disabled.',def:"3", f:'' },
-
+				instrWithSideRating:{ name:'Stil use "instr" for side-replies when side-rating is on ',v:true,d:"Shoud your instruction (instr) be used when you request side-message with rated examples (ctrl+right). Instruction may interefere with the examples as AI gets confused with what you want from it, there are bad examples, good examples and also an instruction for new reply, not mentioning the context. You may switch this off. It has effect only when you request for rated side-replies, otherwise this setting is not used.",def:true, f:'cb',q:false,qn:'s-rate' },
+				badExForSideReply:	{ name:'Use that many -ed side replies for new ones',v:3,d:'When you ask for one more side message from AI clicking ">", you just get a reply generated on the context above. But if you click "ctrl+right", your rated messages are shown to AI as examples. However, showing many negative ones may have the opposite effect as AI just starts copying them. This number defines how many random bad messages from your last turn should be given to AI as an example of how it shouldn\'t talk. Also, setting this high will result in a serious reduction of context window memory. 0 means disable.',def:"3", f:'',q:false,qn:'b-ex' },
+				goodExForSideReply:	{ name:'Use that many +ed side replies for new ones',v:3,d:'Same as above, but for messages with good rating. Unlike with bad messages it is ok to have a lot of these but remember it eats the context memory. Unless you have unlimited vram, don\'t set this high. 0 means disabled.',def:"3", f:'',q:false,qn:'g-ex' },
 			},
 			settings: {
 				options: {
-					temperature:		{v:'',t:'n',def:0.8,d:'The temperature of the model. Increasing the temperature will make the model answer more creatively. (Default: 0.8)'},
-					num_ctx:				{v:'',t:'n',def:2048,d:'Sets the size of the context window used to generate the next token. (Default: 2048)'},
-					top_k:					{v:'',t:'n',def:40,d:'Reduces the probability of generating nonsense. A higher value (e.g. 100) will give more diverse answers, while a lower value (e.g. 10) will be more conservative. (Default: 40)'},
-					top_p:					{v:'',t:'n',def:0.9,d:'Works together with top-k. A higher value (e.g., 0.95) will lead to more diverse text, while a lower value (e.g., 0.5) will generate more focused and conservative text. (Default: 0.9)'},
-					num_thread:			{v:'',t:'n',def:'',d:'Sets the number of threads to use during computation. By default, Ollama will detect this for optimal performance. It is recommended to set this value to the number of physical CPU cores your system has (as opposed to the logical number of cores).'},
-					repeat_last_n:	{v:'',t:'n',def:64,d:'Sets how far back for the model to look back to prevent repetition. (Default: 64, 0 = disabled, -1 = num_ctx)'},
-					repeat_penalty:	{v:'',t:'n',def:1.1,d:'Sets how strongly to penalize repetitions. A higher value (e.g., 1.5) will penalize repetitions more strongly, while a lower value (e.g., 0.9) will be more lenient. (Default: 1.1)'},
-					mirostat:				{v:'',t:'n',def:0,d:'Enable Mirostat sampling for controlling perplexity. (default: 0, 0 = disabled, 1 = Mirostat, 2 = Mirostat 2.0)'},
-					mirostat_eta:		{v:'',t:'n',def:0.1,d:'Influences how quickly the algorithm responds to feedback from the generated text. A lower learning rate will result in slower adjustments, while a higher learning rate will make the algorithm more responsive. (Default: 0.1)'},
-					mirostat_tau:		{v:'',t:'n',def:5,d:'Controls the balance between coherence and diversity of the output. A lower value will result in more focused and coherent text. (Default: 5.0)'},
-					num_gqa:				{v:'',t:'n',def:'',d:'The number of GQA groups in the transformer layer. Required for some models, for example it is 8 for llama2:70b'},
-					num_gpu:				{v:'',t:'n',def:'',d:'The number of layers to send to the GPU(s). On macOS it defaults to 1 to enable metal support, 0 to disable.'},
-					stop:						{v:[''],t:'as',def:'"AI assistant:". Enter each stop match into a single input',d:'Sets the stop sequences to use. When this pattern is encountered the LLM will stop generating text and return. Multiple stop patterns may be set by specifying multiple separate stop parameters in a modelfile. Each input here means one stop match',f:'mis'},
-					tfs_z:					{v:'',t:'n',def:1,d:'Tail free sampling is used to reduce the impact of less probable tokens from the output. A higher value (e.g., 2.0) will reduce the impact more, while a value of 1.0 disables this setting. (default: 1)'},
-					num_predict:		{v:'',t:'n',def:128,d:'Maximum number of tokens to predict when generating text. (Default: 128, -1 = infinite generation, -2 = fill context)'},
-					seed:						{v:'',t:'n',def:0,d:'Sets the random number seed to use for generation. Setting this to a specific number will make the model generate the same text for the same prompt. (Default: 0)'},
+					temperature:		{v:'',t:'n',def:0.8,d:'The temperature of the model. Increasing the temperature will make the model answer more creatively. (Default: 0.8)',q:true,qn:'temp'},
+					num_ctx:				{v:'',t:'n',def:2048,d:'Sets the size of the context window used to generate the next token. (Default: 2048)',q:true,qn:'ctx'},
+					top_k:					{v:'',t:'n',def:40,d:'Reduces the probability of generating nonsense. A higher value (e.g. 100) will give more diverse answers, while a lower value (e.g. 10) will be more conservative. (Default: 40)',q:true},
+					top_p:					{v:'',t:'n',def:0.9,d:'Works together with top-k. A higher value (e.g., 0.95) will lead to more diverse text, while a lower value (e.g., 0.5) will generate more focused and conservative text. (Default: 0.9)',q:true},
+					num_thread:			{v:'',t:'n',def:'',d:'Sets the number of threads to use during computation. By default, Ollama will detect this for optimal performance. It is recommended to set this value to the number of physical CPU cores your system has (as opposed to the logical number of cores).',q:false,qn:'thr'},
+					repeat_last_n:	{v:'',t:'n',def:64,d:'Sets how far back for the model to look back to prevent repetition. (Default: 64, 0 = disabled, -1 = num_ctx)',q:true,qn:'rep_l'},
+					repeat_penalty:	{v:'',t:'n',def:1.1,d:'Sets how strongly to penalize repetitions. A higher value (e.g., 1.5) will penalize repetitions more strongly, while a lower value (e.g., 0.9) will be more lenient. (Default: 1.1)',q:true,qn:'rep_p'},
+					mirostat:				{v:'',t:'n',def:0,d:'Enable Mirostat sampling for controlling perplexity. (default: 0, 0 = disabled, 1 = Mirostat, 2 = Mirostat 2.0)',q:false,qn:'m-t'},
+					mirostat_eta:		{v:'',t:'n',def:0.1,d:'Influences how quickly the algorithm responds to feedback from the generated text. A lower learning rate will result in slower adjustments, while a higher learning rate will make the algorithm more responsive. (Default: 0.1)',q:false,qn:'m-eta'},
+					mirostat_tau:		{v:'',t:'n',def:5,d:'Controls the balance between coherence and diversity of the output. A lower value will result in more focused and coherent text. (Default: 5.0)',q:false,qn:'m-tau'},
+					num_gqa:				{v:'',t:'n',def:'',d:'The number of GQA groups in the transformer layer. Required for some models, for example it is 8 for llama2:70b',q:false,qn:'gqa'},
+					num_gpu:				{v:'',t:'n',def:'',d:'The number of layers to send to the GPU(s). On macOS it defaults to 1 to enable metal support, 0 to disable.',q:false,qn:'gpu'},
+					stop:						{v:[''],t:'as',def:'"AI assistant:". Enter each stop match into a single input',d:'Sets the stop sequences to use. When this pattern is encountered the LLM will stop generating text and return. Multiple stop patterns may be set by specifying multiple separate stop parameters in a modelfile. Each input here means one stop match',f:'mis',q:null},
+					tfs_z:					{v:'',t:'n',def:1,d:'Tail free sampling is used to reduce the impact of less probable tokens from the output. A higher value (e.g., 2.0) will reduce the impact more, while a value of 1.0 disables this setting. (default: 1)',q:false},
+					num_predict:		{v:'',t:'n',def:128,d:'Maximum number of tokens to predict when generating text. (Default: 128, -1 = infinite generation, -2 = fill context)',qn:'prdct',q:false},
+					seed:						{v:'',t:'n',def:0,d:'Sets the random number seed to use for generation. Setting this to a specific number will make the model generate the same text for the same prompt. (Default: 0)',q:false},
 				},
 				req: {
-					keep_alive:			{v:900,t:'n',def:"300",d:'Time to keep model cached in memory, a number in seconds, any negative number will keep the model loaded in memory, 0 will unload the model immediately after generating a response.'},
+					keep_alive:			{v:900,t:'n',def:"300",d:'Time to keep model cached in memory, a number in seconds, any negative number will keep the model loaded in memory, 0 will unload the model immediately after generating a response.',q:false,qn:'k-alv'},
 				}
 			},
 			stream:	true,
@@ -986,6 +1020,11 @@ window.app=createApp({
 		});
 		this.w('mounted')
 	},
+	provide() {
+		return {
+			config: this.config
+		}
+	},
 	watch: {
 		'config.themeWhite.v'(v) {
 			if(v) {
@@ -1019,7 +1058,10 @@ window.app=createApp({
 		},
 		'ctrl'(v) {
 			this.w(`ctrl: ${v}`);
-		}
+		},
+//		'config.fkeys.v':(v) {
+//			if(v) return;
+//		}
 	},
 	methods: {
 		w(a) {
@@ -1291,6 +1333,21 @@ window.app=createApp({
 					t.w(`upgraded to version ${d.config.version.v}`);
 					parse(d);
 					return;
+				} else if (d.config.version.v==1.5) {
+					t.w('upgrading from version 1.6');
+					d.config.version.v=1.6;
+					t.updateAddParams(d,'config');
+					for(const i in d.config) { 
+						for(const j of ['q','qn']) { d.config[i][j]=t.config[i][j] }
+					}
+					for(const i in d.settings.options) {
+						for(const j of ['q','qn']) { d.settings.options[i][j]=t.settings.options[i][j] }
+					}
+					for(const i in d.settings.req) {
+						for(const j of ['q','qn']) { d.settings.req[i][j]=t.settings.req[i][j] }
+					}
+					t.w(`upgraded to version ${d.config.version.v}`);
+					parse(d);
 				}
 				t.w('adding new config vars');
 				t.updateAddParams(d,'config');
@@ -1983,7 +2040,7 @@ window.app=createApp({
 				const reader	=r.getReader();
 				const rrtp		=new RegExp(`${this.rgEsc(t.chatRatingMod(1,''))}`,'g');
 				const rrtm		=new RegExp(`${this.rgEsc(t.chatRatingMod(0,''))}`,'g');
-				const rn			=new RegExp('^(?:as )?'+this.rgEsc(m.nick)+':[\\s\\r\\n]*','gim');
+				const rn			=new RegExp('^\\s*(?:as )?'+this.rgEsc(m.nick)+':[\\s\\r\\n]*','gim');
 				let res='',buf='';
 				m.content	='';
 				
@@ -2017,6 +2074,7 @@ window.app=createApp({
 					for (const ch of chnks) {
 						try { res=JSON.parse(ch) } catch (error) { t.w({'error':error,data:ch}); }
 						buf+=res.message.content;
+						//t.w(`${buf} ${rn}`)
 						buf=buf.replace(rrtp,'').replace(rrtm,'').replace(rn,'');
 						m.trm++;
 						if(m.status===0) {
@@ -2377,7 +2435,11 @@ app.component('nick',{
 		props: ['id','name']
 	}).component('menun', {
 		template: '#tmplMenuN',
-		props: ['k','t']
+		props: ['k','t'],
+		inject: ['config']
+	}).component('fields', {
+		template: '#tmplField',
+		props: ['i','n','nShow'],
 	});
 
 window.ap=app.mount('#app');
