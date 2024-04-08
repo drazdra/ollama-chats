@@ -12,9 +12,9 @@ It looks like this:
 ![image](https://github.com/drazdra/ollama-chats/assets/133811709/64d89353-3c76-41a6-925e-7e91ae919426)
 ![image](https://github.com/drazdra/ollama-chats/assets/133811709/ae5f3580-fc6d-4567-98db-ae3acb722475)
 
-It requires you to have an installed web-server software, like NGINX, Apache, etc.
+You can run it just from disk in your browser, if you set an evironment variable or you can run it in a local web-server, like NGINX, Apache, etc.
 The reason for that is that Ollama's API is done via a local network server, and 
-locally opened web pages (from disk) are not allowed to access network resources (for safety reasons), even if it's your local Ollama server. Thus, to make it work you need a local web-server software :).
+locally opened web pages (from disk) by default are not allowed to access network resources (for safety reasons), even if it's your local Ollama server. Thus, to make it work you need either to configure Ollama to allow that or to use a local web-server software :).
 
 ## Why:
 when i installed Ollama, i tried its built-in console chat interface but quickly realized it's nowhere enough to have fun, just enough to test the thing..
@@ -48,10 +48,34 @@ If you don't, you can install Nginx in some minutes.
 ## Installation:
 There is not much to install, it's a single index.html file.
 The file needs to connect to your local Ollama server and you have 2 choices for that:
-* you need to have some web-server
-* you can configure ollama to allow any Origin header, but you would need to either edit starting script to modify environment variable or to run it from terminal after changing the env there. As it still runs only on your local 127.0.0.1 local address, others won't be able to connect to it. 
+* If Ollama runs on your own computer, the short way is to configure Ollama to allow any Origin header. As it still runs only on your local 127.0.0.1 address, others still won't be able to connect to it, so it's totally safe.
+* If you don't want to configure your environment variable or your ollama server is on another computer, you will need to have some web-server there.
 
-If you have a web-server, there is not much to say, just put "index.html" from this project into any of your web folders, rename it as you wish if needed and access in browser.
+### Let's see how we can do it.
+#### 1. Running on your own computer from file, nothing else is required.
+#####On Ubuntu
+You will need to edit ollama.service. i use Nano editor, replace it with what you use: 
+* open terminal
+* cd /etc/systemd/system
+* sudo nano ollama.service
+* In the [Service] section add a line (it's okay if there is already one like that, just add one more): Environment="OLLAMA_ORIGINS=*"
+* Save it: F2, y, enter.
+* systemctl daemon-reload
+* service ollama restart
+* open the index.html from my project in your browser and enjoy.
+
+  
+##### On Windows:
+* open settings
+* in the search enter "environment", click on changing the environment variables
+* click "create"
+* Enter the name OLLAMA_ORIGINS
+* Enter the value *
+* Click OK.
+* Open the index.html from my project in your browser and enjoy.
+
+#### If you don't like or can't use the method above, here is a longer way with a web-server:
+If you already have a web-server, there is not much to say, just put "index.html" from this project into any of your web folders, rename it as you wish if needed and access in browser.
  
 if you don't have a web-server, the easiest and the best one is NGINX. I do not have a goal of writing FAQ on NGINX here, there are tons online. So please consult with these. The short installation instruction, tho, is here: 
 1. install nginx (on ubuntu it's as easy as: sudo apt install nginx).
