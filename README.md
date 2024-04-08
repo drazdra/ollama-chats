@@ -53,7 +53,7 @@ The file needs to connect to your local Ollama server and you have 2 choices for
 
 ### Let's see how we can do it.
 #### 1. Running on your own computer from file, nothing else is required.
-#####On Ubuntu
+##### On Ubuntu
 You will need to edit ollama.service. i use Nano editor, replace it with what you use: 
 * open terminal
 * cd /etc/systemd/system
