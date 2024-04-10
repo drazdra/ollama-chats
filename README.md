@@ -83,7 +83,7 @@ You will need to edit ollama.service. i use Nano editor, replace it with what yo
 * Save it: F2, y, enter.
 * systemctl daemon-reload
 * service ollama restart
-* open the index.html from my project in your browser and enjoy. Normally you should download the file to your local disk and open it there, but if you wish just to try you can also open it here: https://drazdra.github.io/ollama-chats/
+* open the index.html from my project in your browser and enjoy.
 
   
 ##### On Windows:
