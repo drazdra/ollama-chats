@@ -49,10 +49,9 @@ If you don't, you can install Nginx in some minutes.
 There is not much to install, it's a single index.html file.
 The file needs to connect to your local Ollama server and you have 2 choices for that:
 * You can install a local web-server as a reverse proxy.
-* If Ollama runs on your own computer, a bad way is to configure Ollama to allow any Origin header. As it still runs only on your local 127.0.0.1 address, others still won't be able to connect to it directly. However, sites you visit may use malicious code the will be able to connect to your local network as you run your browser on your local computer. So any site you open theoretically will be able to exploit your Ollaama with this.
+* If Ollama runs on your own computer, a bad way is to configure Ollama to allow any Origin header. As it still runs only on your local 127.0.0.1 address, others still won't be able to connect to it directly. However, sites you visit may use malicious code to connect to your local network as you run your browser on your local computer. So any site you open theoretically will be able to exploit your Ollaama with this.
 
-### Let's see how we can do it.
-#### Here is a longer but safe way with a web-server:
+#### 1. Here is a longer but safe way with a web-server:
 If you already have a web-server, there is not much to say, just put "index.html" from this project into any of your web folders, rename it as you wish if needed and access in browser.
  
 if you don't have a web-server, the easiest and the best one is NGINX. I do not have a goal of writing FAQ on NGINX here, there are tons online. So please consult with these. The short installation instruction, tho, is here: 
@@ -74,7 +73,7 @@ Also, please note, now the sample configuration file has an example on how to co
 #### Alternative web-server written with GO, if you are a GO fan, check this out :). The mod by Farwish is here: https://github.com/farwish/ollama-chats/tree/main/go
 it's a way to run the page in GO written web-server, if you like GO and know what you are doing (i.e. can read and trust the GO code), instead of nginx you can take a look at this project. Thanks to Farwish for this :).
 
-#### 2. Running on your own computer from file, nothing else is required but INSECURE, NOT RECOMMENDED.
+#### 2. If you do not wish to install a webserver, here is an INSECURE way to install, NOT RECOMMENDED.
 ##### On Ubuntu
 You will need to edit ollama.service. i use Nano editor, replace it with what you use: 
 * open terminal
