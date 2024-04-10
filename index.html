@@ -807,64 +807,48 @@ Ctrl+right or right click will generate a new message trying to use the messages
 					<tr>
 						<td colspan=2>
 							<p class='header center green'>Installation</p>
-							To chat you will need to do only 2 things.<br>
-							<p>1. <a href='https://ollama.com/download' target='new'>Install Ollama: https://ollama.com/download</a>
-							</p>
-							<p>
-							2. If you run Ollama on your own computer, just configure Ollama to allow connections from your local browser.
-								 This protection (CORS check) is required for people hosting Ollama server on internet, it matches
-								 the address of the web-site used by a user to the address of the Ollama server itself. 
-								 This way owners of site B can not provide their users with access to Ollama on site A (at least directly).
-								 In our case when you open this page from your disk, the "address" you use is a filename and it
-								 doesn't match your local IP address (where Ollama runs), so it doesn't allow the connection.
-								 Doing the steps below fixes that. Remember, your Ollama will still work on your local IP
-								 address 127.0.0.1, so people from your home network or internet won't be able to access to it.
-								 In other words, it's safe. Here is how to do it.
-							</p>
-						</td>
-					</tr>
-					<tr>
-						<td>
-							Windows
-						</td>
-						<td>
-							Ubuntu
-						</td>
-					</tr>
-					<tr>
-						<td>
-							<ol>
-								<li> Open settings
-								<li> In the search enter "environment", click on changing the environment variables
-								<li> Click "create"
-								<li> Enter the name: OLLAMA_ORIGINS
-								<li> Enter the value: *
-								<li> Click "Ok".
-								<li> Open this file again in your browser and enjoy.
-							</ol>
-						</td>
-						<td>
-							You will need to edit ollama.service. i use Nano editor, replace it with what you use:.
-							<br>
-							<ol>
-								<li> Open terminal
-								<li> cd /etc/systemd/system
-								<li> sudo nano ollama.service
-								<li> In the [Service] section add a line (it's okay if there is already one like that, just add
-								<li> Save it: F2, y, enter.
-								<li> systemctl daemon-reload
-								<li> service ollama restart
-								<li> Open this file again in your browser and enjoy.
-							</ol>
-						</td>
-					</tr>
-					<tr>
-						<td colspan='2'>
-							<br>
-							P.S. If you need to install Ollama on another computer, you will need to install
-							Nginx as reverse proxy and configure the access rights. You can read
-							how to do that and get ready sample configuration file in the readme 
-							file of this project. (Click on the header on top of the page to see the repository).
+<p>There is not much to install, it's a single index.html file. 
+However, the file needs to connect to your local Ollama server and you have 2 choices for 
+that:
+<ul>
+	<li>You can install a local web-server as a reverse proxy.
+	<li>If Ollama runs on your own computer, you can use a bad way to configure Ollama to
+allow a specific Origin header. As it still runs only on your local 127.0.0.1 address, others still
+ won't be able to connect to it directly. However, sites you visit may use malicious code 
+to connect to your local network, as you run their code in your browser on your local 
+computer. So any site you open theoretically will be able to exploit your Ollama with this.
+You could limit the Origin header to a certain URL only but then you won't be able to run
+this from your local computer only, you would have to access this page on internet,
+which doesn't make much sense in my opinion as it's totally not required.
+</ul>
+</p>
+<p>So here is a longer but better way with a web-server:</p>
+<p>If you already have a web-server, there is not much to say, just put "index.html" from this
+project into any of your web folders, rename it as you wish if needed and access in browser.
+</p>
+
+<p>If you don't have a web-server, the easiest and the best one is Nginx.</p>
+		</tr>
+		<tr>
+			<td>
+				Ubuntu:
+			</td>
+		</tr>
+		<tr>
+			<td>
+				<ol>
+					<li>Download the project, let's say it's in ~/ollama-chats
+					<li>Open terminal
+					<li>sudo apt install nginx
+					<li>sudo cp ~/ollama-chats/nginx-ollama.conf /etc/nginx/conf.d
+					<li>If you have different paths, make sure to edit the config file.
+					<li>sudo cp ~/ollama-chats/index.html /var/www/html/ollama-chats.html
+					<li>sudo chmod 640 /var/www/html/ollama-chats.html
+					<li>sudo chown "$USER":www-data /var/www/html/index.html
+					<li>sudo service nginx restart
+					<li>Access http://127.0.0.1/ollama-chats.html in your browser
+					<li>If you configured everything correctly, that's it. It was probably just 2-3 minutes.
+				</ol>
 						</td>
 					</tr>
 				</table>

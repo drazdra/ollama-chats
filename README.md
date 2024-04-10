@@ -48,11 +48,33 @@ If you don't, you can install Nginx in some minutes.
 ## Installation:
 There is not much to install, it's a single index.html file.
 The file needs to connect to your local Ollama server and you have 2 choices for that:
-* If Ollama runs on your own computer, the short way is to configure Ollama to allow any Origin header. As it still runs only on your local 127.0.0.1 address, others still won't be able to connect to it, so it's totally safe.
-* If you don't want to configure your environment variable or your ollama server is on another computer, you will need to have some web-server there.
+* You can install a local web-server as a reverse proxy.
+* If Ollama runs on your own computer, a bad way is to configure Ollama to allow any Origin header. As it still runs only on your local 127.0.0.1 address, others still won't be able to connect to it directly. However, sites you visit may use malicious code the will be able to connect to your local network as you run your browser on your local computer. So any site you open theoretically will be able to exploit your Ollaama with this.
 
 ### Let's see how we can do it.
-#### 1. Running on your own computer from file, nothing else is required.
+#### Here is a longer but safe way with a web-server:
+If you already have a web-server, there is not much to say, just put "index.html" from this project into any of your web folders, rename it as you wish if needed and access in browser.
+ 
+if you don't have a web-server, the easiest and the best one is NGINX. I do not have a goal of writing FAQ on NGINX here, there are tons online. So please consult with these. The short installation instruction, tho, is here: 
+1. install nginx (on ubuntu it's as easy as: sudo apt install nginx).
+2. create a configuration file "ollama-chats.conf" in its configuration folder, (/etc/nginx/conf.d for linux)
+ The file example is already presented in this project, you can just copy it if you run ollama locally, nothing needs to be changed.
+4. Take care to set all paths to what you have, including the "root" folder to where you want it to be and copy the index.html file from this project there. If you are using ubuntu, nothing needs to be changed in the sample config.
+5. Make sure to set file permissions and file ownership of the index.html and of the root folder according to nginx rules, you can google it for your OS. On ubuntu:
+    * copy the index.html from this project to /var/www/html/index.html (root folder in config)
+    * in console change the file permissions: sudo chmod 640 /var/www/html/index.html
+    * in console change the file permissions: sudo chown "$USER":www-data /var/www/html/index.html
+6. Start nginx (on ubuntu: sudo service nginx restart)
+7. Access http://127.0.0.1/index.html in your browser
+8. If you see some error, like file not found, etc, it means you've misconfigured nginx or file ownership/permissions.
+9. If you configured your web server correctly, that's it. It's probably just 3 minutes.
+
+Also, please note, now the sample configuration file has an example on how to configure Nginx as reverse proxy for Ollama. That is needed if you run Ollama on another computer. In that case you will need to change the IP addresses in the sample config as it's explained there. Check the "nginx-ollama.conf" file. This is the best way to access Ollama remotely, because you can configure access in Nginx. Alternative method of changing "origin" environment headers for Ollama would open it up for anybody on internet, which is probably not what you want.
+
+#### Alternative web-server written with GO, if you are a GO fan, check this out :). The mod by Farwish is here: https://github.com/farwish/ollama-chats/tree/main/go
+it's a way to run the page in GO written web-server, if you like GO and know what you are doing (i.e. can read and trust the GO code), instead of nginx you can take a look at this project. Thanks to Farwish for this :).
+
+#### 2. Running on your own computer from file, nothing else is required but INSECURE, NOT RECOMMENDED.
 ##### On Ubuntu
 You will need to edit ollama.service. i use Nano editor, replace it with what you use: 
 * open terminal
@@ -74,27 +96,7 @@ You will need to edit ollama.service. i use Nano editor, replace it with what yo
 * Click OK.
 * Open the index.html from my project in your browser and enjoy.
 
-#### If you don't like or can't use the method above, here is a longer way with a web-server:
-If you already have a web-server, there is not much to say, just put "index.html" from this project into any of your web folders, rename it as you wish if needed and access in browser.
- 
-if you don't have a web-server, the easiest and the best one is NGINX. I do not have a goal of writing FAQ on NGINX here, there are tons online. So please consult with these. The short installation instruction, tho, is here: 
-1. install nginx (on ubuntu it's as easy as: sudo apt install nginx).
-2. create a configuration file "ollama-chats.conf" in its configuration folder, (/etc/nginx/conf.d for linux)
- The file example is already presented in this project, you can just copy it if you run ollama locally, nothing needs to be changed.
-4. Take care to set all paths to what you have, including the "root" folder to where you want it to be and copy the index.html file from this project there. If you are using ubuntu, nothing needs to be changed in the sample config.
-5. Make sure to set file permissions and file ownership of the index.html and of the root folder according to nginx rules, you can google it for your OS. On ubuntu:
-    * copy the index.html from this project to /var/www/html/index.html (root folder in config)
-    * in console change the file permissions: sudo chmod 640 /var/www/html/index.html
-    * in console change the file permissions: sudo chown "$USER":www-data /var/www/html/index.html
-6. Start nginx (on ubuntu: sudo service nginx restart)
-7. Access http://127.0.0.1/index.html in your browser
-8. If you see some error, like file not found, etc, it means you've misconfigured nginx or file ownership/permissions.
-9. If you configured your web server correctly, that's it. It's probably just 3 minutes.
 
-Also, please note, now the sample configuration file has an example on how to configure Nginx as reverse proxy for Ollama. That is needed if you run Ollama on another computer. In that case you will need to change the IP addresses in the sample config as it's explained there. Check the "nginx-ollama.conf" file. This is the best way to access Ollama remotely, because you can configure access in Nginx. Alternative method of changing "origin" environment headers for Ollama would open it up for anybody on internet, which is probably not what you want.
-
-#### Alternative web-server written with GO, if you are a GO fan, check this out :). The mod by Farwish is here: https://github.com/farwish/ollama-chats/tree/main/go
-it's a way to run the page in GO written web-server, if you like GO and know what you are doing (i.e. can read and trust the GO code), instead of nginx you can take a look at this project. Thanks to Farwish for this :).
  
 ## Features:
 Now, let me list the features this thing has:
