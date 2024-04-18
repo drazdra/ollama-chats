@@ -8,10 +8,15 @@ Ollama server.
 It looks like this:
 
 ![image](https://github.com/drazdra/ollama-chats/blob/main/screenshots/1.png)
+
 ![image](https://github.com/drazdra/ollama-chats/blob/main/screenshots/2.png)
+
 ![image](https://github.com/drazdra/ollama-chats/blob/main/screenshots/3.png)
+
 ![image](https://github.com/drazdra/ollama-chats/blob/main/screenshots/4.png)
+
 ![image](https://github.com/drazdra/ollama-chats/blob/main/screenshots/5.png)
+
 ![image](https://github.com/drazdra/ollama-chats/blob/main/screenshots/6.png)
 
 You can run it just from disk in your browser, if you set an evironment variable or you can run it in a local web-server, like NGINX, Apache, etc.
