@@ -53,23 +53,25 @@ you are totally safe with it. If you already have a web-server running this thin
 If you don't, you can install Nginx in some minutes.
 
 ## Installation:
-There is not much to install, it's a single index.html file.
+There is not much to install, it's a single index.html file +vue js library.
 The file needs to connect to your local Ollama server and you have 2 choices for that:
 * You can install a local web-server as a reverse proxy.
 * If Ollama runs on your own computer, a bad way is to configure Ollama to allow any Origin header. As it still runs only on your local 127.0.0.1 address, others still won't be able to connect to it directly. However, sites you visit may use malicious code to connect to your local network as you run your browser on your local computer. So any site you open theoretically will be able to exploit your Ollaama with this.
 
 #### 1. Here is a longer but safe way with a web-server:
-If you already have a web-server, there is not much to say, just put "index.html" from this project into any of your web folders, rename it as you wish if needed and access in browser.
+If you already have a web-server, there is not much to say, just put "index.html" and "vue.prod.js" from this project into any of your web folders, rename it as you wish if needed and access in browser.
  
 if you don't have a web-server, the easiest and the best one is NGINX. I do not have a goal of writing FAQ on NGINX here, there are tons online. So please consult with these. The short installation instruction, tho, is here: 
 1. install nginx (on ubuntu it's as easy as: sudo apt install nginx).
 2. create a configuration file "ollama-chats.conf" in its configuration folder, (/etc/nginx/conf.d for linux)
  The file example is already presented in this project, you can just copy it if you run ollama locally, nothing needs to be changed.
-4. Take care to set all paths to what you have, including the "root" folder to where you want it to be and copy the index.html file from this project there. If you are using ubuntu, nothing needs to be changed in the sample config.
+4. Take care to set all paths to what you have, including the "root" folder to where you want it to be and copy the index.html and "vue.prod.js" files from this project there. If you are using ubuntu, nothing needs to be changed in the sample config.
 5. Make sure to set file permissions and file ownership of the index.html and of the root folder according to nginx rules, you can google it for your OS. On ubuntu:
-    * copy the index.html from this project to /var/www/html/index.html (root folder in config)
+    * copy the index.html from this project to /var/www/html/index.html (root folder in config) and vue.prod.js
     * in console change the file permissions: sudo chmod 640 /var/www/html/index.html
+    * in console change the file permissions: sudo chmod 640 /var/www/html/vue.prod.js
     * in console change the file permissions: sudo chown "$USER":www-data /var/www/html/index.html
+    * in console change the file permissions: sudo chown "$USER":www-data /var/www/html/vue.prod.js
 6. Start nginx (on ubuntu: sudo service nginx restart)
 7. Access http://127.0.0.1/index.html in your browser
 8. If you see some error, like file not found, etc, it means you've misconfigured nginx or file ownership/permissions.
