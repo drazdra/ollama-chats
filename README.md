@@ -92,6 +92,7 @@ You will need to edit ollama.service. i use Nano editor, replace it with what yo
 * Save it: F2, y, enter.
 * systemctl daemon-reload
 * service ollama restart
+* edit the index.html file to replace the line: "vue":"/vue.prod.js" with the line: "vue":"https://unpkg.com/vue@3/dist/vue.esm-browser.js"
 * open the index.html from my project in your browser and enjoy.
 
   
@@ -102,6 +103,7 @@ You will need to edit ollama.service. i use Nano editor, replace it with what yo
 * Enter the name OLLAMA_ORIGINS
 * Enter the value *
 * Click OK.
+* edit in the notepad index.html file to replace the line: "vue":"/vue.prod.js" with the line: "vue":"https://unpkg.com/vue@3/dist/vue.esm-browser.js"
 * Open the index.html from my project in your browser and enjoy.
 
 
