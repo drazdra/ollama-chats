@@ -1,25 +1,662 @@
 <html id='html'>
 <head>
 <!-- this is a code of: https://github.com/drazdra/ollama-chats -->
+<!--"vue": 		"https://unpkg.com/vue@3/dist/vue.esm-browser.js"-->
 <script type="importmap">
 	{
 		"imports": {
-			"vue": 		"https://unpkg.com/vue@3/dist/vue.esm-browser.prod.js"
+			"vue": 		"/vue.prod.js"
 		}
 	}
 </script>
-<style>
-	body {
-		background-color: #141414;
-		color: silver;
-	}
-</style>
 </head>
-<body style="" >
+<body style="background: black">
 	<div id="app" ><chat /></div>
 
-	<div id='template' style='display:none'>
+<div class='tmpl' style='display:none'>
+	<div id='tmplChat'>
+	<table id='chat' border=1 height='100%'>
+		<tr>
+			<td colspan='3' id='heading'><a href='https://www.github.com/drazdra/ollama-chats' target='new'>Ollama-chats (v{{config.version.v}})</a></td>
+		</tr>
+		<template v-if='this.connection==1'>
+			<tr>
+				<td colspan='3'  id='nicks'>
+					<table width='100%' cellspacing=0 cellpadding=0>
+						<tr v-if='config.stories.v'>
+							<td class='understroke' colspan='2' title="These are presets of users. They are here simply to let you save and quickly access groups of users that talk together. For example, characters in 2 different rooms. Or character talking on a phone to somebody when others do not hear it, etc.">
+							<template v-for='(g,gi) in groups'>
+								<span @click='groupCh(gi)' :class='"groups "+(gi==group&&"groupSel")'>{{g.n}}</span> <template v-if='gi!=0'>(<span @click='groupDel(gi)' class='del'>x</span>)</template> :
+							</template>
+							<input placeholder='add new' v-model='groupAddN'/> <span class='lnk' @click='groupAdd(this.groupAddN,[]);groupAddN=""'>add</span>
+							</td>
+						</tr>
+						<tr>
+							<td>
+								<br>
+								Users ({{groups[this.group].an['u']}}):
+							</td>
+							<td width='100%'>
+								<br>
+								<user-list :t='"u"' :group='group' :groups='groups' :nicks='nicks'></users-list>
+							</td>
+							<td><nickadd t='u' :group='group' :groups='groups' :nicks='nicks' :amount-nicks='amountNicks'/></td>
+						</tr>
+						<tr>
+							<td>AIs ({{groups[this.group].an['a']}}):</td>
+							<td>
+								<user-list :t='"a"' :group='group' :groups='groups' :nicks='nicks'></users-list>
+							</td>
+							<td class='understroke'><nickadd t='a' :group='group' :groups='groups' :nicks='nicks' :amount-nicks='amountNicks'/></td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<template v-for="(i,index) in turns">
+				<tr v-if='index<=turn&&i.branch>=0&&!hideMsg(...tbma(index))' :class='msgFilterRow(index)'>
+					<template v-if='index>0&&index<=turn'>
+						<td class='prev' @click='listmsgs(0,index)'>
+							<span v-show='msgIndex(index,i.branch)!==0'>
+								&lt;<br>
+								{{msgIndex(index,i.branch)}}
+							</span>
+						</td>
+						<td 
+							:id		='"msg"+index'
+							:class='(index===turn?"lastmsg":"msg")' 
+							width	='100%' 
+						>
+							<transition name="slide-fade" mode="out-in">
+								<div :key='msgIndex(index,i.branch)' class='msgTextCont' :id='"msgC"+index'>
+									<div :class='i.role==="user"?"nicku":"nickai"'>
+										<span contenteditable='true' @blur='edit($event,"n",index)'>{{msga(index).nick}}</span> #{{msgIndex(index,i.branch)+1}}:
+									</div>
+									<div 
+										class						='msgText' 
+										:style					='"font-size:"+this.config.msgFontSize.v' 
+										:tabindex				='10000+index*1'
+										contenteditable	='true' 
+										@blur						="edit($event,'c',index)"
+									>
+										<template v-if="i.role==='user'">
+											<template v-if='msga(index).waiting'>
+												..input new variant into the prompt, please..
+											</template>
+											<template v-else>
+												{{msga(index).content}}
+											</template>
+										</template>
+										<template v-else-if='msga(index).waiting'>
+											..wait for it..
+										</template>
+										<template v-else>
+											{{msga(index).content}}
+										</template>
+									</div>
+									<div class='msgFooter'>
+										<span class='msgNicks' v-if='config.stories.v'>
+											<template v-if='msgUserListAllAvail(msga(index),this.group).length'>
+												<template v-if='!msgUserListOn[index+""+msgIndex(index,i.branch)]'>
+													<span class='lnk' @click='msgUserListOn[index+""+msgIndex(index,i.branch)]=true'>add</add></span>
+												</template>
+												<template v-else>
+													<span class='msgUserList'>
+														<template v-for='uid in msgUserListAllAvail(msga(index),this.group)'>
+															<span class='lnk' @click='msgUserAdd(msga(index),uid,index+""+i.branch)'><nick :id='uid' :name='nicks[uid].n'></nick></span>
+															&nbsp;
+														</template>
+													</span>
+												</template>
+											</template>
+											&nbsp;
+											<template v-for='(u) in msga(index).nicksArr'>
+												<span @click='msgUserDel(msga(index),u)' class='lnk'><nick :id='u' :name='nicks[u].n'></nick></span> 
+												&nbsp;
+											</template>
+										</span>
+										<template v-if='!msgWaiting(...tbma(index))&&msgEmpty(...tbma(index))'>
+											<span class='empty'>empty message</span>
+										</template>
+										<span 
+											class='tokens' 
+											v-show='i.role==="assistant"&&tokensTotal(index,null)'
+										>
+											Tokens: 
+											<template v-if='tokensTotal(index,null)'>
+												<!--span title='History token'>{{tokens(index,null,'tp')}}</span>
+													+
+												<span title='Response tokens'>{{tokens(index,null,'tr')}}</span>
+												= -->
+												<span title='Whole history tokens'>
+													{{tokensTotal(index,null)}}
+												</span>
+												<template v-if='this.settings.options["num_ctx"].v.length'>
+													of 
+													<span title='Configured context window'>
+														{{this.settings.options.num_ctx.v}}
+													</span>
+												</template>
+											</template>
+										</span>
+										&nbsp;&nbsp;
+										<span class='rating'>
+											<span :class='this.msga(index).rating===0&&"litn"' @click='msgRating(index,0)'>--</span>
+											 / 
+											<span :class='this.msga(index).rating===1&&"litp"' @click='msgRating(index,1)'>++</span>
+										</span>
+									</div>
+								</div>
+							</transition>
+						</td>
+						<td 
+							title="Right button or left click will generate an alternative message.
+Ctrl+right or right click will generate a new message trying to use the messages you've rated in this turn as good/bad examples for AI."
+							class='next' 
+							@click='listmsgs(1,index)' @click.right.prevent='listmsgs(2,index)'
+						>
+							<span v-if="!msgSide(index,i.branch,i.branches[i.branch].msg).side">
+								<span v-show='i.role==="assistant"&&ctrl===1&&msgLast(index,i.branch)'>
+									+/-
+								</span>
+								><br>
+								{{msgMore(index,i.branch)||">"}}<br>
+							</span>
+						</td>
+					</template>
+				</tr>
+			</template>
+				<tr v-if='this.turnNotLast(turn)'>
+					<td></td>
+					<td class='lnk'>
+						<div class='center' @click='this.turnDown(0)'>
+							There is more in the chat below, totally: {{turnLast(turn)-turn}} message(s), press down or click here to see.
+						</div>
+						<div class='center' @click='this.turnDown(1)'>
+							Press shift+down or click here to show all the messages below
+						</div>
+					</td>
+					<td></td>
+				</tr>
+			<tr v-if='config.stories.v&&turns.length>1'>
+				<td></td>
+				<td class='contextFilter' colspan='2' title='Filters the messages of context history by who was meant to read them. You can do it to see either what Ai will see or just the history. "Every1" shows all the messages ever sent to chat. If you have both characters selected, you get one more checkbox that can be "AND" / "OR". "And" means you see only messages visible for BOTH selected characters - that is you see everything they BOTH meant to see. If one of them did not see something, you do not see it in this mode. "OR", on other hand, means you see ALL of the messages visible by any of these characters (in that some message of yours you see might not not be visible Ai, and some of the messages sent by Ai might not be meant for you to see)'>
+					<template v-if='!context[0]'>
+						<span v-if="userS('u')!=null"><input type='checkbox' v-model='context[2]'><nick :id='userS("u")' :name='nicks[userS("u")].n'></nick></span>
+						<template v-if='context[2]&&context[1]'>
+							<span><input type='checkbox' v-model='context[3]'>{{context[3]?"and":"or"}}</span>
+						</template>
+						<span v-if="userS('a')!=null"><input type='checkbox' v-model='context[1]'><nick :id='userS("a")' :name='nicks[userS("a")].n'></nick></span>
+					</template>
+					<span><input type='checkbox' v-model='context[0]'>Every1</span>
+				</td>
+				<td></td>
+			</tr>
+			<tr>
+				<td colspan=3 class='center'>
+					<br>
+					<talkers t='u' :config='config' :group='group' :groups='groups' :nicks='nicks'></talkers>
+					<textarea rows='5' tabindex='5300' id='prompt' placeholder='Prompt'
+						:disabled='userS("u")==null||userS("a")==null'
+						v-model="prompt" 
+							@keydown.enter='send($event,1,null)'
+						:style='"font-size:"+config.taFontSize.v'
+					></textarea>
+					<br>
+					<talkers t='a' :config='config' :group='group' :groups='groups' :nicks='nicks'></talkers>
+					<br><br>
+					<table id='sysinstr'>
+						<tbody>
+						<tr>
+							<td :width='(pState["sys"]?(pState["instr"]?"50%":"100%"):"0%")'>
+								<transition name="ta" mode="out-in">
+									<div :key='pState["sys"]' v-if='userS("a")!=null'>
+										<div v-show='pState["sys"]' id='sysTitle'>System Prompt of <nick :id='userS("a")' :name='nicks[userS("a")].n'/></div>
+										<textarea 
+											v-show='pState["sys"]'
+											id='sys' 
+											rows=10 
+											v-model='this.nicks[userS("a")].system'
+											:placeholder='`Edit this to override the system prompt of (${userS("a")}) ${nicks[userS("a")].n} with this text. Empty means the system uses default system prompt (from modelfile)`'
+											:style='"font-size:"+config.taFontSize.v'
+										></textarea>
+									</div>
+								</transition>
+							</td>
+							<td :width='(pState["instr"]?(pState["sys"]?"50%":"100%"):"0%")'>
+								<transition name="ta" mode="out-in">
+									<div :key='pState["instr"]' v-if='userS("a")!=null'>
+										<div v-show='pState["instr"]' id='instTitle'>Instruction of <nick :id='userS("a")' :name='nicks[userS("a")].n'/></div><br>
+										<textarea 
+											v-show='pState["instr"]'
+											id='instr'
+											rows=10 
+											v-model='this.nicks[userS("a")].instr'
+											:placeholder='`You can specify special reminder here for (${userS("a")}) ${nicks[userS("a")].n} on the situation. It will be injected as a last message belonging to the AI, but will not stay in the chat log. I use things like: "I am thinking about doing .., as i am .., i see that.. i feel that.. etc`'
+											:style='"font-size:"+config.taFontSize.v'
+										></textarea>
+									</div>
+								</transition>
+							</td>
+						</tr>
+						</tbody>
+					</table>
+					
+					<span id='setsQ' v-if='config.setsQ.v'>
+						<template v-for='j of [config,settings.options,settings.req]'>
+							<template v-for='(i,ind) of j'>
+								<template v-if='i.q===true'>
+									<fields :n='ind' :i='i' n-show='1'/>
+								</template>
+							</template>
+						</template>
+					</span>
+				
+					<div v-show='pState["sets"]' align='center'>
+						<table id='sets'>
+							<tr>
+								<td colspan='3' style='text-align: justify'>
+									These can be changed any time and will override the model's settings,
+									if the value is empty, then the model's own configuration is used
+									(the one specified in modelfile). You can mouseover the parameter's
+									name to see the explanation from the docs.
+								</td>
+							</tr>
+							<!-- hardcoded settings that are personalized/outside of main ones, too lazy to write templating that would support everything needed. i suppose if needed i can make this "nicks" settings and then it's easy enough.-->
+							<tr v-if='userS("a")!=null'>
+								<td class='title' title="Enable this to make the currently active AI to have personal set of settings and configuration. It makes it possible to assign different models per characters, to have different settings like temperature, etc and even different interface style (the latter is totaly useless).">
+									<div :class='config.setsDescrShow.v&&"understroke green"'>
+										Personal settings for <nick :id='userS("a")' :name='nicks[userS("a")].n'></nick>
+									</div>
+									<div v-if='config.setsDescrShow.v' class='justify'>
+										Enable this to make <nick :id='userS("a")' :name='nicks[userS("a")].n'></nick> have personal set of settings and configuration. It makes it possible to assign different models per characters, to have different settings like temperature, etc and even different interface style (the latter is totaly useless).
+										Default: false
+									</div>
+								</td>
+								<td class='val'><input type='checkbox' @change='userSetsPerAi(userS("a"))' v-model='nicks[userS("a")].setsDo'></td>
+								<td class='setsQ'></td>
+								<td v-if='!config.setsDescrShow.v' class='def left'>def: false</td>
+							</tr>
+							
+							<template v-for='j in [{break:"config"},config,{break:"ollama"},settings["req"],{break:"ollama-options"},settings["options"]]'>
+								<template v-if='j.break'>
+									<tr>
+										<td class='header center' colspan='2'>
+											<p class='green'>
+											<template v-if='j.break=="config"'>
+												script configuration
+											</template>
+											<template v-else-if='j.break=="ollama"'>
+												ollama request parameters
+											</template>
+											<template v-if='j.break=="ollama-options"'>
+												ollama options parameters
+											</template>
+											</p>
+										</td>
+										<td class='header center'><p class='green'>q.access</p></td>
+									</tr>
+								</template>
+								<template v-else v-for='(i,ind) in j'>
+									<tr>
+										<td class='title' :title='i.d'>
+											<div :class='config.setsDescrShow.v&&"understroke green"'>
+											{{i.name?i.name:ind}}
+											</div>
+											<div v-if='config.setsDescrShow.v' class='justify'>
+												{{i.d}}<br>
+												Default: <span v-show='(i.def+"")!=""'>{{i.def}}</span>
+											</div>
+										</td>
+										<td class='val'><fields :n='i.name?i.name:ind' :i='i'/></td>
+										<td class='setsQ'><input v-if='i.q!==null' type='checkbox' v-model='i.q'/></td>
+										<td v-if='!config.setsDescrShow.v' class='def left'><span v-show='(i.def+"")!=""'>def: {{i.def}}</span></td>
+									</tr>
+								</template>
+							</template>
+						</table>
+					</div>
+					<div id='howto' v-if='pState["howto"]'><help></help></div>
+				</td>
+			</tr>
+			<tr v-if='pState["pull"]' id='pull'>
+				<td colspan='3' class='center'>
+					<template v-if='!this.working'>
+						<div v-if='!this.models.length'>
+							There are no models installed, please install the models in the console
+							or install it through this interface. 
+						</div>
+						To install a model enter your preferred model's name, as it's at 
+						<a href='https://ollama.com/library' target='new'>https://ollama.com/library</a>
+						and click "pull".<br><br>
+						<input @keydown.enter.prevent='this.pull()' v-model='modelPull'/> <span class='lnk' @click='this.pull()'>pull</span>
+						<br><br>
+						<div v-if='this.connectionErr.length'>
+							Error: {{this.connectionErr}}
+						</div>
+					</template>
+					<template v-else>
+						Pulling model: {{this.modelPull}}<br><br>
+						<template v-for='i in this.mpull'>
+							<div>
+								{{i.status}} 
+								<span v-if='i.total'>
+									{{i.done}} / {{i.total}} = {{i.prcnt}}%
+								</span>
+							</div><br>
+						</template>
+					</template>
+				</td>
+			</tr>
+			<tr>
+				<td colspan=3 class='center' id='menu'>
+					<span class='lnk' @click='pToggle("howto")'><menun k='F1' t='Help'/></span> | 
+					<span class='lnk' @click='save()'><menun k='F2' t='Save'/></span> | 
+					<span>
+						<input id='load' type='file' @change='load()'/>
+						<label class='lnk' for="load" id="loadlabel"><menun k='F3' t='Load'></label>
+					</span> | 
+					<span class='lnk' @click='pToggle("sys")'><menun k='F4' t='Sys prompt'/></span> |
+					<span class='lnk' @click='pToggle("instr")'><menun k='F5' t='Instr'/></span> |
+					<span class='lnk' @click='list()'><menun k='F6' t='Reload models'/> </span> |
+					<span class='lnk' @click='pToggle("pull")'><menun k='F7' t='Pull'/></span> |
+					<span class='lnk' @click='this.prune()'><menun k='F8' t='Prune'/></span> | 
+					<span class='lnk' @click='pToggle("sets")'><menun k='F9' t='Sets'/></span> |
+					<span class='lnk' @click='close()'><menun k='F10' t='Quit'/></span>
+				</td>
+			</tr>
+		</template>
+		<template v-else>
+			<tr>
+				<td class='center'>
+					Ollama url if you have access to it directly<br>
+					<input v-model='this.config.url.v' class='understroke'/><br><br>
+					Default reverse proxy url to try to fall back to:<br>
+					<input v-model='this.config.urlProxy.v' class='understroke'/><br>
+					<template v-if='this.connectionErr.length'>
+						<br>
+						<span class='lnk' @click='this.urlTest()'>Re-try</span><br><br>
+						{{this.connectionErr}}
+					</template>
+				
+					<br><br><br><br>
+					<table>
+						<tr>
+							<td colspan=2>
+								<p class='header center green'>Installation</p>
+								To chat you will need to do only 2 things.<br>
+								<p>1. <a href='https://ollama.com/download' target='new'>Install Ollama: https://ollama.com/download</a>
+								</p>
+								<p>
+								2. If you run Ollama on your own computer, just configure Ollama to allow connections from your local browser.
+									 This protection (CORS check) is required for people hosting Ollama server on internet, it matches
+									 the address of the web-site used by a user to the address of the Ollama server itself. 
+									 This way owners of site B can not provide their users with access to Ollama on site A (at least directly).
+									 In our case when you open this page from your disk, the "address" you use is a filename and it
+									 doesn't match your local IP address (where Ollama runs), so it doesn't allow the connection.
+									 Doing the steps below fixes that. Remember, your Ollama will still work on your local IP
+									 address 127.0.0.1, so people from your home network or internet won't be able to access to it.
+									 In other words, it's safe. Here is how to do it.
+								</p>
+							</td>
+						</tr>
+						<tr>
+							<td>
+								Windows
+							</td>
+							<td>
+								Ubuntu
+							</td>
+						</tr>
+						<tr>
+							<td>
+								<ol>
+									<li> Open settings
+									<li> In the search enter "environment", click on changing the environment variables
+									<li> Click "create"
+									<li> Enter the name: OLLAMA_ORIGINS
+									<li> Enter the value: *
+									<li> Click "Ok".
+									<li> Open this file again in your browser and enjoy.
+								</ol>
+							</td>
+							<td>
+								You will need to edit ollama.service. i use Nano editor, replace it with what you use:.
+								<br>
+								<ol>
+									<li> Open terminal
+									<li> cd /etc/systemd/system
+									<li> sudo nano ollama.service
+									<li> In the [Service] section add a line (it's okay if there is already one like that, just add
+									<li> Save it: F2, y, enter.
+									<li> systemctl daemon-reload
+									<li> service ollama restart
+									<li> Open this file again in your browser and enjoy.
+								</ol>
+							</td>
+						</tr>
+						<tr>
+							<td colspan='2'>
+								<br>
+								P.S. If you need to install Ollama on another computer, you will need to install
+								Nginx as reverse proxy and configure the access rights. You can read
+								how to do that and get ready sample configuration file in the readme 
+								file of this project. (Click on the header on top of the page to see the repository).
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+		</template>
+		</table>
+	</div>
+	<div id='tmplNick'><span>({{id}}) {{name}}</span></div>
+	<div id='tmplMenuN'><span v-show='config.fKeys.v' class='menuHK'>{{k}}&nbsp;</span>{{t}}</div>
+	<div id='tmplField'>
+		<div style='display:inline-block' :title='n+": "+i.d'>
+			<template v-if='nShow'>{{i.qn??n}}: </template>
+			<template v-if='i.f==="ro"'>
+				{{i.v}}
+			</template>
+			<template v-else>
+				<template v-if='i.f==="cb"'>
+					<input :title='n+": "+i.d' type='checkbox' v-model='i.v'/>
+				</template>
+				<template v-else-if='i.f==="sel"'>
+					<select v-model="i.v.v">
+						<template v-for="(j,jind) in i.v.l">
+							<option :value='jind'>{{j.n}}</option>
+						</template>
+					</select>
+				</template>
+				<template v-else-if='i.f==="mis"'>
+					<template v-for='(k,kind) in i.v'> 
+						<span class='nobreak'>{{kind+1}}: 
+							<input class='understroke' type='input' v-model='i.v[kind]'/>
+						</span><br>
+					</template>
+				</template>
+				<template v-else>
+					<input v-model='i.v'/>
+				</template>
+			</template>
+		</div>
+	</div>
+	<div id='tmplNickAdd'>
+		<table width='100%'>
+			<tr>
+				<td class='nowrap addTxt'>
+					<span>Create {{ut}}:</span><br>
+				</td>
+				<td class='addVal'>
+					<input @keydown.enter='this.userAdd()' v-model='userNickA'/>
+				</td>
+				<td class='addBtn'>
+					<span class='lnk' @click='this.userAdd()'>add</span><br>
+				</td>
+			</tr>
+			<tr>
+				<td class='nowrap addTxt'><span>Add existing {{ut}}:</span><br></td>
+				<td class='addVal'>
+					<template v-if='amountNicks[t]>groups[group].an[t]'>
+						<template v-if='t=="u"'>
+							<select class='nickGroupAddList' v-model='userGroupAddId'>
+								<template v-for='i in uListAvail'>
+									<option :value='i'>({{i}}) {{nicks[i].n}}</options>
+								</template>
+							</select>
+						</template>
+						<template v-else>
+							<select class='nickGroupAddList' v-model='userGroupAddId'>
+								<template v-for='i in uListAvail'>
+									<option :value='i'>({{i}}) {{nicks[i].n}}</options>
+								</template>
+							</select>
+						</template>
+					</template>
+					<template v-else>
+						all are in
+					</template>
+				</td>
+				<td class='addBtn'>
+					<span @click='userGroupAdd()' class='lnk'>add</span>
+				</td>
+			</tr>
+		</table>
+	</div>
+	<div id='tmplHeardBy'>
+		<span class='heardBy' :style='!config.stories.v&&"display:none;"' :title='`New message by (${u}) ${nicks[u].n} will be "heard" only by these users`'>
+			<template v-for='id in users'>
+				<template v-if='u!=id'>
+					<input type='checkbox' v-model='groups[group].u[u][id]'><nick :id='id' :name='nicks[id].n'/>
+				</template>
+			</template>
+		</span>
+	</div>
+	<div id='tmplTalkers'>
+		<template v-if='userS(t)!=null'>
+			<transition name="slide-fade" mode="out-in">
+				<span :key='group'>
+					<span>
+						<span title="This simply changes the set of characters if you don't want to see them all. You can predefine these at the top" @click='groupPrev()' class='lnk groupPN' v-if='config.stories.v&&group>0'>&lt; {{groups[group-1].n}}</span>
+						&nbsp;
+						<template v-for='(i,id) in groups[group]["u"]'>
+							<template v-if='userVis(id)'>
+								<span class='nickSel' :title='
+									t==="u"?
+										`"Speak for" selector. This selects the character you play for in this turn. For example you nay have your main "hero" and "World" describing the changes of the situation.`
+										:`"Reply from:" selector. This selects an AI character that will generate a reply. You can have multiple personages talking to you. Every AI personage has its own instruction (instr) and system prompt. Click on the desired character here and then edit their system prompt by clicking "System prompt" below. Add more AI characters at the top.`
+								'>
+									<input 
+										:id='"s"+t+id' 
+										class='nickSel'
+										type='radio' 
+										:tabindex='(t==="u"?5100:5500)+id*1' 
+										
+										@change='userCh()' 
+										@keydown.enter.stop='send($event,1,null)' 
 
+										:value='id' 
+										v-model='groups[group]["sel"][t]'
+									/>
+									<label class='lnk' :for='"s"+t+id'><nick :id='id' :name='nicks[id].n'/></label>&nbsp;
+								</span>
+							</template>
+						</template>
+						&nbsp;
+						<span title="This simply changes the set of characters if you don't want to see them all. You can predefine these at the top" @click='groupNext()' v-if='config.stories.v&&group<(groups.length-1)' class='lnk groupPN'>{{groups[group+1].n}} ></span>
+					</span>
+					<heard-by :u='userS(t)' :config='config' :nicks='nicks' :groups='groups' :group='group'></heard-by>
+				</span>
+			</transition>
+		</template>
+		<template v-else>
+			<template v-if='t=="u"'>
+				Please add at least one user you control at the top-right corner.
+			</template>
+			<template v-else>
+				Please add at least one AI controlled user at the top-right corner.
+			</template>
+		</template>
+	</div>
+	<div id='tmplUserList'>
+		<template v-for='(i,id) in groups[group]["u"]'>
+			<template v-if='userVis(id)'>
+				<span class='nick'>
+					({{id}})
+					<input v-model='nicks[id].n'/>(<span @click='userTypeCh(id)' class='lnk userTypeCh' title='Change user type from manual to AI and vice-versa if you all of a sudden decide to control some character yourself or wish AI to control your character.'><template v-if='t=="a"'>&uarr;</template><template v-else>&darr;</template></span>)<span class='nickDelC'>(<span class='nickDel' @click='group==0?userDel(id):userGroupDel(id)'>x</span>)</span>
+				</span>&nbsp;
+			</template>
+		</template>
+	</div>
+	<div id='tmplHelp'>
+		<p>How to chat here, a short guide.</p>
+		<ol>
+			<li>At the top left rename your character, rename Ai character.</li>
+			<li>At the top right add more characters if your rpg will have more people. Add a "World" user at least to write the changes in the world from its name for the AI.</li>
+			<li>Click "system prompt", a new text area opens. 
+					Write the definition of the first AI character into the system prompt.
+					like "You are..."</li>
+			<li>If you have more than one AI character, under the prompt text area
+					you will see several radio buttons with the names you created.
+					By default the first one is chosen and you've already defined the system prompt
+					for this one. Now, click on the next radio button and system prompt
+					box will be cleared, as now it is a system prompt of the newly selected
+					character. Write a definition for this character. Repeat with all
+					AI characters you've created. You can update these anytime during
+					the chat.</li>
+			<li>Click on "system prompt" link again to hide it.</li>
+			<li>Click on "instr". It uses the same logic as system prompt and defines
+					instructions for each AI character. You can use it to push character
+					towards certain actions in a story. It should be written in first person.
+					For example: "i'm so jealous". or "i'm angry". or "i want to..".
+					Also you can use it for describing the location of personages, for whatever.
+					Use it throughout the chat process, changing accordingly.</li>
+			<li>Click on instr to hide it, if you don't want to see the text area.</li>
+			<li>Before start, check the settings and set the num_ctx param to a desired value.
+					It's a size of the context memory in tokens that AI remembers. 
+					Check other settings you may need, like temperature, etc.</li>
+			<li>Below the "prompt" text area in the select list choose the model you wish to get reply from.
+					if you don't have models, you can click "pull" and download some.
+					Names of the models to pull you can see at ollama.com/library website.</li>
+			<li>It's a good idea to click "Save" now to save your starting point of the game.</li>
+			<li>Type in your first message. it's best to start from introduction,
+					like "I'm ...describe yourself... walking/sitting/doing sth.	
+					Usually you can put into the system prompts how they are related to you. 
+					so the reply should make some sense, when they meet you.</li>
+			<li>Hit enter to send your first message.</li>
+			<li>Once the model is loaded, which may take time, the character will reply.</li>
+			<li>If you dislike the reply, just hit "right" on the keyboard or click the arrows
+					on the right of the AI reply.
+					repeat until the reply is good.</li>
+			<li>If the reply is nearly ideal but something is wrong, just click on the
+					reply and edit that part yourself. Erasing of extra bs is a good idea,
+					as models love to litter with meaningless garbage, platitudes, etc.</li>
+			<li>If you decide that your own message is no good, you can edit it too. or, you can
+					create an alternative side-reply, by clicking the "right" arrows on the right
+					from your message. Then just type new prompt as usually and send it.</li>
+			<li>Use rating buttons for AI messages. By default AI is instructed to follow the style of these. You can disable it in settings, if you wish to use the rating for future finetuning project but do not wish the model to see it in the chat.</li>
+			<li>Also, you can use the rating of model's answers in the last turn to instruct the model. If you click "ctrl+right" or right click on the arrows, the model will be instructed to provide a new reply unlike bad ones and alike to the good ones. It may help if the answers are really bad.</li>
+			<li>If you are bored with the story development you can anytime use up/down arrows to go up in the story and start another branch there or continue an existing alternative branch.</li>
+			<li>It's a good idea to post situation changes from the name of the
+					"World" character. like "That person went away". or "it started to rain".
+					or "You have noticed that..". etc. To send message from another user
+					just type in the prompt, click on the respective radio button above the prompt text area and
+					hit enter.</li>
+			<li>You can choose which character replies next by clicking on the respective
+					radio button under the prompt box. You even can send empty messages,
+					to make them talk to each other, that's half of the fun. Empty messages are hidden by default,
+					so it looks like they just talk to each other, 	but you can change it in the settings.
+					If they don't want to talk to each other, use "instr" field with sth like
+					"now i should reply to.." or add some message from the world.</li>
+			<li>If you feel you need more control over the character's memory, you can use "Stories", it's enabled in the settings. With this feature on, you can define the access list for all messages, so you can have characters that don't know what's going or who plan something and others have no clue, or just characters that come late and being unaware, etc.</li>
+			<li>If you wish, you can define different settings per AI with personal settings in.. settings. This way, for example, you could use 2 different models for 2 characters without need to change them every time.</li>
+			<li>Repeat the process till the alarm clock is ringing telling you it's time to wake up.
+					it was good idea to set alarm clock in your phone to the evening time, so
+					you still have time to sleep tonight.</li>
+			<li>Enjoy.</li>
+		</ol>
+	</div>
+	<div id='tmplCss'>
 <style>
 html {
 }
@@ -38,15 +675,14 @@ html {
   color: #10ee10;
   background: #103510;
 }
-
 body {
 	background-color: #141414;
-	color: silver;
+	color: #e0e0e0;
 }
 textarea {
 	text-size: 16px;
 	background-color: black;
-	color: #e5e5e5;
+	color: #e0e0e0;
 //	color: white;
 	width: 100%;
 	box-sizing: border-box;
@@ -55,7 +691,7 @@ textarea {
   border-image: linear-gradient(#103510, #141414, #103510) 2/3px 2px 3px 2px;
 }
 textarea:focus {
-	outline: silver solid 1px;
+	outline: #e0e0e0 solid 1px;
 	border-color: silver;
 }
 input {
@@ -86,7 +722,7 @@ select {
 	color: mediumseagreen;
 	background-color: black;
 	box-sizing: border-box;
-	border-color: silver;
+	border-color: #e0e0e0;
 	margin: 15 15 15 15;
 	padding: 5 2 2 2;
   border-image: linear-gradient(#103510, #141414, #103510) 2/3px 2px 3px 2px;
@@ -108,10 +744,11 @@ select {
 	border-radius: 7px;
 	padding: 7 10 5 10;
 }
-#chat #nicks {
+#chat #nicks td {
 	text-align: left;
+	padding: 2 5 2 5;
 }
-#chat #nicks *{
+#chat #nicks * {
 	font-size: 12px;
 }
 #chat #nicks input {
@@ -127,6 +764,15 @@ select {
 	padding: 10 10 10 10;
 	border-image: linear-gradient(to right, #141414, #306530, #306030, #143514) 3/2px 0px 2px 0px;
 }
+.filterDark {
+	filter: brightness(50%);
+}
+.filterGray {
+	filter: saturate(0%) brightness(60%);
+}
+.msgUserList * {
+	filter: saturate(0%);
+}
 .msgTextCont {
 	height: 100%;
 }
@@ -138,6 +784,13 @@ select {
 }
 .msg:hover,.lastmsg:hover {
  	background-color: #002500;
+}
+.msgNicks, .msgNicks * {
+	font-size: 10px;
+}
+.msgNicks {
+	margin-right: 15px;
+	vertical-align: middle;
 }
 #chat .nicku {
 	float: left;
@@ -152,7 +805,6 @@ select {
 	white-space: pre-wrap;
 }
 #chat .lastmsg {
-//	height: 150px;
 }
 #chat .next,#chat .prev {
 	vertical-align: middle;
@@ -166,19 +818,13 @@ select {
   color: #15c015;
 }
 .prev:hover,.next:hover {
-  //background-color: #002500;
   background: radial-gradient(150% 200%, #052005, #141414);
 }
 .msg:hover {
-// 	background-color: #002500;
 }
 #chat .msg, #chat .lastmsg {
 	height: auto;
 	border-image: linear-gradient(to right, #141414, #205520, #205520, #141414) 5/1px 0px 2px 0px;
-//	border-color: #205520;	
-//	border-style: solid;
-//	border-color: transparent;
-//	border-width: 1 0 2 0;
 }
 #loadlabel {
   display: inline-block;
@@ -197,10 +843,22 @@ select {
 }
 .litp {
 	color: #15c015;
-;
 }
 .litn {
 	color: #d51515;
+}
+.contextFilter {
+	text-align: right;
+}
+.contextFilter * {
+	text-align: right;
+	font-size: 10px;
+}
+.contextFilter * input {
+	padding-right: 2px;
+	margin-right: 2px;
+	width: 10px;
+	height: 10px;
 }
 .understroke {
 	border-image: linear-gradient(to right, #141414, #306530, #306030, #143514) 3/0px 0px 2px 0px;
@@ -208,7 +866,6 @@ select {
 #sysinstr {
 	width: 100%;
 	text-align: center;
-//	border-spacing: 10 10 10 10;
 	margin: 10 0 0 0;
 	padding: 0 0 0 0;
 }
@@ -229,7 +886,6 @@ select {
 }
 #sets .def {
 	width: 300px;
-//	white-space: nowrap;
 	vertical-align: middle;
 }
 #sets .val {
@@ -248,6 +904,9 @@ select {
 	padding: 0px;
 	vertical-align: middle;
 }
+#setsQ div {
+	color: silver;
+}
 #setsQ input {
 	width: 30px;
 	border-image: linear-gradient(to right, #141414, #306530, #306030, #143514) 3/0px 0px 2px 0px;
@@ -262,8 +921,34 @@ select {
 .nowrap * {
 	white-space: nowrap;
 }
-.nickDelC {
+.groups {
 	color: mediumseagreen;
+	font-style: italic;
+}
+.groupSel {
+	font-weight: bold;
+	border-image: linear-gradient(to right, #141414, #306530, #306030, #143514) 3/0px 0px 2px 0px;
+}
+.groupDel {
+	color: #d51515;
+}
+.groupPN {
+	font-size: 10px;
+}
+.del {
+	color: #d51515;
+}
+.nickGroupAddList {
+	margin: 2 2 2 2;
+	padding: 4 3 2 3;
+	width: 100%;
+	font-size: 12px;
+	border-image: linear-gradient(to right, #141414, #306530, #306030, #143514) 3/0px 0px 2px 0px;
+}
+.userTypeCh {
+	font-weight: bold;
+}
+.nickDelC {
 }
 .nickDel {
 	color: #d51515;
@@ -271,9 +956,21 @@ select {
 #nicks .addTxt {
 	vertical-align: middle;
 	text-align: right;
+	margin-right: 2px;
+	padding-right: 4px;
 }
 #nicks .addVal {
 	vertical-align: middle;
+	min-width: 100px;
+	padding-left: 0px;
+}
+#nicks .addVal {
+	vertical-align: middle;
+	min-width: 100px;
+	padding-left: 0px;
+}
+#chat #nicks .addVal input {
+	width: 100%;
 }
 #nicks .addBtn {
 	vertical-align: middle;
@@ -312,6 +1009,20 @@ input[type="radio"] {
 .msgText[contenteditable]:focus {
   outline: 0px solid darkgreen;
 }
+.heardBy {
+	display:block;
+	clear: none;
+	float: right;
+	min-width: 50%;
+	text-align: right;
+}
+.heardBy * {
+	font-size: 10px;
+}
+.heardBy input {
+	width: 10px;
+	height: 10px;
+}
 #prompt {
   padding: 11 7 11 7;
   border-width: 1px;
@@ -324,11 +1035,13 @@ input[type="radio"] {
 #sysTitle {
 	text-align:left;
 	font-size: 12px;
+	color: silver;
 }
 #instTitle {
 	float: right;
 	clear:none;
 	font-size: 12px;
+	color: silver;
 }
 #howto {
 	text-align: justify;
@@ -384,8 +1097,12 @@ input[type="radio"] {
 	font-size: 16px;
 	font-color: mediumseagreen;
 }
-.nickSel {
+.nickSel * {
 	font-size: 12px;
+}
+.nickSel input {
+	width: 10px;
+	height: 10px;
 }
 .models {
 	font-size: 12px;
@@ -399,487 +1116,6 @@ input[type="radio"] {
 	vertical-align: middle;
 }
 </style>
-
-<table id='chat' border=1 height='100%'>
-	<tr>
-		<td colspan='3' id='heading'><a href='https://www.github.com/drazdra/ollama-chats' target='new'>Ollama-chats (v{{config.version.v}})</a></td>
-	</tr>
-	<template v-if='this.connection==1'>
-		<tr>
-			<td colspan='3'  id='nicks'>
-				<table width='100%'>
-					<tr>
-						<td>Users ({{amountNicks['u']}}):</td>
-						<td width='100%'>
-							<template v-for='(i,index) in nicks'>
-								<template v-if='i.t=="u"&&i.del==0'>
-									<span class='nick'>
-										({{index}})
-										<input v-model='i.n'/><template v-if='amountNicks["u"]>1'><span class='nickDelC'>(<span class='nickDel' @click='userDel(index)'>x</span>)</span></template>
-									</span>&nbsp;
-								</template>
-							</template>
-						</td>
-						<td class='nowrap addTxt'><span>Add one more user:</span></td>
-						<td class='addVal'><input @keydown.enter='userAdd("u")' v-model='nick["n"]["u"]'/></td>
-						<td class='addBtn'><span class='lnk' @click='userAdd("u")'>add</span></td>
-					</tr>
-					<tr>
-						<td >AIs ({{amountNicks['a']}}):</td>
-						<td>
-							<template v-for='(i,index) in nicks'>
-								<template v-if='i.t=="a"&&i.del==0'>
-									<span class='nick'>
-										({{index}})
-										<input v-model='i.n'/><template v-if='amountNicks["a"]>1'><span class='nickDelC'>(<span class='nickDel' @click='userDel(index)'>x</span>)</span></template>
-									</span>&nbsp;
-								</template>
-							</template>
-						</td>
-						<td class='nowrap addTxt'>Add one more AI:</td>
-						<td class='addVal'><input @keydown.enter='userAdd("a")' v-model='nick["n"]["a"]'/></td>
-						<td class='addBtn'><span class='lnk' @click='userAdd("a")'>add</span></td>
-					</tr>
-				</table>
-				<br>
-			</td>
-		</tr>
-		<template v-for="(i,index) in turns">
-			<tr v-if='index<=turn&&i.branch>=0&&!hideMsg(...tbma(index))'>
-				<template v-if='index>0&&index<=turn'>
-					<td class='prev' @click='listmsgs(0,index)'>
-						<span v-show='msgIndex(index,i.branch)!==0'>
-							&lt;<br>
-							{{msgIndex(index,i.branch)}}
-						</span>
-					</td>
-					<td 
-						:id		='"msg"+index'
-						:class='(index===turn?"lastmsg":"msg")' 
-						width	='100%' 
-					>
-						<transition name="slide-fade" mode="out-in">
-							<div :key='msgIndex(index,i.branch)' class='msgTextCont' :id='"msgC"+index'>
-								<div :class='i.role==="user"?"nicku":"nickai"'>
-									<span contenteditable='true' @blur='edit($event,"n",index)'>{{msga(index).nick}}</span> #{{msgIndex(index,i.branch)+1}}:
-								</div>
-								<div 
-									class						='msgText' 
-									:style					='"font-size:"+this.config.msgFontSize.v' 
-									:tabindex				='10000+index*1'
-									contenteditable	='true' 
-									@blur						="edit($event,'c',index)"
-								>
-									<template v-if="i.role==='user'">
-										<template v-if='msga(index).waiting'>
-											..input new variant into the prompt, please..
-										</template>
-										<template v-else>
-											{{msga(index).content}}
-										</template>
-									</template>
-									<template v-else-if='msga(index).waiting'>
-										..wait for it..
-									</template>
-									<template v-else>
-										{{msga(index).content}}
-									</template>
-								</div>
-								<div class='msgFooter'>
-									<template v-if='!msgWaiting(...tbma(index))&&msgEmpty(...tbma(index))'>
-										<span class='empty'>empty message</span>
-									</template>
-									<span 
-										class='tokens' 
-										v-show='i.role==="assistant"&&tokensTotal(index,null)'
-									>
-										Tokens: 
-										<template v-if='tokensTotal(index,null)'>
-											<!--span title='History token'>{{tokens(index,null,'tp')}}</span>
-												+
-											<span title='Response tokens'>{{tokens(index,null,'tr')}}</span>
-											= -->
-											<span title='Whole history tokens'>
-												{{tokensTotal(index,null)}}
-											</span>
-											<template v-if='this.settings.options["num_ctx"].v.length'>
-												of 
-												<span title='Configured context window'>
-													{{this.settings.options.num_ctx.v}}
-												</span>
-											</template>
-										</template>
-									</span>
-									&nbsp;&nbsp;
-									<span class='rating'>
-										<span :class='this.msga(index).rating===0&&"litn"' @click='msgRating(index,0)'>--</span>
-										 / 
-										<span :class='this.msga(index).rating===1&&"litp"' @click='msgRating(index,1)'>++</span>
-									</span>
-								</div>
-							</div>
-						</transition>
-					</td>
-					<td 
-						title="Right button or left click will generate an alternative message.
-Ctrl+right or right click will generate a new message trying to use the messages you've rated in this turn as good/bad examples for AI."
-						class='next' 
-						@click='listmsgs(1,index)' @click.right.prevent='listmsgs(2,index)'
-					>
-						<span v-if="!msgSide(index,i.branch,i.branches[i.branch].msg).side">
-							<span v-show='i.role==="assistant"&&ctrl===1&&msgLast(index,i.branch)'>
-								+/-
-							</span>
-							><br>
-							{{msgMore(index,i.branch)||">"}}<br>
-						</span>
-					</td>
-				</template>
-			</tr>
-			<tr v-if='index===this.turn&&this.turnNotLast(index)'>
-				<td></td>
-				<td class='lnk'>
-					<div class='center' @click='this.turnDown(0)'>
-						There is more in the chat below: {{turnLast(index)-index}} message(s), press down or click here to see.
-					</div>
-					<div class='center' @click='this.turnDown(1)'>
-						Press shift+down or click here to show all the messages below
-					</div>
-				</td>
-				<td></td>
-			</tr>
-		</template>
-		<tr v-if='pState["pull"]' id='pull'>
-			<td colspan='3' class='center'>
-				<template v-if='!this.working'>
-					<div v-if='!this.models.length'>
-						There are no models installed, please install the models in the console
-						or install it through this interface. 
-					</div>
-					To install a model enter your preferred model's name, as it's at 
-					<a href='https://ollama.com/library' target='new'>https://ollama.com/library</a>
-					and click "pull".<br><br>
-					<input @keydown.enter.prevent='this.pull()' v-model='modelPull'/> <span class='lnk' @click='this.pull()'>pull</span>
-					<br><br>
-					<div v-if='this.connectionErr.length'>
-						Error: {{this.connectionErr}}
-					</div>
-				</template>
-				<template v-else>
-					Pulling model: {{this.modelPull}}<br><br>
-					<template v-for='i in this.mpull'>
-						<div>
-							{{i.status}} 
-							<span v-if='i.total'>
-								{{i.done}} / {{i.total}} = {{i.prcnt}}%
-							</span>
-						</div><br>
-					</template>
-				</template>
-			</td>
-		</tr>
-		<tr v-else>
-			<td colspan=3 class='center'>
-				<br>
-				<span title='"Speak for" selector. This is selector of a character that will say the message you send. You can multiple manually controlled personages you speak for. For example your main "hero" and "Narrator" describing the changes of situation.'>
-					<template v-for='(i,index) in nicks'>
-						<template v-if='i.t=="u"&&i.del==0'>
-							<input @keydown.enter.stop='send($event,1,null)' :tabindex='100+index*1' type='radio' :id='"sF"+index' :value='i.id' v-model='nick["u"]'/>
-							<label class='lnk nickSel' :for='"sF"+index'><nick :id='index' :name='i.n'/></label>&nbsp;
-						</template>
-					</template>
-				</span>
-				<textarea rows='5' tabindex='5000' id='prompt' placeholder='Prompt'
-					v-model="prompt" 
-					@keydown.enter='send($event,1,null)'
-					:style='"font-size:"+config.taFontSize.v'
-				></textarea>
-				<br>
-				<span title='"Reply from:" selector. This selects the AI character that will generate a reply. You can have multiple personages talking to you. Every AI personage has its own instruction (instr) and system prompt. Click on the desired character here and then edit their system prompt by clicking "System prompt" below. Add more AI characters at the top.'>
-					<template v-for='(i,index) in nicks'>
-						<template v-if='i.t=="a"&&i.del==0'>
-							<input @keydown.enter.prevent='send($event,1,null)' :tabindex='5500+index*1' type='radio' :id='"rF"+index' :value='i.id' v-model='nick["a"]'/>
-							<label class='lnk nickSel' :for='"rF"+index'><nick :id='index' :name='i.n'/></label>&nbsp;
-						</template>
-					</template>
-				</span>
-				<br><br>
-				<table id='sysinstr'>
-					<tbody>
-					<tr>
-						<td :width='(pState["sys"]?(pState["instr"]?"50%":"100%"):"0%")'>
-							<transition name="ta" mode="out-in">
-								<div :key='pState["sys"]'>
-									<div v-show='pState["sys"]' id='sysTitle'>System Prompt of <nick :id='nick["a"]' :name='nicks[nick["a"]].n'/></div>
-									<textarea 
-										v-show='pState["sys"]'
-										id='sys' 
-										rows=10 
-										v-model='this.system[this.nick["a"]]'
-										:placeholder='`Edit this to override the system prompt of (${nick["a"]}]) ${nicks[nick["a"]].n}  with this text. Empty means the system uses default system prompt (from modelfile)`'
-										:style='"font-size:"+config.taFontSize.v'
-									></textarea>
-								</div>
-							</transition>
-						</td>
-						<td :width='(pState["instr"]?(pState["sys"]?"50%":"100%"):"0%")'>
-							<transition name="ta" mode="out-in">
-								<div :key='pState["instr"]'>
-									<div v-show='pState["instr"]' id='instTitle'>Instruction of <nick :id='nick["a"]' :name='nicks[nick["a"]].n'/></div><br>
-									<textarea 
-										v-show='pState["instr"]'
-										id='instr'
-										rows=10 
-										v-model='this.instr[this.nick["a"]]'
-										:placeholder='`You can specify special reminder here for (${nick["a"]}) ${nicks[nick["a"]].n} on the situation. It will be injected as a last message belonging to the AI, but will not stay in the chat log. I use things like: "I am thinking about doing .., as i am .., i see that.. i feel that.. etc`'
-										:style='"font-size:"+config.taFontSize.v'
-									></textarea>
-								</div>
-							</transition>
-						</td>
-					</tr>
-					</tbody>
-				</table>
-				
-				<select v-model="this.model" class='models'>
-					<template v-for="(i,ind) in this.models">
-						<option :value='ind'>{{i.n}} ({{i.ps}} {{i.q}})</option>
-					</template>
-				</select>
-
-				<span id='setsQ' v-if='config.setsQ.v'>
-					<template v-for='j of [config,settings.options,settings.req]'>
-						<template v-for='(i,ind) of j'>
-							<template v-if='i.q===true'>
-								<fields :n='ind' :i='i' n-show='1'/>
-							</template>
-						</template>
-					</template>
-				</span>
-				
-				<div v-show='pState["sets"]' align='center'>
-					<table style='' id='sets'>
-						<tr>
-							<td colspan='3' style='text-align: justify'>
-								These can be changed any time and will override the model's settings,
-								if the value is empty, then the model's own configuration is used
-								(the one specified in modelfile). You can mouseover the parameter's
-								name to see the explanation from the docs.
-							</td>
-						</tr>
-						<template v-for='j in [{break:"config"},config,{break:"ollama"},settings["req"],{break:"ollama-options"},settings["options"]]'>
-							<template v-if='j.break'>
-								<tr>
-									<td class='header center' colspan='2'>
-										<p class='green'>
-										<template v-if='j.break=="config"'>
-											script configuration
-										</template>
-										<template v-else-if='j.break=="ollama"'>
-											ollama request parameters
-										</template>
-										<template v-if='j.break=="ollama-options"'>
-											ollama options parameters
-										</template>
-										</p>
-									</td>
-									<td class='header center'><p class='green'>q.access</p></td>
-								</tr>
-							</template>
-							<template v-else v-for='(i,ind) in j'>
-								<tr>
-									<td class='title' :title='i.d'>
-										<div :class='config.setsDescrShow.v&&"understroke green"'>
-										{{i.name?i.name:ind}}
-										</div>
-										<div v-if='config.setsDescrShow.v' class='justify'>
-											{{i.d}}<br>
-											Default: <span v-show='(i.def+"")!=""'>{{i.def}}</span>
-										</div>
-									</td>
-									<td class='val'><fields :n='i.name?i.name:ind' :i='i'/></td>
-									<td class='setsQ'><input v-if='i.q!==null' type='checkbox' v-model='i.q'/></td>
-									<td v-if='!config.setsDescrShow.v' class='def left'><span v-show='(i.def+"")!=""'>def: {{i.def}}</span></td>
-								</tr>
-							</template>
-						</template>
-					</table>
-				</div>
-				<div id='howto' v-if='pState["howto"]'>
-					<p>How to chat here, a short guide.</p>
-					<p>1.	At the top left rename your character, rename Ai character.</p>
-					<p>2.	At the top right add more characters if your rpg will have more people. Add a "World" user at least to write the changes in the world from its name for the AI.</p>
-					<p>3.	Click "system prompt", a new text area opens. 
-							Write the definition of the first AI character into the system prompt.
-							like "You are..."</p>
-					<p>4.	If you have more than one AI character, under the prompt text area
-							you will see several radio buttons with the names you created.
-							By default the first one is chosen and you've already defined the system prompt
-							for this one. Now, click on the next radio button and system prompt
-							box will be cleared, as now it is a system prompt of the newly selected
-							character. Write a definition for this character. Repeat with all
-							AI characters you've created. You can update these anytime during
-							the chat.</p>
-					<p>5.	Click on "system prompt" link again to hide it.</p>
-					<p>6.	Click on "instr". It uses the same logic as system prompt and defines
-							instructions for each AI character. You can use it to push character
-							towards certain actions in a story. It should be written in first person.
-							For example: "i'm so jealous". or "i'm angry". or "i want to..".
-							Also you can use it for describing the location of personages, for whatever.
-							Use it throughout the chat process, changing accordingly.</p>
-					<p>7.	Click on instr to hide it, if you don't want to see the text area.</p>
-					<p>8.	Before start, check the settings and set the num_ctx param to a desired value.
-							It's a size of the context memory in tokens that AI remembers. 
-							Check other settings you may need, like temperature, etc.</p>
-					<p>9. 	Below the "prompt" text area in the select list choose the model you wish to get reply from.
-							if you don't have models, you can click "pull" and download some.
-							Names of the models to pull you can see at ollama.com/library website.</p>
-					<p>10.	It's a good idea to click "Save" now to save your starting point of the game.</p>
-					<p>11.	Type in your first message. it's best to start from introduction,
-							like "I'm ...describe yourself... walking/sitting/doing sth.	
-							Usually you can put into the system prompts how they are related to you. 
-							so the reply should make some sense, when they meet you.</p>
-					<p>12.	Hit enter to send your first message.</p>
-					<p>13. Once the model is loaded, which may take time, the character will reply.</p>
-					<p>14. If you dislike the reply, just hit "right" on the keyboard or click the arrows</p>
-							on the right of the AI reply.
-							repeat until the reply is good.</p>
-					<p>15.	If the reply is nearly ideal but something is wrong, just click on the
-							reply and edit that part yourself. Erasing of extra bs is a good idea,
-							as models love to litter with meaningless garbage, platitudes, etc.</p>
-					<p>16.	If you decide that your own message is no good, you can edit it too. or, you can
-							create an alternative side-reply, by clicking the "right" arrows on the right
-							from your message. Then just type new prompt as usually and send it.</p>
-					<p>17.	Use rating buttons for AI messages. By default AI is instructed to follow the style of these. You can disable it in settings, if you wish to use the rating for future finetuning project but do not wish the model to see it in the chat.</p>
-					<p>18.	Also, you can use the rating of model's answers in the last turn to instruct the model. If you click "ctrl+right" or right click on the arrows, the model will be instructed to provide a new reply unlike bad ones and alike to the good ones. It may help if the answers are really bad.</p>
-					<p>19.	If you are bored with the story development you can anytime use up/down arrows to go up in the story and start another branch there or continue an existing alternative branch.</p>
-					<p>20.	It's a good idea to post sitation changes from the name of the
-							"World" character. like "That person went away". or "it started to rain".
-							or "You have noticed that..". etc. To send message from another user
-							just type in the prompt, click on the respective radio button above the prompt text area and
-							hit enter.</p>
-					<p>21. You can choose which character replies next by clicking on the respective
-								radio button under the prompt box. You even can send empty messages,
-								to make them talk to each other, that's half of the fun. Empty messages are hidden by default,
-								so it looks like they just talk to each other, 	but you can change it in the settings.
-								If they don't want to talk to each other, use "instr" field with sth like
-								"now i should reply to.." or add some message from the world.
-					<p>22.	Repeat the process till the alarm clock is ringing telling you it's time to wake up.
-									it was good idea to set alarm clock in your phone to the evening time, so
-									you still have time to sleep tonight.</p>
-					<p>23.	Enjoy.</p>
-				</div>
-			</td>
-		</tr>
-		<tr>
-			<td colspan=3 class='center' id='menu'>
-				<span class='lnk' @click='pToggle("howto")'><menun k='F1' t='Help'/></span> | 
-				<span class='lnk' @click='save()'><menun k='F2' t='Save'/></span> | 
-				<span>
-					<input id='load' type='file' @change='load()'/>
-					<label class='lnk' for="load" id="loadlabel"><menun k='F3' t='Load'></label>
-				</span> | 
-				<span class='lnk' @click='pToggle("sys")'><menun k='F4' t='Sys prompt'/></span> |
-				<span class='lnk' @click='pToggle("instr")'><menun k='F5' t='Instr'/></span> |
-				<span class='lnk' @click='list()'><menun k='F6' t='Reload models'/> </span> |
-				<span class='lnk' @click='pToggle("pull")'><menun k='F7' t='Pull'/></span> |
-				<span class='lnk' @click='this.prune()'><menun k='F8' t='Prune'/></span> | 
-				<span class='lnk' @click='pToggle("sets")'><menun k='F9' t='Sets'/></span> |
-				<span class='lnk' @click='close()'><menun k='F10' t='Quit'/></span>
-			</td>
-		</tr>
-	</template>
-	<template v-else>
-		<tr>
-			<td class='center'>
-				Ollama url if you have access to it directly<br>
-				<input v-model='this.config.url.v' class='understroke'/><br><br>
-				Default reverse proxy url to try to fall back to:<br>
-				<input v-model='this.config.urlProxy.v' class='understroke'/><br>
-				<template v-if='this.connectionErr.length'>
-					<br>
-					<span class='lnk' @click='this.urlTest()'>Re-try</span><br><br>
-					{{this.connectionErr}}
-				</template>
-				
-				<br><br><br><br>
-				<table>
-					<tr>
-						<td colspan=2>
-							<p class='header center green'>Installation</p>
-<p>There is not much to install, it's a single index.html file. 
-However, the file needs to connect to your local Ollama server and you have 2 choices for 
-that:
-<ul>
-	<li>You can install a local web-server as a reverse proxy.
-	<li>If Ollama runs on your own computer, you can use a bad way to configure Ollama to
-allow a specific Origin header. As it still runs only on your local 127.0.0.1 address, others still
- won't be able to connect to it directly. However, sites you visit may use malicious code 
-to connect to your local network, as you run their code in your browser on your local 
-computer. So any site you open theoretically will be able to exploit your Ollama with this.
-You could limit the Origin header to a certain URL only but then you won't be able to run
-this from your local computer only, you would have to access this page on internet,
-which doesn't make much sense in my opinion as it's totally not required.
-</ul>
-</p>
-<p>So here is a longer but better way with a web-server:</p>
-<p>If you already have a web-server, there is not much to say, just put "index.html" from this
-project into any of your web folders, rename it as you wish if needed and access in browser.
-</p>
-
-<p>If you don't have a web-server, the easiest and the best one is Nginx.</p>
-		</tr>
-		<tr>
-			<td>
-				Ubuntu:
-			</td>
-		</tr>
-		<tr>
-			<td>
-				<ol>
-					<li>Download the project, let's say it's in ~/ollama-chats
-					<li>Open terminal
-					<li>sudo apt install nginx
-					<li>sudo cp ~/ollama-chats/nginx-ollama.conf /etc/nginx/conf.d
-					<li>If you have different paths, make sure to edit the config file.
-					<li>sudo cp ~/ollama-chats/index.html /var/www/html/ollama-chats.html
-					<li>sudo chmod 640 /var/www/html/ollama-chats.html
-					<li>sudo chown "$USER":www-data /var/www/html/index.html
-					<li>sudo service nginx restart
-					<li>Access http://127.0.0.1/ollama-chats.html in your browser
-					<li>If you configured everything correctly, that's it. It was probably just 2-3 minutes.
-				</ol>
-						</td>
-					</tr>
-				</table>
-			</td>
-		</tr>
-	</template>
-</table>
-</div>
-<div id='tmplNick' class='tmpl'><span>({{id}}) {{name}}</span></div>
-<div id='tmplMenuN' class='tmpl'><span v-show='config.fKeys.v' class='menuHK'>{{k}}&nbsp;</span>{{t}}</div>
-<div id='tmplField' class='tmpl'>
-	<div style='display:inline-block'>
-	<template v-if='nShow'>{{i.qn??n}}: </template>
-	<template v-if='i.f==="ro"'>
-		{{i.v}}
-	</template>
-	<template v-else>
-		<template v-if='i.f==="cb"'>
-			<input :title='n+": "+i.d' type='checkbox' v-model='i.v'/>
-		</template>
-		<template v-else-if='i.f==="mis"'>
-			<template v-for='(k,kind) in i.v'> 
-				<span class='nobreak'>{{kind+1}}: 
-					<input :title='n+": "+i.d' class='understroke' type='input' v-model='i.v[kind]'/>
-				</span><br>
-			</template>
-		</template>
-		<template v-else>
-			<input :title='n+": "+i.d' v-model='i.v'/>
-		</template>
-	</template>
 	</div>
 </div>
 
@@ -889,12 +1125,15 @@ import { createApp,reactive,computed,ref,nextTick,inject,provide } from 'vue';
 
 
 window.app=createApp({
-	template:'#template',
+	template:'#tmplChat',
 	data() {
 		return {
 			def:{},
-			message:'',
 			prompt:	'',
+			groups: [],
+			group: 0,
+			groupAddN: '',
+			context: {1:true,2:true,0:false,3:true},
 			turns: [
 				{
 					"role":'root',
@@ -902,11 +1141,12 @@ window.app=createApp({
 					'branches':[{msg:0,msgs:[{
 							"content":	'',
 							"nick":		'',
+							"nicks":{},
+							an:{}
 						}]}],
 					'tree':{0:{ 0:0 }},//parent's branch:{selected msg:local branch growing from that msg}
 				},
 			],
-			model:	'',
 			models: [],
 			pState: {
 				'sys':	1,
@@ -915,22 +1155,18 @@ window.app=createApp({
 				'pull': 0,
 				'howto': 0,
 			},
-			system: {
-				'1':'',
-			},
-			instr:	{
-				'1':'',
-			},
-			config: {
-				version:						{ name:'Version', v:1.6,def:'',d:'UI version, just for information and upgrades','f':'ro',q:null },
+			configGlobal: {
+				version:						{ name:'Version', v:1.9,def:'',d:'UI version, just for information and upgrades','f':'ro',q:null },
 				themeWhite:					{ name:'Invert colors',v:false,d:"Inverted colors, if you are weird person preferring white backgrounds, you may check this. But it looks scary, beware.",def:false,f:'cb',q:false,qn:'clrs'},
 				setsDescrShow:			{ name:"Show descriptions for configuration values",v:true,d:"Enables showing descriptions for each parameter below parameter's name, otherwise shows only as a tooltip.",def:true,f:'cb',q:null},
 				rooms:							{ name:'Use single prompt to send the chat',v:true,def:true,d:"If true, all messages are concatenated and sent to AI as one big prompt, AI will take all the chat as a single input prompt generated by user. If it's off, chat is sent as a set of messages, then AI can see which messages were created by AI and which ones by user. Which one is better depends on the model.",f:'cb',q:false,qn:'sngl'},
 				replyWithRating:		{	name:'Use rating to instruct model',v:true,d:"Should attempt to instruct model to use the existing rated messages as style examples for replies. Some models react well, some do not. If you didn't rate any answers in the current branch, nothing is changed in the prompt, so if you don't use the rating and do not wish to pollute the prompt, no need to switch it off.",def:true, f:'cb',q:false,qn:'rate' },
 				otherAiAsUser:			{ name:'Other AI personages are "users" for AI',v:true,d:"When multi-message mode is used to send chat log to AI (that is single-message format is off) mark messages of other AI characters as created by the user. If you have 3 personages, only the current character's messages are marked for AI as AI generated ones. Experimental thing, i think the reaction will be model dependant.",def:true,f:'cb',q:false,qn:'ai usr'},
+				stories:						{ name:'Separate personal story for every character',v:false,d:"In all of the other UI i know (on the moment of writing this) characters see all of the chat history. I came up with a new idea, with this feature every personage can have each own context within the chat. For example, you may talk to a character A and do various things. Then you can introduce character B and that character will not know anything about things you did with character A. Every message is marked with the list of characters that can see it. You define it when you send the message for both your message and AI's one. You can see the 'access list' under every message and change it. The chat log is automatically filtered when you choose your and ai chars for next messages. You can change the filter mode under the chat log at the right. Obvious usage for this can be: two different stories intersecting at some point, where one group plans something or does something and another doesn't know about it. A classic scenario of talking on the phone. Or when character 'thinks' and you don't want other characters to know these thoughts, you can with one click remove them from the message's access list. In other words, it makes it possible to simulate real stories and there is no more need to persuade AI that it shouldn't be aware of something in the chat log :). It comes at a cost of more complicated interface. I've spend a lot of time, much more than coding, on coming up with this interface, to make it as convenient as possible and intuitive. It's still harder than usual one but i believe it's a good one and trust me, as obvious as it seems when you see it, it wasn't easy to form the idea into UI :).",def:false,f:'cb',q:true,qn:'strz' },
 
 				hideEmptyOwn:				{ name:'Hide own empty replies',v:true,def:1,d:'Hide own empty replies (the ones where you just clicked enter). Setting this to false can be useful if you wish to branch a conversation at a turn of your empty reply. Otherwise these just irritate.','f':'cb',q:false,qn:'no emp' },
 				showEmptyOwnSide:		{ name:'Force show own empty replies when there are side-replies',v:true,def:true,d:`Show own empty replies if there are alternative side-replies available, even if hideEmptyOwn is true. Otherwise you wouldn't be able to see prev/next branches if you've sent an empty message, because there would be no 'crossroads' message shown.`,'f':'ro' },
+				emojiNo:						{ name: 'Auto-remove emojis',v:false,def:false,d:"Erase emojis from model's output",f:"cb",q:false,qn:'noemj'},
 
 				resClean:						{ name:'Auto-clean reply from junk',v:true,d:"Should the reply be auto-cleaned of 'Name: ' and other known garbage.",def:true,f:'cb',q:false,qn:'cln' },
 				resBufCleanSize:		{ name:'Buffer size before printing reply',v:10,d:"Buffer size that should be filled before it starts showing your the reply. It's needed to prevent jerking of the reply when we clean it from the litter of names and other marks.",def:10,f:'',q:null},
@@ -948,7 +1184,7 @@ window.app=createApp({
 				badExForSideReply:	{ name:'Use that many -ed side replies for new ones',v:3,d:'When you ask for one more side message from AI clicking ">", you just get a reply generated on the context above. But if you click "ctrl+right", your rated messages are shown to AI as examples. However, showing many negative ones may have the opposite effect as AI just starts copying them. This number defines how many random bad messages from your last turn should be given to AI as an example of how it shouldn\'t talk. Also, setting this high will result in a serious reduction of context window memory. 0 means disable.',def:"3", f:'',q:false,qn:'b-ex' },
 				goodExForSideReply:	{ name:'Use that many +ed side replies for new ones',v:3,d:'Same as above, but for messages with good rating. Unlike with bad messages it is ok to have a lot of these but remember it eats the context memory. Unless you have unlimited vram, don\'t set this high. 0 means disabled.',def:"3", f:'',q:false,qn:'g-ex' },
 			},
-			settings: {
+			settingsGlobal: {
 				options: {
 					temperature:		{v:'',t:'n',def:0.8,d:'The temperature of the model. Increasing the temperature will make the model answer more creatively. (Default: 0.8)',q:true,qn:'temp'},
 					num_ctx:				{v:'',t:'n',def:2048,d:'Sets the size of the context window used to generate the next token. (Default: 2048)',q:true,qn:'ctx'},
@@ -968,13 +1204,12 @@ window.app=createApp({
 					seed:						{v:'',t:'n',def:0,d:'Sets the random number seed to use for generation. Setting this to a specific number will make the model generate the same text for the same prompt. (Default: 0)',q:false},
 				},
 				req: {
+					model:					{v:{l:computed(()=>this.models),v:''},t:'sel',def:0,d:'Model that will generate the reply',f:'sel',q:true,qn:'mdl'},
 					keep_alive:			{v:900,t:'n',def:"300",d:'Time to keep model cached in memory, a number in seconds, any negative number will keep the model loaded in memory, 0 will unload the model immediately after generating a response.',q:false,qn:'k-alv'},
 				}
 			},
 			stream:	true,
 			nick: {
-				u:0,
-				a:1,
 				s:-1,
 				n:{
 					u:'',
@@ -982,12 +1217,11 @@ window.app=createApp({
 					s:'',
 				}
 			},
-			amountNicks: { u:1, a:1, t:2, s:1, idNext:2 }, //total for u+a, s is ignored
+			amountNicks: { u:0,a:0,t:0,s:1,idNext:0 },
 			nicks: {
 				'-1':	{	t:'s',n:computed(()=>this.config.sysNick.v),id:'-1'	},
-				0:		{	t:'u',n:'User',id:0,del:0	},
-				1:		{	t:'a',n:'AI',id:1,del:0	},
 			},
+			msgUserListOn:{},
 			turn:					0,
 			cancel:				0,
 			working:			0,
@@ -1001,18 +1235,39 @@ window.app=createApp({
 		}
 	},
 	computed: {
+		config() {
+			const u=this.userS('a');
+			if(u==null) return this.configGlobal;
+			if(this.nicks[u].sets) return this.nicks[u].config;
+			return this.configGlobal;
+		},
+		settings() {
+			const u=this.userS('a');
+			if(u==null) return this.settingsGlobal;
+			if(this.nicks[u].sets) return this.nicks[u].settings;
+			return this.settingsGlobal;
+		},
 	},
 	created() {
 	},
 	mounted() {
 		this.w('mounting');
+
+		this.groupAdd('Every1',[]);
+		
+		this.userAdd('u','User');
+		this.userAdd('a','AI');
+		this.userAdd('u','World');
+		
+		this.groupAdd('1st set',[0,1,2]);
+		this.group=1;
 		
 		this.urlTest();
 
-		for(const i in this.$data) {
-			if(i==='def') continue;
-			this.def[i]=this[i];
-		}
+		let def={};
+		for(const k in this.$data) {
+			this.copy(this.$data,def,k);
+		} this.def=def;
 		
 		window.addEventListener("keyup",(event)=>{
 			this.ctrl=((event.ctrlKey||event.metaKey)?this.ctrl:0);
@@ -1077,7 +1332,12 @@ window.app=createApp({
 	},
 	provide() {
 		return {
-			config: this.config
+			config: this.config,
+			nicks: this.nicks,
+			groups: this.groups,
+			nick: this.nick,
+			group: this.group,
+			amountNicks: this.amountNicks,
 		}
 	},
 	watch: {
@@ -1088,13 +1348,8 @@ window.app=createApp({
 				document.getElementById('html').style.filter='invert(0%) hue-rotate(0deg)';
 			}
 		},
-		'nick.u'(v) {
-			this.w('chosen user nick has changed, let us update side msg if it is open');
-			const tbm=this.tbma(this.turn);
-			if(this.msgSide(...tbm)) this.msgSideNickUpdate(...tbm);
-		},
-		'model'(v) {
-			this.w(`changing model ${v}`);
+		'settings.req.model.v.v'(v) {
+			this.w(`changed model ${v}, updating defs in settings`);
 			if(!this.models.length) return;
 			if(this.models[v].ctx) {
 				this.settings.options.num_ctx.def=`${this.models[v].ctx} in modelfile for ${this.models[v].n}`;
@@ -1104,6 +1359,7 @@ window.app=createApp({
 		},
 		'settings.options.stop.v': {
 			handler(v) {
+				if(!v) return;
 				if(v[v.length-1].length!=0) v.push('')
 				for(let i=0;i<(v.length-1);i++) { //>
 					if(v[i]=='') v.splice(i,1);
@@ -1114,11 +1370,19 @@ window.app=createApp({
 		'ctrl'(v) {
 			this.w(`ctrl: ${v}`);
 		},
-//		'config.fkeys.v':(v) {
-//			if(v) return;
-//		}
+		'context': {
+			handler (v) {
+				//this.turnLastFilteredGo();
+			},
+			deep:true
+		},
 	},
 	methods: {
+		groupCh(id) {
+			this.w(`changing group to ${id} ${this.groups[id]}`);
+			this.group=id*1;
+			//this.turnLastFilteredGo();
+		},
 		w(a) {
 			if(!this.log) return;
 			if(typeof a==='object') {
@@ -1137,8 +1401,8 @@ window.app=createApp({
 			return this.tokens(turn,model,'tp')+this.tokens(turn,model,'tr');
 		},
 		tokens(turn,model,id) {
-			//this.w(`connection=${this.connection} this.model=${JSON.stringify(this.model)} models=${JSON.stringify(this.models,null,2)}`)
-			if(model==undefined) model=this.models[this.model].n;
+			//this.w(`connection=${this.connection} this.model=${JSON.stringify(this.settings.req.model.v.v)} models=${JSON.stringify(this.models,null,2)}`)
+			if(model==undefined) model=this.models[this.settings.req.model.v.v].n;
 			return this.msga(turn)[id][model];
 		},
 		async pToggle(id,v) {
@@ -1152,18 +1416,41 @@ window.app=createApp({
 			if(id=='sys'||id=='instr') id='sysinstr';
 			this.scroll(id,1);
 		},
+		msgFilter(turn,b,m) {
+			const t=this.turns[turn];
+			const msg=t.branches[b].msgs[m];
+			if(!this.context[0]&&!this.context[1]&&!this.context[2]) {
+				return 1;
+			} else if(!this.context[0]) {
+				const u=this.userS("u"),a=this.userS("a");
+				if(this.context[3]&&this.context[1]&&this.context[2]) {
+					if(!msg.nicks[u]&&!msg.nicks[a]) return 1;
+					if(!(msg.nicks[a]&&this.context[1])||!(msg.nicks[u]&&this.context[2])) return 1;
+				} else {
+					if(!msg.nicks[u]&&!msg.nicks[a]) return 1;
+					if(!(msg.nicks[a]&&this.context[1])&&!(msg.nicks[u]&&this.context[2])) return 1;
+				}
+			}
+		},
+		msgSkipped(turn,b,m) {
+			if(this.hideMsg(turn,b,m)) 		return 1;
+			if(this.msgFilter(turn,b,m)) 	return 1;
+			return 0;
+		},
 		hideMsg(turn,b,m) {
 			const t=this.turns[turn];
+			const msg=t.branches[b].msgs[m];
+			
 			if(t.role!=="user") return 0;
 			if(!this.config.hideEmptyOwn.v) return 0;
 			if(this.config.showEmptyOwnSide.v&&this.msgTotal(turn,b)>1) return 0; //force showing.
 			if(this.msgSide(turn,b,m)) return 0;
-			const msg=t.branches[b].msgs[m];
 			if(!this.msgEmpty(turn,b,m)) return 0;
 			return 1;
 		},
 		listmsgs(m,turn) {
 			this.w(`listing ${m} - turn ${turn}, m: ${m}, ctrl: ${this.ctrl} role: ${this.turns[turn].role}`);
+			if(this.userS('u')==null||this.userS('a')==null) return 0;
 			if(m==1&&this.ctrl&&this.turns[turn].role==='assistant') m=2;
 			if(m==2&&this.turns[turn].role==='user') m=1; //for right mouse click
 			
@@ -1206,7 +1493,8 @@ window.app=createApp({
 			this.connection=0; //to prevent partial updates to dom
 			for(const i in this.def) {
 				this.w(`restoring ${i}`)
-				this.$data[i]=this.def[i];
+				if(i=='def') continue;
+				this.copy(this.def,this.$data,i)
 			}
 			
 			const l=document.getElementById('load');
@@ -1229,10 +1517,31 @@ window.app=createApp({
 				}
 				t.w(d)
 				
-				if(!d['config']) { //updating from version 0->1
+				//patch for 1.8 shift.
+				if(t.$data.hasOwnProperty('configGlobal')) {
+					t.config=t.configGlobal;
+					t.settings=t.settingsGlobal;
+					if(t.settingsGlobal.req.hasOwnProperty('model')) {
+						t.model=t.settingsGlobal.req.model.v.v;
+					}
+					
+				}
+				let ver;
+				if(d.hasOwnProperty('configGlobal')) {
+					ver=d.configGlobal.version.v;
+				} else if(d.hasOwnProperty('config')) {
+					ver=d.config.version.v;
+				} else {
+					ver=0;
+				}
+				t.w(`new parser pass for ver: ${ver}`);
+				
+				if(ver==0) { //updating from version 0->1
 					t.w('upgrading from version 0');
-					t.updateAddParams(d,'config');
-					t.updateAddParams(d,'settings');
+					
+					t.copy(t.def,d,'configGlobal'); d.config=d.configGlobal; delete d.configGlobal;
+					t.copy(t.def,d,'settingsGlobal'); d.settings=d.settingsGlobal; delete d.settingsGlobal;
+					
 					d.nicks={
 						0:{	't':'u','n':d.nick,'id':0	},
 						1:{	't':'a','n':d.nickai,'id':1	}
@@ -1240,16 +1549,17 @@ window.app=createApp({
 					delete d.nick;
 					delete d.nickai;
 					t.updateAddParams(d,'nick');
+					t.w({config:d.config})
 					d.config.url.v=d.url;
 					delete d.url;
+
+					let tmp;
+					tmp=d.system; delete d.system; d.system={'1':tmp};
+					tmp=d.instr; delete d.instr; d.instr={'1':tmp};
 					
-					t.system['1']	=d.system; delete d.system;
-					t.instr['1']	=d.instr; delete d.instr;
-					
-					t.updateAddParams(d,'system');
-					t.updateAddParams(d,'instr');
 					t.updateAddParams(d,'amountNicks');
 					t.updateAddParams(d,'pState');
+					
 					for (const i in d.pState) {
 						d.pState[i]=0;
 					}
@@ -1258,22 +1568,22 @@ window.app=createApp({
 					delete d.pullHide;
 					delete d.setingsHide;
 					delete d.settings; //just delete old settings )
-					t.updateAddParams(d,'settings');
+					t.copy(t.def,d,'settingsGlobal'); d.settings=d.settingsGlobal; delete d.settingsGlobal;
 					d.config.version.v=1;
 					t.w(`upgraded to version ${d.config.version.v}`);
 					parse(d);
 					return;
-				} else if (d.config.version.v==1) {
-					t.w('upgrading from version 1');
+				} else if (ver==1) {
+					t.w(`upgrading from version ${d.config.version.v}`);
 					d.config.version.v=1.1;
-					delete d.settings; //just delete old settings )
-					t.updateAddParams(d,'settings');
+					//delete d.settings; //just delete old settings )
+					t.copy(t.def,d,'settingsGlobal'); d.settings=d.settingsGlobal; delete d.settingsGlobal;
 					d.config.version.v=1.1;
 					t.w(`upgraded to version ${d.config.version.v}`);
 					parse(d);
 					return;
-				} else if (d.config.version.v==1.1) {
-					t.w('upgrading from version 1.1');
+				} else if (ver==1.1) {
+					t.w(`upgrading from version ${d.config.version.v}`);
 					d.config.version.v=1.2;
 					t.updateAddParams(d,'config');
 					for(const i in d.models) {
@@ -1300,18 +1610,18 @@ window.app=createApp({
 					t.w(`upgraded to version ${d.config.version.v}`);
 					parse(d);
 					return;
-				} else if (d.config.version.v==1.2) {
-					t.w('upgrading from version 1.2');
+				} else if (ver==1.2) {
+					t.w(`upgrading from version ${d.config.version.v}`);
 					d.config.version.v=1.3;
 					t.updateAddParams(d,'config');
 					d.config.version.v=1.3;
 					t.w(`upgraded to version ${d.config.version.v}`);
 					parse(d);
 					return;
-				} else if (d.config.version.v==1.3) {
-					t.w('upgrading from version 1.3');
+				} else if (ver==1.3) {
+					t.w(`upgrading from version ${d.config.version.v}`);
 					d.config.version.v=1.4;
-					let tmp=t.msgTmpl(1,null); //just to get new fields
+					let tmp=t.msgTmpl(1,null,0); //just to get new fields
 					for(const tu of d.turns) {
 						if(tu.role==='root') continue;
 						for(const b of tu.branches) {
@@ -1330,11 +1640,11 @@ window.app=createApp({
 					t.w(`upgraded to version ${d.config.version.v}`);
 					parse(d);
 					return;
-				} else if (d.config.version.v==1.4) {
-					t.w('upgrading from version 1.4');
+				} else if (ver==1.4) {
+					t.w(`upgrading from version ${d.config.version.v}`);
 					d.config.version.v=1.5;
-					t.settings.options.stop.v=[d.settings.options.stop.v];
-					d.settings.options=t.settings.options;
+					t.settingsGlobal.options.stop.v=[d.settings.options.stop.v];
+					d.settings.options=t.settingsGlobal.options;
 					//if we change userAdd or structures this will need rewriting
 					//clean current list
 					for(const i in t.nicks) {
@@ -1348,7 +1658,7 @@ window.app=createApp({
 						if(i>maxId) maxId=i;
 					}
 					t.amountNicks['idNext']=maxId*1+1;
-					let tmp=t.msgTmpl(1,null); //just to get new fields
+					let tmp=t.msgTmpl(1,null,0); //just to get new fields
 					for(const tu of d.turns) {
 						if(tu.role==='root') continue;
 						let role;
@@ -1374,7 +1684,7 @@ window.app=createApp({
 								if(m.nId==null) {
 									//copy added deleted user to d
 									t.nick['n'][role]=m.nick;
-									t.userAdd(role);
+									t.userAdd(role,m.nick);
 									let id=t.amountNicks['idNext']-1;
 									t.nicks[id].del=1;
 									d.nicks[id]=t.nicks[id];
@@ -1388,8 +1698,8 @@ window.app=createApp({
 					t.w(`upgraded to version ${d.config.version.v}`);
 					parse(d);
 					return;
-				} else if (d.config.version.v==1.5) {
-					t.w('upgrading from version 1.6');
+				} else if (ver==1.5) {
+					t.w(`upgrading from version ${d.config.version.v}`);
 					d.config.version.v=1.6;
 					t.updateAddParams(d,'config');
 					for(const i in d.config) { 
@@ -1403,14 +1713,106 @@ window.app=createApp({
 					}
 					t.w(`upgraded to version ${d.config.version.v}`);
 					parse(d);
+					return;
+				} else if (ver==1.6) {
+					t.w(`upgrading from version ${d.config.version.v}`);
+					d.config.version.v=1.7;
+					t.w({n:d.nick});
+					t.updateAddParams(d,'config');
+					t.updateAddParams(d,'group');
+					t.updateAddParams(d,'groupAddN');
+					t.updateAddParams(d,'context');
+					t.updateAddParams(d,'msgUserListOn');
+					d.pState=t.pState;
+					t.group=0;
+					for(const u in t.nicks) {
+						if(t.nicks[u].t=='s') continue;
+						t.userDelDo(u);
+						delete t.nicks[u];
+					}
+					t.w({'list of users before import':t.nicks,importing:d.nicks,sys:d.system});
+
+					let tmp={system:{},instr:{}};
+					for(const u in d.nicks) {
+						if(d.nicks[u].t=='s') continue;
+						if(d.nicks[u].del) continue;
+						const id=t.userAdd(d.nicks[u].t,d.nicks[u].n);
+						tmp.system[id]=d.system[u];
+						tmp.instr[id]=d.instr[u];
+						t.userGroupAdd(1,id);
+					}
+					d.system=tmp.system;
+					d.instr=tmp.instr;
+					d.groups=t.groups;
+					d.nicks=t.nicks;
+					d.group=1;
+					d.amountNicks=t.amountNicks;
+					
+					for(const tu of d.turns) {
+						for(const b of tu.branches) {
+							if(!b.msgs.length) continue;
+							for(const m of b.msgs) {
+								m.nicks={};
+								for(const u in d.nicks) {
+									if(d.nicks[u].t!='u'&&d.nicks[u].t!='a') continue;
+									m.nicks[u]=true;
+								}
+								m.nicksArr=t.msgUserListAll({nicks:m.nicks});
+							}
+						}
+					}
+					t.w(`upgraded to version ${d.config.version.v}`);
+					parse(d);
+					return;
+				} else if (ver==1.7) {
+					t.w(`upgrading from version ${d.config.version.v}`);
+					d.config.version.v=1.8;
+					for(const u in d.nicks) {
+						d.nicks[u].system	=d.system[u];
+						d.nicks[u].instr	=d.instr[u];
+						d.nicks[u].setsDo	=false;
+						d.nicks[u].sets		=false;
+					}
+					delete d.system;
+					delete d.instr;
+					delete t.system;
+					delete t.instr;
+					
+					t.w(`upgraded to version ${d.config.version.v}`);
+					parse(d);
+					return;
+				} else if (ver==1.8) {
+					t.w(`upgrading from version ${d.config.version.v}`);
+					d.settings.req.model={};
+					t.copy(t.settingsGlobal.req,d.settings.req,'model');
+					d.settings.req.model.v.v=d.model;
+					d.configGlobal=d.config;
+					d.settingsGlobal=d.settings;
+					delete d.config;
+					delete d.settings;
+					delete d.model;
+					delete d.message;
+					for(let m of d.models) {
+						m.n=`${m.n} (${m.ps} ${m.q})`;
+					}
+
+					d.configGlobal.version.v=1.9;
+					t.w(`upgraded to version ${d.configGlobal.version.v}`);
+					parse(d);
+					return;
 				}
 				t.w('adding new config vars');
-				t.updateAddParams(d,'config');
+				t.updateAddParams(d,'configGlobal');
 				
 				for(let i in d) {
 					t[i]=d[i]
 				}
-				t.w(`finished upgrading to version: ${t.config.version.v}`);
+				
+				t.w('restore data links to computed vals');
+				t.nicks[-1].n=computed(()=>t.config.sysNick.v);
+				t.settingsGlobal.req.model.v.l=computed(()=>t.models);
+				
+				t.w(`finished upgrading to version: ${t.configGlobal.version.v}`);
 				
 				t.working	=0;
 				t.cancel	=0;
@@ -1452,7 +1854,7 @@ window.app=createApp({
 			}
 			this.working=1;
 			this.w(`listing models`);
-
+			
 			fetch(this.url()+"/api/tags",{
 				"method": "GET",
 			}).then(r=>{
@@ -1460,26 +1862,26 @@ window.app=createApp({
 				return r.text();
 			}).then(async(r)=>{
 				let res='';
+				this.w(`parsing list reply`);
 				try { res=JSON.parse(r) } catch (error) { console.error(`error: ${error}`) }
 				let old			=this.models;
 				this.models	=[];
 				let found		=-1;
+				this.w({modelsDL:res});
 
 				for(const m of Object.keys(res.models).sort((a,b)=>{
 					return res.models[a].name.localeCompare(res.models[b].name.toLowerCase());
 				})) {
 					let md=res.models[m];
 					this.models.push({
-						n:		md.name,
+						tag:	md.name,
+						n:		`${md.name} (${md.details.parameter_size} ${md.details.quantization_level})`,
 						mt:		md.modified_at,
 						s:		md.size,
 						ps:		md.details.parameter_size,
 						q:		md.details.quantization_level,
 						ctx:	null,
 					});
-					if(old.length&&old[this.model].n===md.name) {
-						found=this.models.length-1;
-					}
 					await this.modelData(this,this.models.length-1);
 					this.w(`processed model ${md.name}`);
 				}
@@ -1492,11 +1894,38 @@ window.app=createApp({
 					this.pToggle('pull',1);
 					return;
 				}
-				if(found!=-1) 			this.model=found;
-				if(this.model=="")	this.model=0;
+				if(this.settingsGlobal.req.model.v.v!=null&&this.settingsGlobal.req.model.v.v!='') {
+					this.w(`searching for previously selected models in new list`);
+
+					for(let m=0;m<this.models.length;m++) { //>
+						if(old.length&&old[this.settingsGlobal.req.model.v.v].n===this.models[m].n) {
+							found=m;
+							this.w(`found matching model #${m}`)
+							break;
+						}
+					}
+				} else {
+					this.w(`no model select globaly, skipping and setting the first one`);
+				}
+				if(found==-1) found=0; this.settingsGlobal.req.model.v.v=found;
+				this.w(`globally set model ${this.models[this.settingsGlobal.req.model.v.v].n}`);
 				
-				const md=this.models[this.model];
-				this.w({'models':this.models.length,md:md});
+				for(let u in this.nicks) {
+					u=this.nicks[u];
+					if(!u.hasOwnProperty('settings')) continue;
+					found=-1;
+					for(let m=0;m<this.models.length;m++) { //>
+						if(old.length&&old[u.settings.req.model.v.v].n===this.models[m].n) {
+							found=m;
+							this.w(`found matching model #${m} for user ${u.n}`);
+							break;
+						}
+					}
+					if(found==-1) found=0; u.settings.req.model.v.v=found;
+					this.w(`user ${u.n} set model ${this.models[u.settings.req.model.v.v].n}`);
+				}
+				
+				this.w({'models':this.models.length});
 				this.connectionErr	='';
 				this.connection			=1;
 				this.cancel					=0;
@@ -1507,13 +1936,14 @@ window.app=createApp({
 				this.working=0;
 				this.connectionErr=error.message;
 				this.connection=0;
+				this.w(`listing conneciton err: ${error.message}`);
 				return;
 			});
 		},
 		async modelData(t,id) {
 			return fetch(t.url()+"/api/show",{
 				"method": "POST",
-				'body': JSON.stringify({ name:t.models[id].n }),
+				'body': JSON.stringify({ name:t.models[id].tag }),
 			}).then(r=>{
 				if(!r.ok) throw new Error(r.statusText);
 				return r.text();
@@ -1619,7 +2049,7 @@ window.app=createApp({
 					this.w(`skipping param ${i}, already exists in loaded file`);
 				} else {
 					this.w(`adding param ${i} to loaded file`);
-					d[p][i]=this['def'].config[i]
+					d[p][i]=this['def'][p][i]
 				}
 			}
 		},
@@ -1634,74 +2064,280 @@ window.app=createApp({
 			}
 		},
 		
+		//group methods
+		
+		
 		//user methods
-		userDel(i) {
-			const t=this.nicks[i].t;
-			if(this.amountNicks[t]<=1) { //>
-				alert("Can't delete the last one");
+		userGroupDel(g,i) {
+			if(g==0&&!confirm(`This is the list of all users, if you delete character "${this.nicks[i].n}", it will be gone permanently. The messages will stay but not the character. Are you sure you wish to delete this character?`)) {
 				return;
 			}
-			for(const j in this.nicks) {
-				const n=this.nicks[j];
-				this.w(`comparing nick ${j} with ${i}`);
-				if(j==i||this.nicks[i].t!=n.t) continue;
-				this.w(`found matching role user ${n.n} with id ${n.id}`);
-				this.nick[n.t]=n.id;
-				break;
+			this.userGroupDelDo(g,i);
+		},
+		userGroupDelDo(g,i) {
+			if(!this.groups[g].u[i]) return 0;
+			this.w(`removing user ${i} from group ${g}`)
+			const n=this.nicks[i];
+			if(this.groups[g].sel[n.t]==i) {
+				this.w(`user is the selected one in the group, removing.`);
+				for(const j in this.groups[g].u) {
+					this.w(`comparing nick ${j} with ${i}`);
+					if(j==i||this.nicks[j].t!=n.t) continue;
+					this.w(`found matching role user "${this.nicks[j].n}" with id ${j} in group ${g}`);
+					this.groups[g].sel[n.t]=j;
+					break;
+				}
+				if(this.groups[g].sel[n.t]==i) {
+					this.w(`we have not found any other user of this type in the group, setting selected one to null`);
+					this.groups[g].sel[n.t]=null;
+				}
 			}
-			if(confirm(`Are you sure you wish to delete character ${this.nicks[i].n}? It won't affect the existing chat but will delete nick and its system and instruction messages.`)) {
-				this.amountNicks[t]--;
-				this.system[this.nicks[i].id]	='';
-				this.instr[this.nicks[i].id]	='';
-				this.nicks[i].del=1;
+			for(const u in this.groups[g].u) {
+				delete this.groups[g].u[u][i];
+			}
+			
+			this.groups[g].an[n.t]--;
+			this.groups[g].an['t']--;
+			delete this.groups[g].u[i];
+		},
+		userDel(i) {
+			if(confirm(`Are you Really sure you wish to completely delete "${this.nicks[i].n}"? It won't affect the existing chat but will delete the nick and its system and instruction messages.`)) {
+				this.userDelDo(i)
 			}
 		},
-		userAdd(t) {
+		userDelDo(i) {
+			const t=this.nicks[i].t;
+			for(const g in this.groups) {
+				this.userGroupDelDo(g,i);
+			}
+			this.amountNicks['t']--;
+			this.amountNicks[t]--;
+			this.nicks[i].del=1;
+
+			for(const t of this.turns) {
+				for(const b of t.branches) {
+					for(const m of b.msgs) {
+						delete m.nicks[i];
+						m.nicksArr=this.msgUserListAll({nicks:m.nicks}); //caches are so caches.
+					}
+				}
+			}
+		},
+		userGroupAdd(g,u) {
+			if(u==null) return;
+			this.w(`adding user ${u} to group ${g}`);
+			const t=this.nicks[u].t;
+			this.groups[g].an['t']++;
+			this.groups[g].an[t]++;
+			this.groups[g].u[u]={};
+			for(const i in this.groups[g].u) {
+				this.groups[g].u[u][i]=true;
+				this.groups[g].u[i][u]=true;
+			}
+			if(this.groups[g].sel[t]===null) {
+				this.groups[g].sel[t]=u;
+			}
+		},
+		groupDel(g) {
+			if(this.groups.length<=1) { //>
+				alert('Can not delete the only group.');
+				return;
+			}
+			for(const i in this.groups) {
+				if(i==g) continue;
+				this.group=i*1; //yep
+				break;
+			}
+
+			this.w(`new chosen group is ${this.group}`);
+			for(const u in this.groups[g].u) {
+				this.userGroupDel(g,u);
+			}
+			this.groups.splice(g,1);
+		},
+		userAdd(t,n) {
 			const id=this.amountNicks['idNext']++;
 			this.amountNicks['t']++;
 			this.amountNicks[t]++;
-			this.nicks[id]		={ t:t,n:this.nick["n"][t],'id':id,del:0 };
-			this.system[id]		='';
-			this.instr[id]		='';
-			this.nick['n'][t]	=''
+			this.nicks[id]		={ t:t,n:n,'id':id,del:0,system:'',instr:'',sets:false,setsDo:false };
+			this.nick['n'][t]	='';
+			this.userGroupAdd(0,id);
+			return id;
 		},
-
+		userVis(t,id) {
+			//this.w(`checking vis of ${id}`);
+			const u=this.nicks[id];
+			//this.w(`checking vis of ${id} ${u.n}: ${u.del}`);
+			if(t!==u.t) return 0;
+			if(u.del==1) return 0;
+			//if(!this.groups[this.group]) return 0;
+			//if(!this.groups[this.group].u[u.id]) return 0;
+			return 1;
+		},
+		userCh(t,v) {
+			this.w(`userch ${t}`);
+			if(t==='u') {
+				this.w('chosen user nick has changed, let us update side msg if it is open and turns');
+				//this.turnLastFilteredGo();
+				const tbm=this.tbma(this.turn);
+				if(this.msgSide(...tbm)) this.msgSideNickUpdate(...tbm);
+			}
+		},
+		userAiCh(v) {
+			this.w('chosen ai nick has changed, let us update turns');
+			//this.turnLastFilteredGo();
+		},
+		userTypeCh(u) {
+			const t	=this.nicks[u].t;
+			const tn=(t=='u'?'a':'u');
+			this.nicks[u].t=tn;
+			//sigh, these had to be auto but..
+			for(const g in this.groups) {
+				if(!this.groups[g].u[u]) continue;
+				this.groups[g].an[t]--;
+				this.groups[g].an[tn]++;
+				if(this.groups[g].sel[t]==u) {
+					for(const j in this.groups[g].u) {
+						if(this.userVis(t,j)) {
+							this.groups[g].sel[t]=j;
+							break;
+						}
+					}
+					if(this.groups[g].sel[t]==u) this.groups[g].sel[t]=null
+				}
+				if(this.groups[g].sel[tn]==null) this.groups[g].sel[tn]=u;
+			}
+			this.amountNicks[t]--;
+			this.amountNicks[tn]++;
+		},
+		groupAdd(n,u) {
+			if(!n.length) {
+				alert('Please, give it a name');
+				return;
+			}
+			this.groups.push(this.groupTmpl(n,u));
+			for(const i of u) {
+				this.userGroupAdd(this.groups.length-1,i);
+			}
+			this.group=this.groups.length-1;
+		},
+		groupTmpl(n,u) {
+			let g={u:{},sel:{u:null,a:null,s:null},an:{u:0,a:0,s:0,t:0}};
+			g.n	=n;
+			return g;
+		},
+		groupPrev() {
+			if(this.group>0) this.group--;
+		},
+		groupNext() {
+			if(this.group<(this.groups.length-1)) this.group++; //>
+		},
+		userS(t) {
+			const u=this.userSelected(t);
+			//this.w(`returning select user ${t}=${u}`);
+			return u;
+		},
+		userSelected(t) {
+			if(!this.groups[this.group]) return null;
+			return this.groups[this.group]['sel'][t];
+		},
+		copy(o,on,k) {
+			//this.w({parsing:o})
+			if(o[k]==null) {
+				on[k]=null
+			} else if(Array.isArray(o[k])) {
+				on[k]=[];
+				//this.w(`copying arr ${k}`);
+				for(const i in o[k]) { this.copy(o[k],on[k],i) }
+			} else if(typeof o[k]==='object') {
+				on[k]={};
+				//this.w(`copying object ${k}`);
+				for(const i in o[k]) { this.copy(o[k],on[k],i) }
+			} else {
+				//this.w(`copying val ${k}`);
+				on[k]=o[k];
+			}
+		},
+		userSetsPerAi(id) {
+			if(id==null) return;
+			const u=this.nicks[id];
+			console.log(`personal sets sets for ${id}: ${u.setsDo}`)
+			if(u.setsDo) {
+				if(!u.hasOwnProperty('settings')) {
+					u.config							={...this.configGlobal};
+					u.settings={};
+					u.settings['req']			={...this.settingsGlobal.req};
+					u.settings['options']	={...this.settingsGlobal.options};
+					this.copy(this.$data,u,'settingsGlobal');
+					this.copy(this.$data,u,'configGlobal');
+					u.settings=u.settingsGlobal; 	delete u.settingsGlobal;
+					u.config	=u.configGlobal; 		delete u.configGlobal;
+					u.settings.req.model.v.l=computed(()=>this.models);
+				}
+			}
+			u.sets=u.setsDo;
+		},
+		
 		//turn methods
 		tbma(t) {
 			return [t,this.branch(t),this.brancha(t).msg];
 		},
 		async turnUp() {
 			event.preventDefault();
+
 			if(this.turn<=1) return; //>
-			this.turn--;
-			if(this.hideMsg(...this.tbma(this.turn))) {
-				this.w(`we went up one message at turn ${this.turn} but it's hidden, let's go higher`)
-				if(this.turn<=1) { //>
-					this.turn++;
-				} else {
-					this.turn--;
-				}
+			const start=this.turn;
+
+			let atVisible=!this.msgSkipped(...this.tbma(this.turn));
+			while(!atVisible&&this.turn>1) {
+				this.turn--;
+				atVisible=!this.msgSkipped(...this.tbma(this.turn));
 			}
+			if(start!==this.turn) return;
+			this.turn--;
+			while(this.msgSkipped(...this.tbma(this.turn))&&this.turn>1&&atVisible) {
+				this.w(`we went up one message at turn ${this.turn} but it's hidden, let's go higher`)
+				atVisible++;
+				this.turn--;
+			}
+			this.w(`stop at turn ${this.turn}`);
 			await nextTick();
 			this.scroll(null,0);
 		},
 		async turnDown(m) {
 			event.preventDefault();
-			if(!this.turnNotLast(this.turn)) return;
-			if(!m) {
-				this.turn++;
-			} else {
-				this.turn=this.turnLast(this.turn);
+
+			const last=this.turnLast(this.turn);
+			let lastv=null;
+			
+			if(m) {
+				this.turn=last;
+				await nextTick();
+				this.scroll(null,0);
+				return;
 			}
 			
-			if(this.hideMsg(...this.tbma(this.turn))) {
-				this.w(`we went up down message at turn ${this.turn} but it's hidden, let's go lower`)
-				//last message is always AI's and can't be hidden, so if it's hidden we just can go down as it's not last.
-				this.turn++;
+			if(!this.turnNotLast(this.turn)) return;
+			
+			lastv=this.turn;
+			let t=this.turn+1;
+			while(t<=last) { //>
+				this.w(`trying next turn ${t}`);
+				if(!this.msgSkipped(...this.tbma(t))) {
+					lastv=t;
+					break;
+				}
+				t++;
 			}
+			if(t>last) t=last;
+			//this.turn=lastv; //it was a different logic attempt but interface was not good
+			this.turn=t;
 			
 			await nextTick();
 			this.scroll(null,0);
+		},
+		turnLastFilteredGo() {
+			this.turnDown(1)
 		},
 		turnNotLast(t) {
 			if(t>=(this.turns.length-1)) return null;
@@ -1718,7 +2354,7 @@ window.app=createApp({
 			this.w(`new turn type is ai: ${ai}`);
 			return ai;
 		},
-		turnnew(turn,u) {
+		turnnew(turn,u,g) {
 			turn++;
 			this.w(`generating new turn #${turn}`);
 			if(this.turns[turn]) {
@@ -1737,7 +2373,7 @@ window.app=createApp({
 			this.turn=turn;
 			this.w(`set turn to ${turn}`);
 			this.w(`initialize the first branch at turn ${turn}`);
-			this.branchNew(turn,u);
+			this.branchNew(turn,u,g);
 			this.w({'current turn':this.turns[turn]});
 		},
 		turnBranchSet(t,b) {
@@ -1772,7 +2408,7 @@ window.app=createApp({
 		},
 		
 		//branch methods
-		branchNew(turn,u) {
+		branchNew(turn,u,g) {
 			this.w(`adding new branch at ${turn}`)
 			if(!this.turns[turn]) return;
 				const prev	=this.turns[turn-1];
@@ -1788,7 +2424,7 @@ window.app=createApp({
 				this.w(`branch for the msg ${prevm} in turn ${turn} already exists: ${b}`);
 			} else {
 				this.w(`creating new branch at turn ${turn}`)
-				this.turns[turn].branches.push(this.branchTmpl(turn,u));
+				this.turns[turn].branches.push(this.branchTmpl(turn,u,g));
 				b=this.turns[turn].branches.length-1;
 			}
 			this.turnBranchSet(turn,b);
@@ -1796,9 +2432,9 @@ window.app=createApp({
 			this.w({'created branch in turn':turn,'branch':this.turns[turn].branches[this.turns[turn].branch]});
 			if(bnew) this.treeu(turn);
 		},
-		branchTmpl(turn,u) {
+		branchTmpl(turn,u,g) {
 			this.w(`adding branch to turn ${turn}`);
-			return { msg:0,msgs:[this.msgTmpl(u,null)] }
+			return { msg:0,msgs:[this.msgTmpl(u,null,g)] }
 		},
 		branch(turn) {
 			return this.turns[turn].branch
@@ -1835,6 +2471,7 @@ window.app=createApp({
 			
 			for(let i=turnIncomplete;i<this.turns.length;i++) {//>
 				this.w(`dropping branch for turn ${i}`);
+				if(this.turns[i].branch==-1) break; //optimization, tho probably we don't even have to mark everything below? just 1.. 
 				this.turnOff(i);
 			}
 			this.turn=turnIncomplete-1;
@@ -1850,8 +2487,17 @@ window.app=createApp({
 		
 		
 		//msg methods
-		msgTmpl(u,c) {
+		msgTmpl(u,c,g) {
 			this.w(`adding message template for ${u}`);
+			let nicks={};
+			if(g!=null) {
+				for(const i in this.groups[g].u[u]) {
+					if(!this.groups[g].u[u][i]) continue;
+					this.w(`adding user ${i} to visible list`);
+					nicks[i]=true;
+				}
+			}
+			nicks[u]=true;
 			return {
 				'content':	(c!=undefined?c:null),
 				'nick':			this.nicks[u].n,
@@ -1861,14 +2507,17 @@ window.app=createApp({
 				'rating':		null,
 				status:			this.msgStatusId('new'),
 				edited:			null,
+				nicks: 			nicks, //for easier access
+				nicksArr:		this.msgUserListAll({nicks:nicks}) //to avoid sorting every time chat is updated
 			}
 		},
-		msgNew(turn,u,u2,c) {
+		msgNew(turn,u,u2,c,g) {
 			this.w(`adding new message to turn ${turn}`);
 			let b=this.brancha(turn)
-			b.msgs.push(this.msgTmpl(u,c));
+			let m=this.msgTmpl(u,c,g);
+			b.msgs.push(m);
 			b.msg=this.msgTotal(turn,this.branch(turn))-1;
-			this.branchNew(turn+1,u2);
+			this.branchNew(turn+1,u2,g);
 		},
 		msgGet(t,b,m) {
 			return this.turns[t].branches[b].msgs[m];
@@ -1954,14 +2603,14 @@ window.app=createApp({
 		},
 		msgInited(t,b,m) {
 			let msg=this.msgGet(t,b,m);
-			return msg.status!==this.msgStatusId('new');
+			return msg.status!=this.msgStatusId('new');
 		},
 		msgSideNickUpdate(t,b,m) {
 			//as we store non-normalized links, we have to update manually.
 			if(!this.msgSide(t,b,m)) return 0;
 			if(this.turns[t].role!=='user') return 0;
 			this.w(`it's an unsent user side message, let's update the nick`);
-			this.msgNickSet(t,b,m,this.nick['u']);
+			this.msgNickSet(t,b,m,this.userS("u"));
 		},
 		msgNickSet(t,b,m,u) {
 			const msg=this.msgGet(t,b,m);
@@ -1978,7 +2627,7 @@ window.app=createApp({
 			}
 		},
 		msgRating(i,v) {
-			if(this.msga(i).rating===v) {
+			if(this.msga(i).rating==v) {
 				this.msga(i).rating=null;
 				return;
 			}
@@ -1990,6 +2639,56 @@ window.app=createApp({
 		},
 		msgsa(turn) {
 			return this.brancha(turn).msgs;
+		},
+		msgFilterRow(t) {
+			const msg=this.msga(t);
+			if(this.msgFilter(...this.tbma(t))) {
+				return "filterGray"
+			}
+		},
+		msgUserAdd(msg,u,id) {
+			msg.nicks[u]=true;
+			msg.nicksArr=this.msgUserListAll({nicks:msg.nicks}); //re-sort
+			this.w(`delete add user list ${id}`)
+			delete this.msgUserListOn[id];
+		},
+		msgUserDel(msg,u) {
+			if(!confirm(`Are you sure you wish to delete character ${this.nicks[u].n} from the access list of this message? If you do that, this character will not see the message anymore.`)) return 0;
+			delete msg.nicks[u];
+			msg.nicksArr=this.msgUserListAll({nicks:msg.nicks}); //re-build to remove erased one
+		},
+		msgUserListAvail(msg,t,g) {
+			let users=[];
+			for(const u in this.groups[g].u) {
+				//this.w(`${this.userVis(t,u)} ${!msg.nicks.hasOwnProperty(u)}`)
+				if(this.userVis(t,u)&&!msg.nicks.hasOwnProperty(u)) {
+					users.push(u);
+				}
+			}
+			//this.w({'available users':users});
+			return users.sort((a,b)=>(this.nicks[a].n.localeCompare(this.nicks[b].n)));
+		},
+		msgUserListAllAvail(msg,g) {
+			let users=[];
+			users.push(...this.msgUserListAvail(msg,"u",g));
+			users.push(...this.msgUserListAvail(msg,"a",g));
+//			this.w(`${users}`);
+			return users;
+		},
+		msgUserList(msg,t) {
+			let users=[];
+			for(const u in msg.nicks) {
+				this.w(`checking if ${u} ${t} is visible the msg list`);
+				if(this.userVis(t,u)&&msg.nicks[u]) users.push(u);
+			}
+			return users.sort((a,b)=>(this.nicks[a].n.localeCompare(this.nicks[b].n)));
+		},
+		msgUserListAll(msg) {
+			let users=[];
+			users.push(...this.msgUserList(msg,"u"));
+			users.push(...this.msgUserList(msg,"a"));
+			this.w(`list all users of the message: ${users}`);
+			return users;
 		},
 
 		//chat methods
@@ -2025,7 +2724,8 @@ window.app=createApp({
 			let ms=[];
 			const side=this.msgSide(...this.tbma(turn));
 			this.w(`chat at turn ${turn}`);
-			this.w(`reply by user ${this.nick['u']} (${this.nicks[this.nick['u']].n})`);
+			const uid=this.userS("u"),aid=this.userS("a");
+			this.w(`reply by user ${uid} (${this.nicks[uid].n})`);
 			
 			if(m===1) {
 				this.w('user is sending new msg');
@@ -2034,7 +2734,7 @@ window.app=createApp({
 					turn--;
 				} else {
 					this.w("create a next turn/branch");
-					this.turnnew(turn,this.nick['u']);
+					this.turnnew(turn,uid,this.group);
 				}
 				
 				turn++;
@@ -2042,8 +2742,8 @@ window.app=createApp({
 				b.msgs[b.msg]['side']=0;
 				b.msgs[b.msg].content=this.prompt.trim();
 				this.msgaStatusSet(turn,'done');
-				ms=this.chatForAi(turn,this.config.rooms.v,this.nick['a'],0);
-				this.turnnew(turn,this.nick['a']);
+				ms=this.chatForAi(turn,this.config.rooms.v,aid,0);
+				this.turnnew(turn,aid,this.group);
 				turn++;
 				this.prompt='';
 			} else if (m===2||m===3) {
@@ -2053,10 +2753,10 @@ window.app=createApp({
 					this.chatUserSide(turn,null);
 					return;
 				} else {
-					this.msgNew(turn,this.nick['a'],this.nick['u'],null);
+					this.msgNew(turn,aid,uid,null,this.group);
 					this.w(`user is asking for a new ai message, mode=${m}`);
 					const redo=m===3?1:0
-					ms=this.chatForAi(turn-1,this.config.rooms.v,this.nick['a'],redo);
+					ms=this.chatForAi(turn-1,this.config.rooms.v,aid,redo);
 				}
 			}
 			this.chatSend(
@@ -2075,7 +2775,7 @@ window.app=createApp({
 			
 			let opt						=this.chatOptions();
 			this.working			=1;
-			opt['model']			=this.models[this.model].n;
+			//opt['model']			=this.models[this.settings.req.model.v.v].tag;
 			opt['messages']		=msgs;
 			opt['stream']			=this.stream;
 			this.w({turn:turn,branch:branch,body:opt});
@@ -2096,6 +2796,7 @@ window.app=createApp({
 				const rrtp		=new RegExp(`${this.rgEsc(t.chatRatingMod(1,''))}`,'g');
 				const rrtm		=new RegExp(`${this.rgEsc(t.chatRatingMod(0,''))}`,'g');
 				const rn			=new RegExp('^\\s*(?:as )?'+this.rgEsc(m.nick)+':[\\s\\r\\n]*','gim');
+				const remoji	=new RegExp('[\\p{Extended_Pictographic}\\p{Emoji_Modifier_Base}\\p{Emoji_Presentation}]*','gum');
 				let res='',buf='';
 				m.content	='';
 				
@@ -2106,8 +2807,8 @@ window.app=createApp({
 						m.content+=buf;
 						t.w({'Stream complete':res});
 						//there is a bug when ollama might not send anything for prompt_eval_count
-						if(res.hasOwnProperty('eval_count')) m.tr[t.models[t.model].n]=res.eval_count;
-						if(res.hasOwnProperty('prompt_eval_count')) m.tp[t.models[t.model].n]=res.prompt_eval_count;
+						if(res.hasOwnProperty('eval_count')) m.tr[t.models[t.settings.req.model.v.v].n]=res.eval_count;
+						if(res.hasOwnProperty('prompt_eval_count')) m.tp[t.models[t.settings.req.model.v.v].n]=res.prompt_eval_count;
 						t.msgStatusSet(turn,branch,msg,'done');
 						t.cancel=0;
 						return;
@@ -2131,8 +2832,9 @@ window.app=createApp({
 						buf+=res.message.content;
 						//t.w(`${buf} ${rn}`)
 						buf=buf.replace(rrtp,'').replace(rrtm,'').replace(rn,'');
+						if(t.config.emojiNo.v) buf=buf.replace(remoji,'');
 						m.trm++;
-						if(m.status===0) {
+						if(m.status==0) {
 							if(t.config.resClean.v) {
 								if(buf.length<t.config.resBufCleanSize.v) {//>
 									t.w(`accumulating buffer at start ${buf}`);
@@ -2151,6 +2853,7 @@ window.app=createApp({
 					if(this.config.resClean.v) {
 						m.content=m.content.trim().replace(rrtp,'').replace(rrtm,'').replace(rn,'');
 					}
+					if(this.config.emojiNo.v) buf=buf.replace(remoji,'');
 				});
 				return 1;
 			}).catch((error)=>{
@@ -2163,12 +2866,13 @@ window.app=createApp({
 		chatForAi(turn,rooms,u,redo) {
 			let ms=[],chat='',add=[],sys='',wRating='',ratingUsed=0;
 
-			this.w(`building list of chat for ai, up to ${turn}`);
+			this.w(`building list of chat for ai ${u} ${this.nicks[u].n}, up to ${turn}`);
 
-			sys=this.system[this.nick['a']];
+			sys=this.nicks[u].system;
 
 			if(this.config.replyWithRating.v) {
 				for(let i=1;i<=turn;i++) { //>
+					if(!this.msga(i).nicks[u]) continue;
 					const rating=this.msga(i).rating;
 					this.w(`checking rating ${rating}`)
 					if(rating!=null&&rating!=='') {
@@ -2194,8 +2898,9 @@ window.app=createApp({
 				chat='';
 
 				for(const m of this.msgsa(turn+1)) { //>
-					if			(m.rating===1) { good.push(m.content) }
-					else if	(m.rating===0) { bad.push(m.content)  }
+					if(!m.nicks[u]) continue;
+					if			(m.rating==1) { good.push(m.content) }
+					else if	(m.rating==0) { bad.push(m.content)  }
 				}
 				
 				let exQ=this.config.badExForSideReply.v
@@ -2239,15 +2944,15 @@ window.app=createApp({
 				chat=`${wRating}\n`;
 			}
 
-			if(this.instr[u].length) {
+			if(this.nicks[u].instr.length) {
 				this.w(`we have instr text, let's see if we should add it: redo=${redo}, config:${this.config.instrWithSideRating.v}`);
 				if(
 							(redo&&this.config.instrWithSideRating.v)
 						||(!redo)
 				) {
-					if(this.instr[u].length) {
+					if(this.nicks[u].instr.length) {
 						this.w(`adding instr`);
-						chat+=`Important: ${this.nicks[u].n}, these are your thoughts to consider in reply: ${this.instr[u]}`;
+						chat+=`Important: ${this.nicks[u].n}, these are your thoughts to consider in reply: ${this.nicks[u].instr}`;
 						chat+="\n\n";
 					} else {
 						this.w('instr is empty');
@@ -2272,6 +2977,8 @@ window.app=createApp({
 			if(rooms) {
 				this.w("room mode, let's concatenate everything");
 				for(let i=1;i<=turn;i++) { //>
+					if(!this.msga(i).nicks[u]) continue;
+
 					const tmp=this.chatAiTurn2Ms(i,u);
 					chat+=`${tmp.content}\n\n`;
 				}
@@ -2283,6 +2990,7 @@ window.app=createApp({
 			} else {
 				this.w("chat mode, let's add everything as messages");
 				for(let i=1;i<=turn;i++) { //>
+					if(!this.msga(i).nicks[u]) continue;
 					const tmp	=this.chatAiTurn2Ms(i,u)
 					let role;
 					this.chatAiMsPush(ms,tmp.content,tmp.role);
@@ -2301,7 +3009,7 @@ window.app=createApp({
 			ms.push({ content:c,role:r });
 		},
 		chatAiAdd(a,n,c,rt) {
-			a.push(this.msgTmpl(n,c));
+			a.push(this.msgTmpl(n,c,null));
 			//hack for chat style messages which needs role, making it look like it's user msg
 			if(this.nicks[n].t==='u') {
 				a[a.length-1]['role']='user';
@@ -2316,8 +3024,8 @@ window.app=createApp({
 			const tmp	=this.turns[i];
 			const m		=this.msga(i);
 			let role;
-			if(this.turnRole(i)==='assistant'&&this.config.otherAiAsUser.v&&m.nId!==u) {
-				this.w(`overriding role of ${m.nick} to make it user`);
+			if(this.turnRole(i)==='assistant'&&this.config.otherAiAsUser.v&&m.nId!=u) {
+				this.w(`overriding role of ${u}!=${m.nId} ${m.nick} to make it user`);
 				role='user';
 			} else {
 				role=tmp.role;
@@ -2346,7 +3054,7 @@ window.app=createApp({
 		},
 		chatRatingMod(rt,s) {
 			let tmp='';
-			if(rt===1) {
+			if(rt==1) {
 				tmp='((+))';
 			} else if(rt===0) {
 				tmp='((-))'
@@ -2355,11 +3063,12 @@ window.app=createApp({
 		},
 		chatUserSide(turn,c) {
 			let b=this.brancha(turn);
-			this.msgNew(turn,this.nick['u'],this.nick['a'],(c??'')); //contents needs to be inited
-			b.msgs[b.msg]['side']		=1;
+			this.msgNew(turn,this.userS("u"),this.userS("a"),(c??''),this.group); //contents needs to be inited
+			b.msgs[b.msg]['side']=1;
 			this.msgaStatusSet(turn,'waiting');
 			this.w(`user is asking for a new own message at ${turn}`);
 			turn=this.turn=turn-1;
+			this.branchu(turn);
 			this.w(`resetting turn to ${this.turn}`);
 		},
 		chatOptions() {
@@ -2382,6 +3091,8 @@ window.app=createApp({
 						if(j=='') continue;
 						opt[i].push(j+'');
 					}
+				} else if(sets[i].t==='sel') {
+					opt[i]=sets[i].v.l[sets[i].v.v].tag;
 				} else {
 					opt[i]=sets[i].v+'';
 				}
@@ -2423,6 +3134,7 @@ window.app=createApp({
 				this.w('working right now, leaving');
 				return;
 			}
+			console.trace();
 			
 			this.connectionErr='';
 			this.connection		=0;
@@ -2447,7 +3159,8 @@ window.app=createApp({
 				"method": "GET",
 			}).then(r=>{
 				if(!r.ok) throw new Error(r.statusText);
-
+				return r;
+			}).then((r)=>{
 				if(url==this.urlProxy()) {
 					this.w(`we couldn't connect to original url but could to proxy, use proxy ${url}`);
 					this.proxy=1;
@@ -2458,8 +3171,10 @@ window.app=createApp({
 				}
 				this.working=0;
 				this.connectionErr=''
+				this.w(`connection established, running models listing`);
 				this.list();
-			}).then().catch((error)=>{
+				return 1;
+			}).catch((error)=>{
 				this.connectionErr=error.message;
 				console.error(`network error ${error.message}`);
 
@@ -2485,9 +3200,12 @@ window.app=createApp({
 	}
 })
 
-app.component('nick',{
+app.component(
+	'css',{
+		template: '#tmplCss'
+	}).component('nick',{
 		template: '#tmplNick',
-		props: ['id','name']
+		props: ['id','name'],
 	}).component('menun', {
 		template: '#tmplMenuN',
 		props: ['k','t'],
@@ -2495,6 +3213,102 @@ app.component('nick',{
 	}).component('fields', {
 		template: '#tmplField',
 		props: ['i','n','nShow'],
+	}).component('nickadd', {
+		template: '#tmplNickAdd',
+		props: ['t','group','nicks','groups','amountNicks'],
+		computed: {
+			ut() {
+				return (this.t==="u"?"user":"ai");
+			},
+			uListAvail() {
+				return this.msgUserListAvail({nicks:this.groups[this.group].u},this.t,0);
+			},
+		},
+		data() {
+			return {
+				userGroupAddId:null,
+				userNickA: '',
+			}
+		},
+		watch: {
+			'uListAvail'(v) {
+				if(!this.uListAvail.length) return 0;
+				this.userGroupAddId=this.uListAvail[0];
+			}
+		},
+		methods: {
+			sel(i) {
+				this.userGroupAddId=i;
+				return false;
+			},
+			userAdd() {
+				this.$parent.userAdd(this.t,this.userNickA);
+				this.$parent.userGroupAdd(this.group,this.amountNicks.idNext-1);
+				this.userNickA='';
+			},
+			userGroupAdd() {
+				this.$parent.userGroupAdd(this.group,this.userGroupAddId)
+				this.userGroupAddId=null;
+			},
+			msgUserListAvail(msg,t,g) {
+				return this.$parent.msgUserListAvail(msg,t,g);
+			}
+		},
+	}).component('heardBy', {
+		template: '#tmplHeardBy',
+		props: ['u','nicks','groups','group','config'],
+		computed: {
+			users() {
+				//yes, i don't want to write that idiotic hash to array thing :).
+				let arr=[[],[]];
+				const g=this.groups[this.group].u[this.u];
+				for(const i in g) { if(this.nicks[i].t==='u') arr[0].push(i) }
+				for(const i in g) { if(this.nicks[i].t==='a') arr[1].push(i) }
+				return [
+					...arr[0].sort((a,b)=>(this.nicks[a].n.localeCompare(this.nicks[b].n))),
+					...arr[1].sort((a,b)=>(this.nicks[a].n.localeCompare(this.nicks[b].n)))
+				];
+			}
+		}
+	}).component('talkers', {
+		template: '#tmplTalkers',
+		props: ['nicks','t','groups','group','config'],
+		methods: {
+			userS(t) {
+				return this.$parent.userS(t);
+			},
+			userVis(id) {
+				return this.$parent.userVis(this.t,id);
+			},
+			groupNext() {
+				this.$parent.groupNext();
+			},
+			groupPrev() {
+				this.$parent.groupPrev();
+			},
+			userCh() {
+				this.$parent.userCh(this.t);
+			}
+		}
+	}).component('userList', {
+		template: '#tmplUserList',
+		props: ['nicks','t','groups','group'],
+		methods: {
+			userVis(id) {
+				return this.$parent.userVis(this.t,id);
+			},
+			userGroupDel(id) {
+				this.$parent.userGroupDel(this.group,id);
+			},
+			userDel(id) {
+				this.$parent.userDel(id);
+			},
+			userTypeCh(id) {
+				this.$parent.userTypeCh(id);
+			},
+		}
+	}).component('help', {
+		template: '#tmplHelp',
 	});
 
 window.ap=app.mount('#app');

@@ -7,10 +7,12 @@ Ollama server.
 
 It looks like this:
 
-![image](https://github.com/drazdra/ollama-chats/assets/133811709/23d1fa2c-5b84-4b6d-a3ec-6fca90a152ab)
-![image](https://github.com/drazdra/ollama-chats/assets/133811709/545dad85-7263-42f8-b79e-aeacc4cc4a65)
-![image](https://github.com/drazdra/ollama-chats/assets/133811709/64d89353-3c76-41a6-925e-7e91ae919426)
-![image](https://github.com/drazdra/ollama-chats/assets/133811709/ae5f3580-fc6d-4567-98db-ae3acb722475)
+![image](https://github.com/drazdra/ollama-chats/blob/main/screenshots/1.png)
+![image](https://github.com/drazdra/ollama-chats/blob/main/screenshots/2.png)
+![image](https://github.com/drazdra/ollama-chats/blob/main/screenshots/3.png)
+![image](https://github.com/drazdra/ollama-chats/blob/main/screenshots/4.png)
+![image](https://github.com/drazdra/ollama-chats/blob/main/screenshots/5.png)
+![image](https://github.com/drazdra/ollama-chats/blob/main/screenshots/6.png)
 
 You can run it just from disk in your browser, if you set an evironment variable or you can run it in a local web-server, like NGINX, Apache, etc.
 The reason for that is that Ollama's API is done via a local network server, and 
@@ -34,7 +36,7 @@ Initially (version 0) i had spent several days to code this thing. My goals were
 5. browser based.
 6. keyboard friendly.
  
-And here we are. Whole thing is less than 30KB right now (actually 75KB already, lol), that's including the
+And here we are. Whole thing is less than 30KB right now (actually 112KB already, lol), that's including the
 excerpts from Ollama documentation, html code and help page. The only imported thing is Vue
 which is a great web framework, probably used by millions of people, so it's pretty safe.
 (in a paranoid mode i didn't even use Punia, sigh).
@@ -115,8 +117,11 @@ Now, let me list the features this thing has:
 13. It can work in two modes, sending messages as a single prompt and as an array of user messages. Models treat these differently, so you can try what fits you the best.
 14. Side messages can use your rating to instruct the model to produce something better. For that just use ctrl+right or right click on an arrow :).
 15. It has white and dark themes. Though white one is scary :).
-16. And many more features :).
-17.	Let's talk about lower menu:
+16. You can create characters with totally different "memory" (context). For example, 2 of your characters can do something together and the 3rd character won't know anything about that, poor thing :). This allows a much more interesting roleplays.
+17. You can have separate settings per AI character, which means you can use different temperature etc and even different models for different characters!
+18. You can switch manually controlled character to be AI controlled and vice versa :). So you can make AI to play for the char you used to be, and you instead would continue to play for AI's char. Of course you can do it with any of the charactes in the story.
+19. And many more features :).
+20.	Let's talk about lower menu:
     
 #### 12.1. Settings: 
 Allows you to configure the script itself and Ollama. If the parameter value is left empty, Ollama uses values from its modelfile, or default ones if modelfile doesn't have these. Parameters are applied upon each request, and according to Ollama's docs, they should change the rules on the fly.
@@ -251,6 +256,25 @@ New version v1.6, it's a minor release.
 * Minor improvement in cleaning garbage in replies.
 
 * Bottom menu removes functional button numbers when you switch off these in the settings.
+
+## Changes (v.1.9 2024.04.19)
+New version v1.9 a huge major release. The changes are vast, so if you catch a bug (or a dozen), let me know :).
+
+* Major *unique* feature: each character can have its own context memory. And each message has its own "access" list where you can set who can actually "know" what happens in that turn.
+
+* New major feature: you can make different settings per character! Now each char can have its own settings, including the model.
+
+* New major feature: now you can switch manually controlled character to become AI controlled and vice versa :). So you can take control of any characted in the roleplay, letting AI play for what used to be your one.
+
+* New feature: now chars can be organized into "presets" which are groups for fast access with configured access settings. So, you can have 2 groups of chars and easily switch between these when you want to continue the dialog for another group.
+
+* Models select list now a part of the settings and can be added/removed to the quick access list of settings
+
+* A setting to auto-remove emojis, in case if you don't want these.
+
+* fixed several bugs found in v1.6.
+
+* NOTE: i've added vue.js file to the project, and removed the link to CDN where it was loaded from before. The reason is that CDN was done for some people recently and the script stopped working, which is not good. So i "bundle" the vue with it. You need 2 files now.
 
 ### For people who wish to parse the saved file:
 P.S. If you wish to parse the saved file for replies, here is structure:
