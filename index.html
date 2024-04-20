@@ -6,7 +6,7 @@
 <script type="importmap">
 	{
 		"imports": {
-			"vue": 		"https://unpkg.com/vue@3/dist/vue.esm-browser.js"
+			"vue": 		"https://unpkg.com/vue@3/dist/vue.esm-browser.prod.js"
 		}
 	}
 </script>
@@ -1812,6 +1812,11 @@ window.app=createApp({
 				t.w('restore data links to computed vals');
 				t.nicks[-1].n=computed(()=>t.config.sysNick.v);
 				t.settingsGlobal.req.model.v.l=computed(()=>t.models);
+				for(let u in t.nicks) {
+					u=t.nicks[u];
+					if(!u.hasOwnProperty('settings')) continue;
+					u.settings.req.model.v.l=computed(()=>t.models);
+				}
 				
 				t.w(`finished upgrading to version: ${t.configGlobal.version.v}`);
 				
