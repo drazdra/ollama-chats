@@ -1,4 +1,4 @@
-# ollama-chats v1.9.
+# ollama-chats v1.9.2.
 Ollama chat client in Vue, everything you need to do your private text rpg in browser, with any amount of different characters.
 
 ## What this is..
