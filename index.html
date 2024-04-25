@@ -166,18 +166,18 @@ Ctrl+right or right click will generate a new message trying to use the messages
 					</template>
 				</tr>
 			</template>
-				<tr v-if='this.turnNotLast(turn)'>
-					<td></td>
-					<td class='lnk'>
-						<div class='center' @click='this.turnDown(0)'>
-							There is more in the chat below, totally: {{turnLast(turn)-turn}} message(s), press down or click here to see.
-						</div>
-						<div class='center' @click='this.turnDown(1)'>
-							Press shift+down or click here to show all the messages below
-						</div>
-					</td>
-					<td></td>
-				</tr>
+			<tr v-if='this.turnNotLast(turn)'>
+				<td></td>
+				<td class='lnk'>
+					<div class='center' @click='this.turnDown(0)'>
+						There is more in the chat below, totally: {{turnLast(turn)-turn}} message(s), press down or click here to see.
+					</div>
+					<div class='center' @click='this.turnDown(1)'>
+						Press shift+down or click here to show all the messages below
+					</div>
+				</td>
+				<td></td>
+			</tr>
 			<tr v-if='config.stories.v&&turns.length>1'>
 				<td></td>
 				<td class='contextFilter' colspan='2' title='Filters the messages of context history by who was meant to read them. You can do it to see either what Ai will see or just the history. "Every1" shows all the messages ever sent to chat. If you have both characters selected, you get one more checkbox that can be "AND" / "OR". "And" means you see only messages visible for BOTH selected characters - that is you see everything they BOTH meant to see. If one of them did not see something, you do not see it in this mode. "OR", on other hand, means you see ALL of the messages visible by any of these characters (in that some message of yours you see might not not be visible Ai, and some of the messages sent by Ai might not be meant for you to see)'>
@@ -192,7 +192,7 @@ Ctrl+right or right click will generate a new message trying to use the messages
 				</td>
 				<td></td>
 			</tr>
-			<tr>
+			<tr v-show='pState["control"]'>
 				<td colspan=3 class='center'>
 					<br>
 					<talkers t='u' :config='config' :group='group' :groups='groups' :nicks='nicks'></talkers>
@@ -348,21 +348,59 @@ Ctrl+right or right click will generate a new message trying to use the messages
 					</template>
 				</td>
 			</tr>
+			<tr v-if='pState["opt"]' id='opt'>
+				<td colspan='3' class='center'>
+					<opt :branch='branchac':config='config' :settings='settings' :opt='opt' :p-state='pState'></opt>
+				</td>
+			</tr>
 			<tr>
 				<td colspan=3 class='center' id='menu'>
-					<span class='lnk' @click='pToggle("howto")'><menun k='F1' t='Help'/></span> | 
-					<span class='lnk' @click='save()'><menun k='F2' t='Save'/></span> | 
-					<span>
-						<input id='load' type='file' @change='load()'/>
-						<label class='lnk' for="load" id="loadlabel"><menun k='F3' t='Load'></label>
-					</span> | 
-					<span class='lnk' @click='pToggle("sys")'><menun k='F4' t='Sys prompt'/></span> |
-					<span class='lnk' @click='pToggle("instr")'><menun k='F5' t='Instr'/></span> |
-					<span class='lnk' @click='list()'><menun k='F6' t='Reload models'/> </span> |
-					<span class='lnk' @click='pToggle("pull")'><menun k='F7' t='Pull'/></span> |
-					<span class='lnk' @click='this.prune()'><menun k='F8' t='Prune'/></span> | 
-					<span class='lnk' @click='pToggle("sets")'><menun k='F9' t='Sets'/></span> |
-					<span class='lnk' @click='close()'><menun k='F10' t='Quit'/></span>
+					<table v-if='pState["menu"]'>
+						<tr>
+							<td></td>
+							<td><span class='lnk' @click='pToggle("howto")'><menun k='F1' t='Help'/></span></td>
+							<td>|</td>
+							<td><span class='lnk' @click='save()'><menun k='F2' t='Save'/></span></td>
+							<td>|</td>
+							<td><span><input id='load' type='file' @change='load()'/><label class='lnk' for="load" id="loadlabel"><menun k='F3' t='Load'></label></span></td>
+							<td>|</td>
+							<td><span class='lnk' @click='pToggle("sys")'><menun k='F4' t='Sys prompt'/></span></td>
+							<td>|</td>
+							<td><span class='lnk' @click='pToggle("instr")'><menun k='F5' t='Instr'/></span></td>
+							<td>|</td>
+							<td><span class='lnk' @click='list()'><menun k='F6' t='Reload models'/> </span></td>
+							<td>|</td>
+							<td><span class='lnk' @click='pToggle("pull")'><menun k='F7' t='Pull'/></span></td>
+							<td>|</td>
+							<td><span class='lnk' @click='this.prune()'><menun k='F8' t='Prune'/></span></td>
+							<td>|</td>
+							<td><span class='lnk' @click='pToggle("sets")'><menun k='F9' t='Sets'/></span></td>
+							<td>|</td>
+							<td><span class='lnk' @click='quit()'><menun k='F10' t='Quit'/></span></td>
+						</tr>
+						<tr>
+							<td>Shift+&nbsp;</td>
+							<td><span class='gray'><menun k='F1' t='None'/></span></td>
+							<td>|</td>
+							<td><span class='gray'><menun k='F2' t='None'/></span></td>
+							<td>|</td>
+							<td><span class='gray'><menun k='F3' t='None'/></span></td>
+							<td>|</td>
+							<td><span class='gray'><menun k='F4' t='None'/></span></td>
+							<td>|</td>
+							<td><span class='gray'><menun k='F5' t='None'/></span></td>
+							<td>|</td>
+							<td><span class='gray'><menun k='F6' t='None'/></span></td>
+							<td>|</td>
+							<td><span class='gray'><menun k='F7' t='None'/></span></td>
+							<td>|</td>
+							<td><span class='gray'><menun k='F8' t='None'/></span></td>
+							<td>|</td>
+							<td><span class='lnk' @click='optToggle()'><menun k='F9' t='Optimize'/></span></td>
+							<td>|</td>
+							<td><span class='gray'><menun k='F10' t='None'/></span></td>
+						</tr>
+					</table>
 				</td>
 			</tr>
 		</template>
@@ -657,8 +695,209 @@ Ctrl+right or right click will generate a new message trying to use the messages
 			<li>Enjoy.</li>
 		</ol>
 	</div>
+	<div id='tmplOpt'>
+		<template v-if='!opt.run'>
+			<table id='optL' >
+				<tr>
+					<td colspan='5'>
+						<p class='understroke center'>&nbsp;</p>
+						<p class='green center'>
+							<span class='header'>Configure here ranges of parameters to try, per model.</span>
+							<br>
+							<span @click='pToggle("optHelp")' class='lnk'>(click for a short instruction)</span>
+						</p>
+						<transition name='slide-fade'>
+							<div v-if='pState["optHelp"]' id='optHelp' :key='pState["optHelp"]'>
+								<p class='justify'>
+									Here you can try to optimize parameters to get the replies you like.
+									How? Simple, it allows you to set starting value and final value of the range to try,
+									as well as step size for next iteration. Then you just see which parameter combinations
+									produce the best replies.
+								</p>
+								<p>
+									<ul class='justify'>
+										<li>
+											IMPORTANT: always set SEED to start=1, end=1, step=1 and toggle on the "use"
+											for seed! That guarantees, that replies models produce do not have
+											a random element to them. I can not set this as default for 
+											logical reasons of various use cases.
+										</li>
+										<li>
+											Before starting this, remember to set everything in settings to 
+											default, unless you actually want to use your manual configuration
+											together with this. 
+										</li>
+										<li>
+											To make it work you need to set Start value of the range you want to try,
+											End value (that is, when to stop) and the Step value, that is how much
+											we should add at every next try. For example: temperature start=1,
+											end=5, step=2 will try to get replies for temperatures: 1, 3, 5.
+										</li>
+										<li>
+											This thing works PER model. Beautiful. It means, you can set
+											separate paramaters to try per each model you wish to try. To do that,
+											simply select the model you wish to try and configure parameters to try,
+											then switch to a second model and repeat for the second one, etc. Once
+											you click "Run" all configured models are tried, one by one.
+											Non-configured models are skipped.
+										</li>
+										<li>
+											Most important parameters to play with are: temperature, top_k, top_p,
+											mirostat, single prompt.
+										</li>
+										<li>
+											Do not use small steps. Like, if you configure trying temperatures
+											from 1 to 300 with the step "1", you get 300 replies to wait for.
+											Now, if you you also add to that top_k 1 to 300 with the step 1, that's
+											300*300 (every possible temperature vs every possible top_k) which makes
+											it 90000 replies to wait for - if your setup generates a reply in 1
+											second, that's 25 hours to wait :). So what's your strategy?
+											Simply provide a very big steps, like temperature 1 to 300, step 50.
+											That's only 6 replies. And top_k 1 to 300 is 6 more. So you get
+											36 replies to wait for. If you add to that top_p from 1 to 100, step 20,
+											you get 5 more steps, which makes it 36*5=180 replies. Even that is
+											a lot, unless your setup is very fast. But with these you will see what 
+											these changes do to replies, so you can figure out what rocks your boat.
+											Once you know the approximate good parameters combination, you can repeat 
+											the process but in that small nice area with a smaller ranges and steps.
+										</li>
+										<li>
+											The results are auto-normalized for your convenience. That means, that
+											all identical replies are collapsed into one, all the
+											parameter combinations that produced that very same result are placed 
+											next to it.
+										</li>
+										<li>
+											Do not try to change settings during the work, it makes everything
+											meaningless.
+										</li>
+										<li>
+											Before starting this experiment, first have a your typical chat with ai,
+											so it would have some context. Then you can actually see what your
+											configuration do in a real chat. Using this with just "hi" is pointless,
+											unless you search for an ideal config to run functions or something like 
+											that.
+										</li>
+									</ul>
+								</p>
+							</div>
+						</transition>
+					</td>
+				</tr>
+				<tr>
+					<td colspan='5' class='center'>
+						Settings for:<fields n='' :i='settings.req.model' :n-show='false'/>
+					</td>
+				</tr>
+				<tr>
+					<td colspan='5' class='center' id='optTimes'>
+						Amount of replies per combination: <input v-model='opt[settings.req.model.v.v].times'>
+					</td>
+				</tr>
+				<tr>
+					<td class='param' title='Name of the parameter to try to be changed'>Param</td>
+					<td class='start' title='Starting value of this parameter'>Start</td>
+					<td class='end' title='Ending value of this parameter'>End</td>
+					<td class='step' title='Step we will go by, walking from start value to end value, for example from 1 to 5 step can be=1.'>Step</td>
+					<td class='use' title='Should we use this parameter in our trial or not.'>Use</td>
+				</tr>
+				<template v-for='j of [config,settings.options,settings.req]'>
+					<template v-for='(i,ind) of j'>
+						<template v-if='i.opt===true'>
+							<tr>
+								<td class='param'>{{i.name??ind}}:</td>
+								<template v-if='i.f!="cb"&&i.f!="sel"'>
+									<td class='start'><input class='understroke' @keyup="optChUse(settings.req.model.v.v,ind)" v-model='opt[this.settings.req.model.v.v]["v"][ind]["start"]'></td>
+									<td class='end'><input class='understroke' @keyup="optChUse(settings.req.model.v.v,ind)" v-model='opt[this.settings.req.model.v.v]["v"][ind]["end"]'></td>
+									<td class='step'>
+										<input class='understroke' @keyup="optChUse(settings.req.model.v.v,ind)" v-model='opt[this.settings.req.model.v.v]["v"][ind]["step"]'>
+									</td>
+								</template>
+								<template v-else>
+									<td colspan='3' class='step'>a true/false param, nothing to configure</td>
+								</template>
+								<td class='use'>
+									<input class='understroke' type='checkbox' v-model='opt[this.settings.req.model.v.v]["v"][ind]["use"]'>
+								</td>
+							</tr>
+						</template>
+					</template>
+				</template>
+				<tr>
+					<td colspan='5' class='right'><span class='lnk' id='optRun' title="start the experiment" @click='optimizeRun()'>->Run</span></td>
+				</tr>
+			</table>
+		</template>
+		<template v-else>
+			<p class='header'>Running.. {{opt.count.d}} / {{opt.count.t}} &nbsp;&nbsp;<span class='lnk' @click='optimizeCancel()'>Cancel</span></p>
+			<template v-if='opt.vals.length||opt.count.t>0'>
+				<table class='optResP' id='optResCur'>
+					<tr>
+						<td :colspan='opt.vals.length+1' class='center'>{{settings.req.model.v.l[opt.m].n}}<br></td>
+					</tr>
+					<template v-if='1'>
+						<opt-res-vals-header :m='opt.res[opt.m]'></opt-res-vals-header>
+					</template>
+					<template v-if='1'>
+						<opt-res-vals-line 
+							:m='opt.res[opt.m]'
+							:mid='branch.msg+1'
+							:vals='opt.vals'>
+						</opt-res-vals-line>
+					</template>
+				</table><br>
+			</template>
+		</template>
+		<table width='100%' class='center' id='optRes' v-if='opt.count.t>0'>
+			<tr>
+				<td><span class='header'>.. results .. results .. results ..<br></span><span class='lnk rightf' @click='optResSave()'>Export to a file</span></td>
+			</tr>
+			<template v-for='(m,mi) in opt.res'>
+				<template v-if='m.v.length'>
+					<tr>
+						<td class='header'>{{settings.req.model.v.l[mi].n}}</td>
+					</tr>
+					<template v-for='i in m.v' >
+						<tr>
+							<td class='justify'>
+								<opt-res :m='m' :i='i'></opt-res>
+								{{i.c}}
+							</td>
+						</tr>
+					</template>
+				</template>
+			</template>
+		</table>
+	</div>
+	<template id='tmplOptRes'>
+		<table class='rightf optResP'>
+			<template v-if='1'>
+				<opt-res-vals-header :m='m'></opt-res-vals-header>
+			</template>
+			<template v-for='(vals,valsid) in i.v'>
+				<opt-res-vals-line :mid='i.ids[valsid]+1' :vals='vals' :m='m'></opt-res-vals-line>
+			</template>
+		</table>
+	</template>
+	<template id='tmplOptResValsLine'>
+		<tr>
+			<td class='center'>{{mid}}</td>
+			<template v-for='(v,vind) in vals'>
+				<td class='center'>
+					<template v-if='m.k[vind].f=="cb"'>{{v==0?"False":"True"}}</template>
+					<template v-else>{{v}}</template>
+				</td>
+			</template>
+		</tr>
+	</template>
+	<template id='tmplOptResValsHeader'>
+		<tr>
+			<td class='center green' title='side message number in the chat'>#</td>
+			<template v-for='k in m.k'><td class='center green' :title='`${k.name}: ${k.d}`'>{{k.qn??k.name}}</td></template>
+		</tr>
+	</template>
 	<div id='tmplCss'>
-<style>
+<style id='css'>
 html {
 }
 .tmpl {
@@ -731,6 +970,9 @@ select {
 #app {
 	width: 100%;
 }
+li {
+	margin-bottom: 7px;
+}
 #chat {
 	width: 800px;
 	max-width: 800px;
@@ -769,6 +1011,9 @@ select {
 	filter: brightness(50%);
 }
 .filterGray {
+	filter: saturate(0%) brightness(60%);
+}
+.gray {
 	filter: saturate(0%) brightness(60%);
 }
 .msgUserList * {
@@ -822,6 +1067,14 @@ select {
   background: radial-gradient(150% 200%, #052005, #141414);
 }
 .msg:hover {
+}
+#menu table {
+	border-spacing: 0px 5px;
+}
+#menu table td {
+	padding: 1px;
+	text-align: justify;
+	white-space: nowrap;
 }
 #chat .msg, #chat .lastmsg {
 	height: auto;
@@ -919,6 +1172,73 @@ select {
 	border-width: 0 0 0 0;
 	text-align: center;
 }
+#optRes {
+	border-color: mediumseagreen;
+	border-radius: 5px;
+	border-spacing: 0px 15px;
+}
+#optResCur {
+  margin-left: auto;
+  margin-right: auto;
+}
+#optResCur td {
+	padding: 7 10 5 10;
+	border-width: 2px;
+	border-radius: 5px;
+  border-image: linear-gradient(#103510, #313531, #265126) 2/3px 2px 3px 2px;
+}
+.optResP {
+	margin-left: 10px;
+	margin-bottom: 5px;
+	margin-top: -7px;
+}
+#optRes .header {
+	font-size: 16px;
+	color: mediumseagreen;
+	border-image: linear-gradient(to right, #141414, #306530, #306030, #143514) 3/0px 0px 2px 0px;
+}
+#optRes td {
+	padding: 7 10 5 10;
+	word-wrap: break-word;
+	border-width: 2px;
+	border-radius: 5px;
+  border-image: linear-gradient(#103510, #313531, #265126) 2/3px 2px 3px 2px;
+}
+#optRun {
+	font-size: 16px;
+	font-weight: bold;
+}
+#optTimes input {
+	width: 30px;
+	border-image: linear-gradient(to right, #141414, #306530, #306030, #143514) 3/0px 0px 2px 0px;
+}
+#optL {
+	//width: 100%;
+	//border-color: mediumseagreen;
+	//border-radius: 5px;
+  //border-image: linear-gradient(#103510, #141414, #103510) 2/3px 2px 3px 2px;
+}
+#optL .param {
+	text-align: right;
+	min-width: 175px;
+}
+#optL .start, #optL .end, #optL .step {
+	text-align: center;
+	max-width: 100px;
+	vertical-align: middle;
+}
+#optL .step {
+	text-align: cener;
+	min-width: 50px;
+}
+#optL .use {
+	text-align: center;
+	min-width: 35px;
+}
+#optL .start input, #optL .end input, #optL .step input {
+	text-align: center;
+	width: 95px;
+}
 .nowrap * {
 	white-space: nowrap;
 }
@@ -1003,6 +1323,7 @@ select {
 .lnk, a {
 	text-decoration: underline;
 	color: mediumseagreen;
+	cursor: pointer;
 }
 input[type="radio"] {
 	accent-color: green;
@@ -1155,58 +1476,62 @@ window.app=createApp({
 				'sets':	0,
 				'pull': 0,
 				'howto': 0,
+				'optHelp': 0,
+				'opt': 0,
+				'menu':1,
+				'control':1,
 			},
 			configGlobal: {
-				version:						{ name:'Version', v:1.9,def:'',d:'UI version, just for information and upgrades','f':'ro',q:null },
-				themeWhite:					{ name:'Invert colors',v:false,d:"Inverted colors, if you are weird person preferring white backgrounds, you may check this. But it looks scary, beware.",def:false,f:'cb',q:false,qn:'clrs'},
-				setsDescrShow:			{ name:"Show descriptions for configuration values",v:true,d:"Enables showing descriptions for each parameter below parameter's name, otherwise shows only as a tooltip.",def:true,f:'cb',q:null},
-				rooms:							{ name:'Use single prompt to send the chat',v:true,def:true,d:"If true, all messages are concatenated and sent to AI as one big prompt, AI will take all the chat as a single input prompt generated by user. If it's off, chat is sent as a set of messages, then AI can see which messages were created by AI and which ones by user. Which one is better depends on the model.",f:'cb',q:false,qn:'sngl'},
-				replyWithRating:		{	name:'Use rating to instruct model',v:true,d:"Should attempt to instruct model to use the existing rated messages as style examples for replies. Some models react well, some do not. If you didn't rate any answers in the current branch, nothing is changed in the prompt, so if you don't use the rating and do not wish to pollute the prompt, no need to switch it off.",def:true, f:'cb',q:false,qn:'rate' },
-				otherAiAsUser:			{ name:'Other AI personages are "users" for AI',v:true,d:"When multi-message mode is used to send chat log to AI (that is single-message format is off) mark messages of other AI characters as created by the user. If you have 3 personages, only the current character's messages are marked for AI as AI generated ones. Experimental thing, i think the reaction will be model dependant.",def:true,f:'cb',q:false,qn:'ai usr'},
-				stories:						{ name:'Separate personal story for every character',v:false,d:"In all of the other UI i know (on the moment of writing this) characters see all of the chat history. I came up with a new idea, with this feature every personage can have each own context within the chat. For example, you may talk to a character A and do various things. Then you can introduce character B and that character will not know anything about things you did with character A. Every message is marked with the list of characters that can see it. You define it when you send the message for both your message and AI's one. You can see the 'access list' under every message and change it. The chat log is automatically filtered when you choose your and ai chars for next messages. You can change the filter mode under the chat log at the right. Obvious usage for this can be: two different stories intersecting at some point, where one group plans something or does something and another doesn't know about it. A classic scenario of talking on the phone. Or when character 'thinks' and you don't want other characters to know these thoughts, you can with one click remove them from the message's access list. In other words, it makes it possible to simulate real stories and there is no more need to persuade AI that it shouldn't be aware of something in the chat log :). It comes at a cost of more complicated interface. I've spend a lot of time, much more than coding, on coming up with this interface, to make it as convenient as possible and intuitive. It's still harder than usual one but i believe it's a good one and trust me, as obvious as it seems when you see it, it wasn't easy to form the idea into UI :).",def:false,f:'cb',q:true,qn:'strz' },
+				version:						{ name:'Version',v:'1.9.2',def:'',d:'UI version, just for information and upgrades','f':'ro',qn:'ver',q:null,opt:false },
+				themeWhite:					{ name:'Invert colors',v:false,d:"Inverted colors, if you are weird person preferring white backgrounds, you may check this. But it looks scary, beware.",def:false,f:'cb',q:false,qn:'clrs',opt:false},
+				setsDescrShow:			{ name:"Show descriptions for configuration values",v:true,d:"Enables showing descriptions for each parameter below parameter's name, otherwise shows only as a tooltip.",def:true,f:'cb',q:null,opt:false},
+				rooms:							{ name:'Use single prompt to send the chat',v:true,def:true,d:"If true, all messages are concatenated and sent to AI as one big prompt, AI will take all the chat as a single input prompt generated by user. If it's off, chat is sent as a set of messages, then AI can see which messages were created by AI and which ones by user. Which one is better depends on the model.",f:'cb',q:false,qn:'sngl',opt:true},
+				replyWithRating:		{	name:'Use rating to instruct model',v:true,d:"Should attempt to instruct model to use the existing rated messages as style examples for replies. Some models react well, some do not. If you didn't rate any answers in the current branch, nothing is changed in the prompt, so if you don't use the rating and do not wish to pollute the prompt, no need to switch it off.",def:true, f:'cb',q:false,qn:'rate',opt:true },
+				otherAiAsUser:			{ name:'Other AI personages are "users" for AI',v:true,d:"When multi-message mode is used to send chat log to AI (that is single-message format is off) mark messages of other AI characters as created by the user. If you have 3 personages, only the current character's messages are marked for AI as AI generated ones. Experimental thing, i think the reaction will be model dependant.",def:true,f:'cb',q:false,qn:'ai usr',opt:true},
+				stories:						{ name:'Separate personal story for every character',v:false,d:"In all of the other UI i know (on the moment of writing this) characters see all of the chat history. I came up with a new idea, with this feature every personage can have each own context within the chat. For example, you may talk to a character A and do various things. Then you can introduce character B and that character will not know anything about things you did with character A. Every message is marked with the list of characters that can see it. You define it when you send the message for both your message and AI's one. You can see the 'access list' under every message and change it. The chat log is automatically filtered when you choose your and ai chars for next messages. You can change the filter mode under the chat log at the right. Obvious usage for this can be: two different stories intersecting at some point, where one group plans something or does something and another doesn't know about it. A classic scenario of talking on the phone. Or when character 'thinks' and you don't want other characters to know these thoughts, you can with one click remove them from the message's access list. In other words, it makes it possible to simulate real stories and there is no more need to persuade AI that it shouldn't be aware of something in the chat log :). It comes at a cost of more complicated interface. I've spend a lot of time, much more than coding, on coming up with this interface, to make it as convenient as possible and intuitive. It's still harder than usual one but i believe it's a good one and trust me, as obvious as it seems when you see it, it wasn't easy to form the idea into UI :).",def:false,f:'cb',q:true,qn:'strz',opt:false },
 
-				hideEmptyOwn:				{ name:'Hide own empty replies',v:true,def:1,d:'Hide own empty replies (the ones where you just clicked enter). Setting this to false can be useful if you wish to branch a conversation at a turn of your empty reply. Otherwise these just irritate.','f':'cb',q:false,qn:'no emp' },
-				showEmptyOwnSide:		{ name:'Force show own empty replies when there are side-replies',v:true,def:true,d:`Show own empty replies if there are alternative side-replies available, even if hideEmptyOwn is true. Otherwise you wouldn't be able to see prev/next branches if you've sent an empty message, because there would be no 'crossroads' message shown.`,'f':'ro' },
-				emojiNo:						{ name: 'Auto-remove emojis',v:false,def:false,d:"Erase emojis from model's output",f:"cb",q:false,qn:'noemj'},
+				hideEmptyOwn:				{ name:'Hide own empty replies',v:true,def:1,d:'Hide own empty replies (the ones where you just clicked enter). Setting this to false can be useful if you wish to branch a conversation at a turn of your empty reply. Otherwise these just irritate.','f':'cb',q:false,qn:'no emp',opt:false },
+				showEmptyOwnSide:		{ name:'Force show own empty replies when there are side-replies',v:true,def:true,d:`Show own empty replies if there are alternative side-replies available, even if hideEmptyOwn is true. Otherwise you wouldn't be able to see prev/next branches if you've sent an empty message, because there would be no 'crossroads' message shown.`,'f':'ro',opt:false },
+				emojiNo:						{ name: 'Auto-remove emojis',v:false,def:false,d:"Erase emojis from model's output",f:"cb",q:false,qn:'noemj',opt:false },
 
-				resClean:						{ name:'Auto-clean reply from junk',v:true,d:"Should the reply be auto-cleaned of 'Name: ' and other known garbage.",def:true,f:'cb',q:false,qn:'cln' },
-				resBufCleanSize:		{ name:'Buffer size before printing reply',v:10,d:"Buffer size that should be filled before it starts showing your the reply. It's needed to prevent jerking of the reply when we clean it from the litter of names and other marks.",def:10,f:'',q:null},
+				resClean:						{ name:'Auto-clean reply from junk',v:true,d:"Should the reply be auto-cleaned of 'Name: ' and other known garbage.",def:true,f:'cb',q:false,qn:'cln',opt:false },
+				resBufCleanSize:		{ name:'Buffer size before printing reply',v:10,d:"Buffer size that should be filled before it starts showing your the reply. It's needed to prevent jerking of the reply when we clean it from the litter of names and other marks.",def:10,f:'',q:null,opt:false },
 
-				fKeys:							{ name:'Enable F1-F10 keyboard keys for menu',v:true,d:"Allows you to access the bottom menu functions with F1-F10 keys of your keyboard. You can disable it if you don't want to lose 'F5' for page reloading, etc",def:true,f:'cb',q:false,qn:'Fs'},
-				setsQ:							{ name:'Show quick settings',v:true,d:"Shows fields for quick access to settings that you often mayy change. You can configure which one are in the list in settings.",def:true,f:'cb',q:null },
-				msgFontSize: 				{ name:'Font size of the message text',v:'14px',d:'Font size of the message text. As it modifies the inline style and not the css itself, it might be slow on big chats and slow computers.',def:'14px',f:'',q:null},
-				taFontSize: 				{ name:'Font size of the input text areas',v:'14px',d:'Font size of the text in prompt, instr and system prompt text areas.',def:'14px',f:'',q:null},
-				url: 								{	name:'URL',v:"http://127.0.0.1:11434",def:'http://127.0.0.1:11434',d:'URL of the Ollama service',q:null},
-				urlProxy:						{ name:'Default url to search for proxy',v:'http://127.0.0.1/ollama_proxy',d:'If you run Ollama server on another computer it will not allow you a connection, unless you configure the variable "OLLAMA_ORIGINS=url_of_the_ui_page", however instead of changing that variable in your os, you can configure reverse proxy server that replaces your IP with a local one while proxying your request. This parameter defines the address of such server (read readme for more data). The script first tries to connect to the URL you specified above and then also tries this one. If it starts with "http://", it will use it as is, otherwise will try to use the IP from the main url.',def:'http://127.0.0.1/ollama_proxy',f:'',q:null},
-				tokensCount:				{ name:'Show token counts reported by ollama',v:false,d:'Show the count of tokens in messages. As it\'s broken in Ollama, disabled by default. Stores tokens per model as these differ.',def:"false as it's broken in Ollama.", f:'cb',q:false,qn:'tkns' },
-				sysNick:						{ name:'System nick instructing model',v:'World',d:"Sometimes we inject special messages into the stuff sent to AI. For example, bad and good examples. To do that we need to have some name of the user sending it. We could do it on behalf of AI but it's less flexible. This is the nick of that 'special person' that injects hidden messages for AI.",def:'World', f:'',q:false,qn:'s-nick' },
+				fKeys:							{ name:'Enable F1-F10 keyboard keys for menu',v:true,d:"Allows you to access the bottom menu functions with F1-F10 keys of your keyboard. You can disable it if you don't want to lose 'F5' for page reloading, etc",def:true,f:'cb',q:false,qn:'Fs',opt:false },
+				setsQ:							{ name:'Show quick settings',v:true,d:"Shows fields for quick access to settings that you often mayy change. You can configure which one are in the list in settings.",def:true,f:'cb',q:null,opt:false },
+				msgFontSize: 				{ name:'Font size of the message text',v:'14px',d:'Font size of the message text. As it modifies the inline style and not the css itself, it might be slow on big chats and slow computers.',def:'14px',f:'',q:null,opt:false},
+				taFontSize: 				{ name:'Font size of the input text areas',v:'14px',d:'Font size of the text in prompt, instr and system prompt text areas.',def:'14px',f:'',q:null,opt:false},
+				url: 								{	name:'URL',v:"http://127.0.0.1:11434",def:'http://127.0.0.1:11434',d:'URL of the Ollama service',q:null,opt:false},
+				urlProxy:						{ name:'Default url to search for proxy',v:'http://127.0.0.1/ollama_proxy',d:'If you run Ollama server on another computer it will not allow you a connection, unless you configure the variable "OLLAMA_ORIGINS=url_of_the_ui_page", however instead of changing that variable in your os, you can configure reverse proxy server that replaces your IP with a local one while proxying your request. This parameter defines the address of such server (read readme for more data). The script first tries to connect to the URL you specified above and then also tries this one. If it starts with "http://", it will use it as is, otherwise will try to use the IP from the main url.',def:'http://127.0.0.1/ollama_proxy',f:'',q:null,opt:false},
+				tokensCount:				{ name:'Show token counts reported by ollama',v:false,d:'Show the count of tokens in messages. As it\'s broken in Ollama, disabled by default. Stores tokens per model as these differ.',def:false, f:'cb',q:false,qn:'tkns',opt:false },
+				sysNick:						{ name:'System nick instructing model',v:'World',d:"Sometimes we inject special messages into the stuff sent to AI. For example, bad and good examples. To do that we need to have some name of the user sending it. We could do it on behalf of AI but it's less flexible. This is the nick of that 'special person' that injects hidden messages for AI.",def:'World', f:'',q:false,qn:'s-nick',opt:false },
 
-				instrWithSideRating:{ name:'Stil use "instr" for side-replies when side-rating is on ',v:true,d:"Shoud your instruction (instr) be used when you request side-message with rated examples (ctrl+right). Instruction may interefere with the examples as AI gets confused with what you want from it, there are bad examples, good examples and also an instruction for new reply, not mentioning the context. You may switch this off. It has effect only when you request for rated side-replies, otherwise this setting is not used.",def:true, f:'cb',q:false,qn:'s-rate' },
-				badExForSideReply:	{ name:'Use that many -ed side replies for new ones',v:3,d:'When you ask for one more side message from AI clicking ">", you just get a reply generated on the context above. But if you click "ctrl+right", your rated messages are shown to AI as examples. However, showing many negative ones may have the opposite effect as AI just starts copying them. This number defines how many random bad messages from your last turn should be given to AI as an example of how it shouldn\'t talk. Also, setting this high will result in a serious reduction of context window memory. 0 means disable.',def:"3", f:'',q:false,qn:'b-ex' },
-				goodExForSideReply:	{ name:'Use that many +ed side replies for new ones',v:3,d:'Same as above, but for messages with good rating. Unlike with bad messages it is ok to have a lot of these but remember it eats the context memory. Unless you have unlimited vram, don\'t set this high. 0 means disabled.',def:"3", f:'',q:false,qn:'g-ex' },
+				instrWithSideRating:{ name:'Stil use "instr" for side-replies when side-rating is on ',v:true,d:"Shoud your instruction (instr) be used when you request side-message with rated examples (ctrl+right). Instruction may interefere with the examples as AI gets confused with what you want from it, there are bad examples, good examples and also an instruction for new reply, not mentioning the context. You may switch this off. It has effect only when you request for rated side-replies, otherwise this setting is not used.",def:true, f:'cb',q:false,qn:'s-rate',opt:false },
+				badExForSideReply:	{ name:'Use that many -ed side replies for new ones',v:3,d:'When you ask for one more side message from AI clicking ">", you just get a reply generated on the context above. But if you click "ctrl+right", your rated messages are shown to AI as examples. However, showing many negative ones may have the opposite effect as AI just starts copying them. This number defines how many random bad messages from your last turn should be given to AI as an example of how it shouldn\'t talk. Also, setting this high will result in a serious reduction of context window memory. 0 means disable.',def:3,f:'',q:false,qn:'b-ex',opt:false },
+				goodExForSideReply:	{ name:'Use that many +ed side replies for new ones',v:3,d:'Same as above, but for messages with good rating. Unlike with bad messages it is ok to have a lot of these but remember it eats the context memory. Unless you have unlimited vram, don\'t set this high. 0 means disabled.',def:3, f:'',q:false,qn:'g-ex',opt:false },
 			},
 			settingsGlobal: {
 				options: {
-					temperature:		{v:'',t:'n',def:0.8,d:'The temperature of the model. Increasing the temperature will make the model answer more creatively. (Default: 0.8)',q:true,qn:'temp'},
-					num_ctx:				{v:'',t:'n',def:2048,d:'Sets the size of the context window used to generate the next token. (Default: 2048)',q:true,qn:'ctx'},
-					top_k:					{v:'',t:'n',def:40,d:'Reduces the probability of generating nonsense. A higher value (e.g. 100) will give more diverse answers, while a lower value (e.g. 10) will be more conservative. (Default: 40)',q:true},
-					top_p:					{v:'',t:'n',def:0.9,d:'Works together with top-k. A higher value (e.g., 0.95) will lead to more diverse text, while a lower value (e.g., 0.5) will generate more focused and conservative text. (Default: 0.9)',q:true},
-					num_thread:			{v:'',t:'n',def:'',d:'Sets the number of threads to use during computation. By default, Ollama will detect this for optimal performance. It is recommended to set this value to the number of physical CPU cores your system has (as opposed to the logical number of cores).',q:false,qn:'thr'},
-					repeat_last_n:	{v:'',t:'n',def:64,d:'Sets how far back for the model to look back to prevent repetition. (Default: 64, 0 = disabled, -1 = num_ctx)',q:true,qn:'rep_l'},
-					repeat_penalty:	{v:'',t:'n',def:1.1,d:'Sets how strongly to penalize repetitions. A higher value (e.g., 1.5) will penalize repetitions more strongly, while a lower value (e.g., 0.9) will be more lenient. (Default: 1.1)',q:true,qn:'rep_p'},
-					mirostat:				{v:'',t:'n',def:0,d:'Enable Mirostat sampling for controlling perplexity. (default: 0, 0 = disabled, 1 = Mirostat, 2 = Mirostat 2.0)',q:false,qn:'m-t'},
-					mirostat_eta:		{v:'',t:'n',def:0.1,d:'Influences how quickly the algorithm responds to feedback from the generated text. A lower learning rate will result in slower adjustments, while a higher learning rate will make the algorithm more responsive. (Default: 0.1)',q:false,qn:'m-eta'},
-					mirostat_tau:		{v:'',t:'n',def:5,d:'Controls the balance between coherence and diversity of the output. A lower value will result in more focused and coherent text. (Default: 5.0)',q:false,qn:'m-tau'},
-					num_gqa:				{v:'',t:'n',def:'',d:'The number of GQA groups in the transformer layer. Required for some models, for example it is 8 for llama2:70b',q:false,qn:'gqa'},
-					num_gpu:				{v:'',t:'n',def:'',d:'The number of layers to send to the GPU(s). On macOS it defaults to 1 to enable metal support, 0 to disable.',q:false,qn:'gpu'},
-					stop:						{v:[''],t:'as',def:'"AI assistant:". Enter each stop match into a single input',d:'Sets the stop sequences to use. When this pattern is encountered the LLM will stop generating text and return. Multiple stop patterns may be set by specifying multiple separate stop parameters in a modelfile. Each input here means one stop match',f:'mis',q:null},
-					tfs_z:					{v:'',t:'n',def:1,d:'Tail free sampling is used to reduce the impact of less probable tokens from the output. A higher value (e.g., 2.0) will reduce the impact more, while a value of 1.0 disables this setting. (default: 1)',q:false},
-					num_predict:		{v:'',t:'n',def:128,d:'Maximum number of tokens to predict when generating text. (Default: 128, -1 = infinite generation, -2 = fill context)',qn:'prdct',q:false},
-					seed:						{v:'',t:'n',def:0,d:'Sets the random number seed to use for generation. Setting this to a specific number will make the model generate the same text for the same prompt. (Default: 0)',q:false},
+					temperature:		{v:'',t:'n',def:0.8,d:'The temperature of the model. Increasing the temperature will make the model answer more creatively. (Default: 0.8)',q:true,qn:'temp',opt:true},
+					num_ctx:				{v:'',t:'n',def:2048,d:'Sets the size of the context window used to generate the next token. (Default: 2048)',q:true,qn:'ctx',opt:true},
+					top_k:					{v:'',t:'n',def:40,d:'Reduces the probability of generating nonsense. A higher value (e.g. 100) will give more diverse answers, while a lower value (e.g. 10) will be more conservative. (Default: 40)',q:true,opt:true},
+					top_p:					{v:'',t:'n',def:0.9,d:'Works together with top-k. A higher value (e.g., 0.95) will lead to more diverse text, while a lower value (e.g., 0.5) will generate more focused and conservative text. (Default: 0.9)',q:true,opt:true},
+					num_thread:			{v:'',t:'n',def:'',d:'Sets the number of threads to use during computation. By default, Ollama will detect this for optimal performance. It is recommended to set this value to the number of physical CPU cores your system has (as opposed to the logical number of cores).',q:false,qn:'thr',opt:true},
+					repeat_last_n:	{v:'',t:'n',def:64,d:'Sets how far back for the model to look back to prevent repetition. (Default: 64, 0 = disabled, -1 = num_ctx)',q:true,qn:'rep_l',opt:true},
+					repeat_penalty:	{v:'',t:'n',def:1.1,d:'Sets how strongly to penalize repetitions. A higher value (e.g., 1.5) will penalize repetitions more strongly, while a lower value (e.g., 0.9) will be more lenient. (Default: 1.1)',q:true,qn:'rep_p',opt:true},
+					mirostat:				{v:'',t:'n',def:0,d:'Enable Mirostat sampling for controlling perplexity. (default: 0, 0 = disabled, 1 = Mirostat, 2 = Mirostat 2.0)',q:false,qn:'m-t',opt:true},
+					mirostat_eta:		{v:'',t:'n',def:0.1,d:'Influences how quickly the algorithm responds to feedback from the generated text. A lower learning rate will result in slower adjustments, while a higher learning rate will make the algorithm more responsive. (Default: 0.1)',q:false,qn:'m-eta',opt:true},
+					mirostat_tau:		{v:'',t:'n',def:5,d:'Controls the balance between coherence and diversity of the output. A lower value will result in more focused and coherent text. (Default: 5.0)',q:false,qn:'m-tau',opt:true},
+					num_gqa:				{v:'',t:'n',def:'',d:'The number of GQA groups in the transformer layer. Required for some models, for example it is 8 for llama2:70b',q:false,qn:'gqa',opt:true},
+					num_gpu:				{v:'',t:'n',def:'',d:'The number of layers to send to the GPU(s). On macOS it defaults to 1 to enable metal support, 0 to disable.',q:false,qn:'gpu',opt:true},
+					stop:						{v:[''],t:'as',def:'',d:'Sets the stop sequences to use. When this pattern is encountered the LLM will stop generating text and return. Multiple stop patterns may be set by specifying multiple separate stop parameters in a modelfile. Each input here means one stop match',f:'mis',q:null,opt:false},
+					tfs_z:					{v:'',t:'n',def:1,d:'Tail free sampling is used to reduce the impact of less probable tokens from the output. A higher value (e.g., 2.0) will reduce the impact more, while a value of 1.0 disables this setting. (default: 1)',q:false,opt:true},
+					num_predict:		{v:'',t:'n',def:128,d:'Maximum number of tokens to predict when generating text. (Default: 128, -1 = infinite generation, -2 = fill context)',qn:'prdct',q:false,opt:false},
+					seed:						{v:'',t:'n',def:0,d:'Sets the random number seed to use for generation. Setting this to a specific number will make the model generate the same text for the same prompt. (Default: 0)',qn:'seed',q:false,opt:true},
 				},
 				req: {
-					model:					{v:{l:computed(()=>this.models),v:''},t:'sel',def:0,d:'Model that will generate the reply',f:'sel',q:true,qn:'mdl'},
-					keep_alive:			{v:900,t:'n',def:"300",d:'Time to keep model cached in memory, a number in seconds, any negative number will keep the model loaded in memory, 0 will unload the model immediately after generating a response.',q:false,qn:'k-alv'},
+					model:					{v:{l:computed(()=>this.models),v:''},t:'sel',def:0,d:'Model that will generate the reply',f:'sel',q:true,qn:'mdl',opt:false},
+					keep_alive:			{v:900,t:'n',def:"300",d:'Time to keep model cached in memory, a number in seconds, any negative number will keep the model loaded in memory, 0 will unload the model immediately after generating a response.',q:false,qn:'k-alv',opt:false},
 				}
 			},
 			stream:	true,
@@ -1223,6 +1548,7 @@ window.app=createApp({
 				'-1':	{	t:'s',n:computed(()=>this.config.sysNick.v),id:'-1'	},
 			},
 			msgUserListOn:{},
+			opt:					{'v':{},model:0,run:false,cancel:false},
 			turn:					0,
 			cancel:				0,
 			working:			0,
@@ -1232,7 +1558,7 @@ window.app=createApp({
 			mpull: 				[],
 			ctrl: 				0,
 			proxy: 				0,
-			log:					1,
+			log:					0,
 		}
 	},
 	computed: {
@@ -1248,6 +1574,9 @@ window.app=createApp({
 			if(this.nicks[u].sets) return this.nicks[u].settings;
 			return this.settingsGlobal;
 		},
+		branchac() {
+	    return this.turns[this.turn].branches[this.branch(this.turn)];
+	  },
 	},
 	created() {
 	},
@@ -1265,6 +1594,12 @@ window.app=createApp({
 		
 		this.urlTest();
 
+		for(const k in this.settings.options) {
+			if(!this.settings.options[k].hasOwnProperty('name')) this.settings.options[k]["name"]=k;
+		}
+		for(const k in this.settings.req) {
+			if(!this.settings.req[k].hasOwnProperty('name')) this.settings.req[k]["name"]=k;
+		}
 		let def={};
 		for(const k in this.$data) {
 			this.copy(this.$data,def,k);
@@ -1274,25 +1609,28 @@ window.app=createApp({
 			this.ctrl=((event.ctrlKey||event.metaKey)?this.ctrl:0);
 		});
 		window.addEventListener("keydown",(event)=>{
+			if(this.opt.run) return;
+			
 			this.ctrl=((event.ctrlKey||event.metaKey)?1:0);
 			
 			const k=event.keyCode;
 
 			if(this.config.fKeys.v&&k>=112&&k<122) { //>
-				if			(k===112) { this.pToggle('howto') 	}
-				else if (k===113) { this.save() 						}
-				else if (k===114) { this.click('loadlabel')	}
-				else if (k===115) { this.pToggle('sys') 		}
-				else if (k===116) { this.pToggle('instr') 	}
-				else if (k===117) { this.list() 						}
-				else if (k===118) { this.pToggle('pull')		} 
-				else if (k===119) { this.prune() 						} 
-				else if (k===120) { this.pToggle('sets') 		} 
-				else if (k===121) {
-					if(confirm("Are you sure you wish to quit the game?")) {
-						window.close();
-						alert("You wish.");
+				if(!event.shiftKey) {
+					if			(k===112) { this.pToggle('howto') 	}
+					else if (k===113) { this.save() 						}
+					else if (k===114) { this.click('loadlabel')	}
+					else if (k===115) { this.pToggle('sys') 		}
+					else if (k===116) { this.pToggle('instr') 	}
+					else if (k===117) { this.list() 						}
+					else if (k===118) { this.pToggle('pull')		} 
+					else if (k===119) { this.prune() 						} 
+					else if (k===120) { this.pToggle('sets') 		} 
+					else if (k===121) {
+						this.quit()
 					}
+				} else {
+					if			(k===120) { this.optToggle() 	}
 				}
 				event.preventDefault();
 				return;
@@ -1379,6 +1717,12 @@ window.app=createApp({
 		},
 	},
 	methods: {
+		quit() {
+			if(confirm("Are you sure you wish to quit the game?")) {
+				window.close();
+				alert("You wish.");
+			}
+		},
 		groupCh(id) {
 			this.w(`changing group to ${id} ${this.groups[id]}`);
 			this.group=id*1;
@@ -1406,16 +1750,42 @@ window.app=createApp({
 			if(model==undefined) model=this.models[this.settings.req.model.v.v].n;
 			return this.msga(turn)[id][model];
 		},
-		async pToggle(id,v) {
+		pToggleDo(id,v) {
 			if(v==undefined) v=!this.pState[id];
 			this.w(`toggling ${id} to ${v}`);
 			this.pState[id]=v;
 			if(this.pState[id]!=1) return;
+		},
+		async pToggle(id,v) {
+			this.pToggleDo(id,v);
 			await nextTick();
 			let to=0;
 			if(id=='howto'||id=='sets') to=1;
 			if(id=='sys'||id=='instr') id='sysinstr';
 			this.scroll(id,1);
+		},
+		optToggle() {
+			if(this.pState['opt']) {
+				this.pToggle('opt');
+				return;
+			}
+			this.opt.count={t:0,d:0};
+			this.opt.res={};
+			for(const m in this.settings.req.model.v.l) {
+				this.w(`creating tune params for model ${m}`);
+				if(!this.opt['v'].hasOwnProperty('m')) this.opt[m]={v:{},k:'',times:1};
+				for(const j of [this.config,this.settings.options,this.settings.req]) {
+					for(const key in j) {
+						this.w(`filling in opt ${key}`);
+						const i=j[key];
+						if(!i.opt) continue;
+						if(this.opt[m]['v'].hasOwnProperty(key)) continue;
+						this.opt[m]['v'][key]={start:'',end:'',step:'',v:'',use:false};
+					}
+				}
+				//this.opt.res[m]={v:[],k:[],count:0};
+			}
+			this.pToggle('opt');
 		},
 		msgFilter(turn,b,m) {
 			const t=this.turns[turn];
@@ -1451,13 +1821,169 @@ window.app=createApp({
 		},
 		listmsgs(m,turn) {
 			this.w(`listing ${m} - turn ${turn}, m: ${m}, ctrl: ${this.ctrl} role: ${this.turns[turn].role}`);
+			if(this.opt.run) return 0;
 			if(this.userS('u')==null||this.userS('a')==null) return 0;
 			if(m==1&&this.ctrl&&this.turns[turn].role==='assistant') m=2;
 			if(m==2&&this.turns[turn].role==='user') m=1; //for right mouse click
 			
-			if			(m==0) {	this.msgMvLeft(turn)			}
-			else if (m==1) {	this.msgMvRight(turn,0)		}
-			else if (m==2) {	this.msgMvRight(turn,1)		}
+			if			(m==0) {	this.msgMvLeft(turn)						}
+			else if (m==1) {	this.msgMvRight(turn,0,null)		}
+			else if (m==2) {	this.msgMvRight(turn,1,null)		}
+		},
+		optChUse(m,k) {
+			const p=['start','end','step'];
+			let found=0;
+			const o=this.opt[m].v[k];
+			for(let P of p) {
+				if(o[P].length) found++;
+			}
+			o.use=(found==p.length?true:false);
+		},
+		optimizeCancel() {
+			if(this.working) this.cancel=true;
+			this.opt.cancel=true;
+		},
+		async optimizeRun() {
+			if(this.turn<2) { //>
+				alert('You need to have a chat log, before you may start this. It creates side-replies, so it needs to have some content for AI to create alternative versions of replies to it.');
+				return;
+			}
+			if(this.turnRole(this.turn)==='user') {
+				alert('You need to stop at the AI reply in your chat log, right now last message in the chat log belongs to you.');
+				return;
+			}
+			const b=this.branchac; if(b.msg!=b.msgs.length-1) b.msg=b.msgs.length-1;
+			this.opt.run=true;
+			let menus=[0,0];
+			if(this.pState['control']){ this.pToggleDo('control'); 	menu[2]=1 };
+			if(this.pState['menu']) 	{ this.pToggleDo('menu'); 		menu[0]=1 };
+			if(this.config.setsQ.v) 	{ this.config.setsQ.v=false;	menu[1]=1 };
+
+			let opts={bak:{},v:{}};
+			let ht={config:this.config,options:this.settings.options,req:this.settings.req}
+			for(let m in this.settings.req.model.v.l) {
+				this.w(`collecting combinations for model ${m} ${this.settings.req.model.v.l[m].tag}`)
+				opts.v[m]=[];
+				//let found=0;
+				for(const i in ht) {
+					for(const key in ht[i]) {
+						if(!ht[i][key].opt) continue;
+						if(!this.opt[m].v[key].use) continue;
+						if(ht[i][key].f=='cb') {
+							this.opt[m].v[key]['start']=0;
+							this.opt[m].v[key]['end']=1;
+							this.opt[m].v[key]['step']=1;
+						} else {
+							if(!/^\d{1,14}$/.test(this.opt[m].times)) {
+								this.opt.run=false;
+								alert(`Amount of replies per combination should be a sane value.`);
+								scroll('optTimes');
+								return;
+							}
+							for(const p of ['start','end','step']) {
+								const val=this.opt[m].v[key][p];
+								this.w(`checking params of ${key} ${p}=${val}`);
+								if(!/^\d+(\.\d+)?$/.test(val)) {
+									this.opt.run=false;
+									alert(`Field's ${ht[i][key].name} ${p} value ${val} for model ${this.settings.req.model.v.l[m].n} is not numeric, please correct it.`);
+									return;
+								}
+							}
+						}
+						opts['v'][m].push({
+							key:key,
+							lnk:ht[i][key],
+							times:this.opt[m].times,
+							...this.opt[m].v[key]
+						});
+						if(!opts.bak.hasOwnProperty(i)) opts.bak[i]={};
+						if(!opts.bak[i].hasOwnProperty(key)) opts.bak[i][key]={lnk:ht[i][key],v:ht[i][key]['v']};
+						this.w(`stored bak value: ${opts.bak[i][key]} for ${i} ${key}`);
+					}
+				}
+				if(!opts.v[m].length) delete opts.v[m];
+			}
+			const t=this;
+			let res=[];
+			let ci=opts.length;
+			async function optDo(p,i,opt,res,vals,idle) {
+				t.w({index:i,p:p});
+				const P=p[i];
+				t.w({from:P.start,to:P.end,step:P.step});
+				for(let v=P.start*1;v<=P.end*1;v+=P.step*1) { //>
+					t.w(`going with value ${p[i].key} ${v}`);
+					P.lnk.v=v;
+					vals[i]=v;
+					if((p.length-1)>i) {  //>
+						t.w(`this is (${i}) not the last level, going deeper`);
+						await optDo(p,i*1+1,opt,res,vals,idle);
+						continue;
+					}
+					if(t.opt.cancel) {
+						t.w('cancelling opt');
+						return;
+					}
+					opt.vals=vals;
+					
+					for(let tms=1;tms<=P.times;tms++) { //>
+						opt.count.d++;
+						if(idle) continue;
+
+						t.w(`trying new iteration`);
+						const coord=await t.msgMvRight(t.turn,0,true);
+						const c=t.turns[coord[0]].branches[coord[1]].msgs[coord[2]].content;
+						let found=0;
+						for(let j=0;j<res.length;j++) { //>
+							if(res[j]['c']!==c) continue;
+							res[j].ids.push(coord[2]);
+							res[j].v.push([...vals]);
+							found=1;
+						}
+						if(!found) res.push({c:c,ids:[coord[2]],v:[[...vals]]});
+					}
+				}
+			}
+			this.w({valuesToTry:opts});
+
+			this.opt.res={};
+			for(const m in opts.v) {
+				this.opt.res[m]={v:[],k:[],count:0};
+				for(const i of opts.v[m]) { this.opt.res[m].k.push(i.lnk) }
+			}
+			
+			function optsRestore(opts) {
+				for(const i in opts.bak) {
+					for(const k in opts.bak[i]) {
+						t.w(`restoring in ${i} bak value of ${k} to ${opts.bak[i][k].v}`);
+						opts.bak[i][k].lnk.v=opts.bak[i][k].v;
+					}
+				}
+			}
+			
+			this.opt.vals	=[];
+			this.opt.count={t:0,d:0};
+			const modelbak=this.settings.req.model.v.v;
+			
+			for(const m in opts.v) {
+				await optDo(opts.v[m],0,this.opt,this.opt.res[m].v,[],true);
+			} this.opt.count.t+=this.opt.count.d; this.opt.count.d=0;
+			
+			for(const m in opts.v) {
+				this.settings.req.model.v.v=this.opt.m=m;
+				optsRestore(opts);
+				await optDo(opts.v[m],0,this.opt,this.opt.res[m].v,[],false);
+			} optsRestore(opts);
+			
+			this.w({opt:this.opt});
+			this.settings.req.model.v.v=modelbak;
+			this.opt.cancel	=false;
+			this.opt.run		=false;
+
+			if(menu[0]) this.pToggleDo('menu');
+			if(menu[1]) this.config.setsQ.v=true;
+			if(menu[2]) this.pToggleDo('control');
+			await nextTick();
+			this.scroll('optRes',true);
 		},
 
 		//db methods
@@ -1532,8 +2058,12 @@ window.app=createApp({
 					ver=d.configGlobal.version.v;
 				} else if(d.hasOwnProperty('config')) {
 					ver=d.config.version.v;
+					t.def.config=computed(()=>t.def.configGlobal);
+					t.def.settings=computed(()=>t.def.settingsGlobal);
 				} else {
 					ver=0;
+					t.def.config=computed(()=>t.def.configGlobal);
+					t.def.settings=computed(()=>t.def.settingsGlobal);
 				}
 				t.w(`new parser pass for ver: ${ver}`);
 				
@@ -1801,6 +2331,41 @@ window.app=createApp({
 					t.w(`upgraded to version ${d.configGlobal.version.v}`);
 					parse(d);
 					return;
+				} else if (ver==1.9) {
+					t.w(`upgrading from version ${d.configGlobal.version.v}`);
+					d.configGlobal.version.v='1.9.2';
+
+					for(const p in t.configGlobal) {
+						t.w(`updating key ${p} in config`);
+						d.configGlobal[p].opt=t.def.configGlobal[p].opt;
+						d.configGlobal[p].def=t.def.configGlobal[p].def;
+						for(let u in d.nicks) {
+							u=d.nicks[u];
+							if(!u.hasOwnProperty('config')) continue;
+							u.config[p].def=t.def.configGlobal[p].def;
+							u.config[p].opt=t.def.configGlobal[p].opt;
+						}
+					}
+					for(const s of ['options','req']) {
+						for(const p in t.def.settingsGlobal[s]) {
+						if(!d.settingsGlobal[s][p].hasOwnProperty('name')) d.settingsGlobal[s][p].name=p;
+						
+							d.settingsGlobal[s][p].opt=t.def.settingsGlobal[s][p].opt;
+							d.settingsGlobal[s][p].def=t.def.settingsGlobal[s][p].def;
+							for(let u in d.nicks) {
+								u=d.nicks[u];
+								if(!u.hasOwnProperty('settings')) continue;
+								u.settings[s][p].def=t.def.settingsGlobal[s][p].def;
+								u.settings[s][p].opt=t.def.settingsGlobal[s][p].opt;
+								if(!u.settings[s][p].hasOwnProperty('name')) u.settings[s][p].name=p;
+							}
+						}
+					}
+					t.updateAddParams(d,'pState');
+					t.updateAddParams(d,'opt');
+					t.w(`upgraded to version ${d.configGlobal.version.v}`);
+					parse(d);
+					return;
 				}
 				t.w('adding new config vars');
 				t.updateAddParams(d,'configGlobal');
@@ -1852,6 +2417,25 @@ window.app=createApp({
 				})
 			)
 			l.remove()
+		},
+		optResSave() {
+			const name=`Optimize_results.${Date().toString()}.html`;
+			const blob=new Blob(["<html>"+document.getElementById('css').outerHTML+"<body>"+document.getElementById('optRes').outerHTML+"</body></html>"],{ type: "text/html" });
+			this.w({blob:blob});
+			const l								=document.createElement("a");
+			l.download						=name;
+			l.href 								=window.URL.createObjectURL(blob);
+			l.dataset.downloadurl	=["text/html",l.download,l.href].join(":");
+
+			l.dispatchEvent(
+				new MouseEvent("click",{
+					view: window,
+					bubbles: true,
+					cancelable: true,
+				})
+			)
+			l.remove()
+		
 		},
 		list() {
 			if(this.working) {
@@ -1995,14 +2579,14 @@ window.app=createApp({
 					if(done) {
 						t.w({'Stream complete':res});
 						t.cancel=0;
-						return res;
+						return r;
 					}
 					if(t.cancel) {
 						t.w('cancelling');
+						reader.cancel();
 						reader.releaseLock();
-						r.cancel();
 						t.cancel=0;
-						return;
+						return r;
 					}
 					buf					=decoder.decode(value);
 					const chnks	=buf.trim().split('\n');
@@ -2044,6 +2628,7 @@ window.app=createApp({
 			})
 		},
 		updateAddParams(d,p) {
+			this.w(`updateAddParams for key ${p}`);
 			if(!d.hasOwnProperty(p)) {
 				this.w(`loaded file doesn't have whole section ${p}, importing`);
 				d[p]=this['def'][p];
@@ -2401,7 +2986,7 @@ window.app=createApp({
 			if(e.key==='Enter'&&e.shiftKey) {
 				return;
 			}
-			this.chat(m,i);
+			this.chat(m,i,null);
 		},
 		edit(e,m,i) {
 			this.w(e);
@@ -2446,6 +3031,7 @@ window.app=createApp({
 			return this.turns[turn].branch
 		},
 		brancha(turn) {
+			//console.trace();
 	    return this.turns[turn].branches[this.branch(turn)];
 		},
 		branchNested(turn) {
@@ -2551,7 +3137,7 @@ window.app=createApp({
 			this.turn=t;
 			this.msgSideNickUpdate(...this.tbma(t));
 		},
-		msgMvRight(t,wSideRating) {
+		async msgMvRight(t,wSideRating,aw) {
 			this.w(`moving right at turn ${t}, siderating: ${wSideRating}`);
 			let b=this.brancha(t);
 			if(!this.msgLast(t,this.turns[t].branch)) {
@@ -2564,11 +3150,17 @@ window.app=createApp({
 			//add new message
 			if(this.working) {
 				this.w('working right now, leaving');
-				return;
+				return 0;
 			}
 			if(this.msgSide(t,this.turns[t].branch,b.msg)) return;
-			this.chat((wSideRating?3:2),t);
+			let res;
+			if(!aw) {
+				this.chat((wSideRating?3:2),t,aw);
+			} else {
+				res=await this.chat((wSideRating?3:2),t,aw);
+			}
 			this.branchu(t);
+			return res;
 		},
 		msgSide(t,b,m) {
 			const msg=this.msgGet(t,b,m)
@@ -2698,8 +3290,8 @@ window.app=createApp({
 		},
 
 		//chat methods
-		chat(m,turn) {
-			event.preventDefault();
+		async chat(m,turn,aw) {
+			if(event!=null) event.preventDefault();
 			if(this.working) {
 				this.w('can not do chat, working already');
 				return;
@@ -2765,13 +3357,24 @@ window.app=createApp({
 					ms=this.chatForAi(turn-1,this.config.rooms.v,aid,redo);
 				}
 			}
-			this.chatSend(
-				turn,
-				this.branch(turn),
-				this.brancha(turn).msg,
-				ms
-			);
-			return 1;
+			if(!aw) {
+				this.chatSend(
+					turn,
+					this.branch(turn),
+					this.brancha(turn).msg,
+					ms
+				);
+				return 1;
+			} else {
+				await this.chatSend(
+					turn,
+					this.branch(turn),
+					this.brancha(turn).msg,
+					ms
+				);
+				this.w('finished waiting for chatsend');
+			}
+			return [turn,this.branch(turn),this.brancha(turn).msg];
 		},
 		async chatSend (turn,branch,msg,msgs) {
 			if(this.working) {
@@ -2786,88 +3389,90 @@ window.app=createApp({
 			opt['stream']			=this.stream;
 			this.w({turn:turn,branch:branch,body:opt});
 			this.msgStatusSet(turn,branch,msg,'waiting');
+			const t=this;
 			
-			fetch(this.url()+"/api/chat",{
+			const r=await fetch(t.url()+"/api/chat",{
 				"method": "POST",
 				"body": 	JSON.stringify(opt)
-			}).then(r=>{
-				if(!r.ok) throw new Error(r.statusText);
-				return r.body;
-			}).then(r=>{
-				this.w('dissecting response');
-				const t				=this;
-				const m				=this.msgGet(turn,branch,msg);
-				const decoder	=new TextDecoder('utf-8');
-				const reader	=r.getReader();
-				const rrtp		=new RegExp(`${this.rgEsc(t.chatRatingMod(1,''))}`,'g');
-				const rrtm		=new RegExp(`${this.rgEsc(t.chatRatingMod(0,''))}`,'g');
-				const rn			=new RegExp('^\\s*(?:as )?'+this.rgEsc(m.nick)+':[\\s\\r\\n]*','gim');
-				const remoji	=new RegExp('[\\p{Extended_Pictographic}\\p{Emoji_Modifier_Base}\\p{Emoji_Presentation}]*','gum');
-				let res='',buf='';
-				m.content	='';
-				
-				this.scroll(null,0);
-				
-				reader.read().then(function processText({done,value}) {
-					if(done) {
-						m.content+=buf;
-						t.w({'Stream complete':res});
-						//there is a bug when ollama might not send anything for prompt_eval_count
-						if(res.hasOwnProperty('eval_count')) m.tr[t.models[t.settings.req.model.v.v].n]=res.eval_count;
-						if(res.hasOwnProperty('prompt_eval_count')) m.tp[t.models[t.settings.req.model.v.v].n]=res.prompt_eval_count;
-						t.msgStatusSet(turn,branch,msg,'done');
-						t.cancel=0;
-						return;
-					}
-					if(t.cancel) {
-						t.w('cancelling');
-						m.content+=buf;
-						t.msgStatusSet(turn,branch,msg,'cancel');
-						reader.releaseLock();
-						r.cancel();
-						t.cancel=0;
-						return res;
-					}
-
-					//careful here, if there is some proxy halving stream, it may break :)
-					const chnks=decoder.decode(value).trim().split('\n');
-					//t.w({cnks:chnks})
-					
-					for (const ch of chnks) {
-						try { res=JSON.parse(ch) } catch (error) { t.w({'error':error,data:ch}); }
-						buf+=res.message.content;
-						//t.w(`${buf} ${rn}`)
-						buf=buf.replace(rrtp,'').replace(rrtm,'').replace(rn,'');
-						if(t.config.emojiNo.v) buf=buf.replace(remoji,'');
-						m.trm++;
-						if(m.status==0) {
-							if(t.config.resClean.v) {
-								if(buf.length<t.config.resBufCleanSize.v) {//>
-									t.w(`accumulating buffer at start ${buf}`);
-									return reader.read().then(processText);
-								}
-							}
-							t.msgStatusSet(turn,branch,msg,'loading');
-						}
-						m.content+=buf;
-						buf='';
-					}
-					return reader.read().then(processText);
-				}).then(r=>{
-					this.w(`chat received`);
-					this.working=0;
-					if(this.config.resClean.v) {
-						m.content=m.content.trim().replace(rrtp,'').replace(rrtm,'').replace(rn,'');
-					}
-					if(this.config.emojiNo.v) buf=buf.replace(remoji,'');
-				});
-				return 1;
-			}).catch((error)=>{
-				this.working=0;
-				this.cancel	=0;
-				this.connectionErr=error.message;
-				this.connection=0;
 			});
+			if(!r.ok) {
+				//throw new Error(r.statusText);
+				console.error(r.statusText);
+				t.connectionErr=r.statusText;
+				t.connection=0;
+				t.working=0;
+				t.cancel	=0;
+			}
+
+			const reader	=r.body.getReader();
+
+			const m				=t.msgGet(turn,branch,msg);
+			const decoder	=new TextDecoder('utf-8');
+			const rrtp		=new RegExp(`${t.rgEsc(t.chatRatingMod(1,''))}`,'g');
+			const rrtm		=new RegExp(`${t.rgEsc(t.chatRatingMod(0,''))}`,'g');
+			const rn			=new RegExp('^\\s*(?:as )?'+t.rgEsc(m.nick)+':[\\s\\r\\n]*','gim');
+			const remoji	=new RegExp('[\\p{Extended_Pictographic}\\p{Emoji_Modifier_Base}\\p{Emoji_Presentation}]*','gum');
+			let res='',buf=''; m.content='';
+
+			while(true) {
+				const {done,value}=await reader.read();
+				t.w('dissecting response');
+				
+				if(done) {
+					m.content+=buf;
+					t.w({'Stream complete':res});
+					//there is a bug when ollama might not send anything for prompt_eval_count
+					if(res.hasOwnProperty('eval_count')) m.tr[t.models[t.settings.req.model.v.v].n]=res.eval_count;
+					if(res.hasOwnProperty('prompt_eval_count')) m.tp[t.models[t.settings.req.model.v.v].n]=res.prompt_eval_count;
+					t.msgStatusSet(turn,branch,msg,'done');
+					t.cancel=0;
+					break;
+				}
+				
+				if(t.cancel) {
+					t.w('cancelling');
+					m.content+=buf;
+					t.msgStatusSet(turn,branch,msg,'cancel');
+					reader.cancel();
+					reader.releaseLock();
+					t.cancel=0;
+					break;
+				}
+
+				//careful here, if there is some proxy halving stream, it may break :)
+				const chnks=decoder.decode(value).trim().split('\n');
+				//t.w({cnks:chnks})
+			
+				for (const ch of chnks) {
+					try { res=JSON.parse(ch) } catch (error) { t.w({'error':error,data:ch}); }
+					buf+=res.message.content;
+					//t.w(`${buf} ${rn}`)
+					buf=buf.replace(rrtp,'').replace(rrtm,'').replace(rn,'');
+					if(t.config.emojiNo.v) buf=buf.replace(remoji,'');
+					m.trm++;
+					if(m.status==0) {
+						if(t.config.resClean.v) {
+							if(buf.length<t.config.resBufCleanSize.v) {//>
+								t.w(`accumulating buffer at start ${buf}`);
+								//return reader.read().then(processText);
+								continue;
+							}
+						}
+						t.msgStatusSet(turn,branch,msg,'loading');
+					}
+					m.content+=buf;
+					buf='';
+				}
+				//return await reader.read().then(processText);
+			}
+
+			t.w(`chat received`);
+			if(t.config.resClean.v) {
+				m.content=m.content.trim().replace(rrtp,'').replace(rrtm,'').replace(rn,'');
+			}
+			if(t.config.emojiNo.v) buf=buf.replace(remoji,'');
+			t.working=0;
+			if(!t.opt.run) t.scroll(null,0);
 		},
 		chatForAi(turn,rooms,u,redo) {
 			let ms=[],chat='',add=[],sys='',wRating='',ratingUsed=0;
@@ -2958,7 +3563,7 @@ window.app=createApp({
 				) {
 					if(this.nicks[u].instr.length) {
 						this.w(`adding instr`);
-						chat+=`Important: ${this.nicks[u].n}, these are your thoughts to consider in reply: ${this.nicks[u].instr}`;
+						chat+=`Important: ${this.nicks[u].n}'s thoughts in the head: ${this.nicks[u].instr}`;
 						chat+="\n\n";
 					} else {
 						this.w('instr is empty');
@@ -3140,7 +3745,6 @@ window.app=createApp({
 				this.w('working right now, leaving');
 				return;
 			}
-			console.trace();
 			
 			this.connectionErr='';
 			this.connection		=0;
@@ -3315,6 +3919,40 @@ app.component(
 		}
 	}).component('help', {
 		template: '#tmplHelp',
+	}).component('opt', {
+		template: '#tmplOpt',
+		props: ['config','settings','opt','pState','branch'],
+		data() {
+			return {
+				
+			}
+		},
+		methods: {
+			optimizeRun() {
+				this.$parent.optimizeRun();
+			},
+			optimizeCancel() {
+				this.$parent.optimizeCancel();
+			},
+			optChUse(m,k) {
+				this.$parent.optChUse(m,k);
+			},
+			pToggle(id,v) {
+				this.$parent.pToggle(id,v);
+			},
+			optResSave() {
+				this.$parent.optResSave();
+			}
+		}
+	}).component('optRes',{
+		template: '#tmplOptRes',
+		props: ['m','i']
+	}).component('optResValsLine',{
+		template: '#tmplOptResValsLine',
+		props: ['m','mid','vals']
+	}).component('optResValsHeader',{
+		template: '#tmplOptResValsHeader',
+		props: ['m']
 	});
 
 window.ap=app.mount('#app');

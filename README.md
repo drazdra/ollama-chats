@@ -2,8 +2,8 @@
 Ollama chat client in Vue, everything you need to do your private text rpg in browser, with any amount of different characters.
 
 ## What this is..
-This "project" is a single web page desktop interface for chatting with your local
-Ollama server. 
+This "project" is a single web page desktop interface for chatting with your local Ollama server. It doesn't use any libraries apart from Vue and can be opened in browser as a regular web page.
+
 
 It looks like this:
 
@@ -31,6 +31,7 @@ when i installed Ollama, i tried its built-in console chat interface but quickly
 2. or i'm too lazy to check all the code to ensure they do not send my local chats somewhere
 3. i want to have it my way - that is for desktop and keyboard, not for mobile phones.
 4. i want it to have a convenient keyboard driven interface and no unnecessary whistles.
+5. i want it to use as little 3rd party libraries as possible for security reasons. 
  
 ## What:
 Initially (version 0) i had spent several days to code this thing. My goals were:
@@ -41,16 +42,17 @@ Initially (version 0) i had spent several days to code this thing. My goals were
 5. browser based.
 6. keyboard friendly.
  
-And here we are. Whole thing is less than 30KB right now (actually 112KB already, lol), that's including the
+And here we are. Whole thing is less than 30KB right now (actually 133KB already, lol), that's including the
 excerpts from Ollama documentation, html code and help page. The only imported thing is Vue
 which is a great web framework, probably used by millions of people, so it's pretty safe.
-(in a paranoid mode i didn't even use Punia, sigh).
 
-#### In other words, if you are really paranoid about your chats, it's for you. 
+#### In other words, this UI is made with paranoia in mind, to prevent any chances of leaking our chats.
 
-You can check the whole code in 15 minutes and ensure
-you are totally safe with it. If you already have a web-server running this thing is a matter of seconds.
+You can check the whole code in 30 minutes if you wish, to ensure you are totally safe with it. It's a single file, so no need to wonder by hundreds of separate sources for that. 
+
+If you already have a web-server running this thing is a matter of seconds.
 If you don't, you can install Nginx in some minutes.
+Hopefully in future we might run it directly with Ollama, but not yet.
 
 ## Installation:
 There is not much to install, it's a single index.html.
@@ -125,13 +127,13 @@ Now, let me list the features this thing has:
 16. You can create characters with totally different "memory" (context). For example, 2 of your characters can do something together and the 3rd character won't know anything about that, poor thing :). This allows a much more interesting roleplays.
 17. You can have separate settings per AI character, which means you can use different temperature etc and even different models for different characters!
 18. You can switch manually controlled character to be AI controlled and vice versa :). So you can make AI to play for the char you used to be, and you instead would continue to play for AI's char. Of course you can do it with any of the charactes in the story.
-19. And many more features :).
-20.	Let's talk about lower menu:
+19. You can automatically try ranges of various model parameters with configurable steps and see how model reacts to these. Find the best parameters to have fun with your model :).
+20. And many more features :).
+21.	Let's talk about lower menu:
     
 #### 12.1. Settings: 
 Allows you to configure the script itself and Ollama. If the parameter value is left empty, Ollama uses values from its modelfile, or default ones if modelfile doesn't have these. Parameters are applied upon each request, and according to Ollama's docs, they should change the rules on the fly.
 
-   	
 #### 12.2. Pull: 
 You can pull new models easily, just enter model's name from ollama.com/library and that's it. For example: "stablelm2:1.6b-zephyr", or just "stablelm2". Once the download is over, you will return to the main interface. Don't forget to choose the newly pulled model in the models list, it's not done automatically.
  
@@ -152,6 +154,9 @@ Yes, you can save the chat, if you wish. the page saves everything and sends it 
  
 #### 12.8. Load:
 Yes, again, you can load your old chat with all of the settings from a saved file and continue any time. Of course, if you have saved it earlier :).
+
+#### 12.9. Optimize:
+Allows you to automatically try any possible combination of configuration and ollama settings for any models and see the results.
  			 
 ### Enjoy!
 
@@ -280,6 +285,18 @@ New version v1.9 a huge major release. The changes are vast, so if you catch a b
 * fixed several bugs found in v1.6.
 
 * NOTE: i've added vue.prod.js file to the project, if CDN dies (again), you can use it instead.
+
+## Changes (v.1.9.2 2024.04.26)
+* Big new feature: "Optimize", called with Shift+F9, it allows you to define ranges of model parameters to try and to come back seeing replies with all possible combinations of these. You can even specify these for several different models with custom ranges per model. In addition to trying out model params you can also try various configuration parameters of the script, like sending all chat by one message or an array of messages, etc. Results are normalized, so you can easily see if some parameters produce the same reply. 
+
+
+##Bonus
+I did some experiments to find the meaningful parameter ranges for llama3:8b and wizardlm2:7b
+Llama3: temperature<=9, top_k<=17, top_p<=1.
+Wizardlm2: temperature<=28, top_k<=24, top_p<=1.
+
+Higher values do not change almost anything. A very rare chance to get a different reply.
+
 
 ### For people who wish to parse the saved file:
 P.S. If you wish to parse the saved file for replies, here is structure:
