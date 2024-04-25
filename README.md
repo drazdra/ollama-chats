@@ -290,7 +290,7 @@ New version v1.9 a huge major release. The changes are vast, so if you catch a b
 * Big new feature: "Optimize", called with Shift+F9, it allows you to define ranges of model parameters to try and to come back seeing replies with all possible combinations of these. You can even specify these for several different models with custom ranges per model. In addition to trying out model params you can also try various configuration parameters of the script, like sending all chat by one message or an array of messages, etc. Results are normalized, so you can easily see if some parameters produce the same reply. 
 
 
-##Bonus
+## Bonus
 I did some experiments to find the meaningful parameter ranges for llama3:8b and wizardlm2:7b
 Llama3: temperature<=9, top_k<=17, top_p<=1.
 Wizardlm2: temperature<=28, top_k<=24, top_p<=1.
