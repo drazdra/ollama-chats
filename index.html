@@ -699,7 +699,7 @@ Ctrl+right or right click will generate a new message trying to use the messages
 		<template v-if='!opt.run'>
 			<table id='optL' >
 				<tr>
-					<td colspan='5'>
+					<td colspan='6'>
 						<p class='understroke center'>&nbsp;</p>
 						<p class='green center'>
 							<span class='header'>Configure here ranges of parameters to try, per model.</span>
@@ -785,12 +785,12 @@ Ctrl+right or right click will generate a new message trying to use the messages
 					</td>
 				</tr>
 				<tr>
-					<td colspan='5' class='center'>
+					<td colspan='6' class='center'>
 						Settings for:<fields n='' :i='settings.req.model' :n-show='false'/>
 					</td>
 				</tr>
 				<tr>
-					<td colspan='5' class='center' id='optTimes'>
+					<td colspan='6' class='center' id='optTimes'>
 						Amount of replies per combination: <input v-model='opt[settings.req.model.v.v].times'>
 					</td>
 				</tr>
@@ -799,6 +799,7 @@ Ctrl+right or right click will generate a new message trying to use the messages
 					<td class='start' title='Starting value of this parameter'>Start</td>
 					<td class='end' title='Ending value of this parameter'>End</td>
 					<td class='step' title='Step we will go by, walking from start value to end value, for example from 1 to 5 step can be=1.'>Step</td>
+					<td class='round' title='Round the parameter to this many decimals, to avoid getting parameters like 3.0000000000000004. If empty, no rounding. Please note, that if you round things wrong, you may end up posting the same combination many times (e.g. if you round 0.1-0.7 to an integer.'>Round</td>
 					<td class='use' title='Should we use this parameter in our trial or not.'>Use</td>
 				</tr>
 				<template v-for='j of [config,settings.options,settings.req]'>
@@ -812,9 +813,10 @@ Ctrl+right or right click will generate a new message trying to use the messages
 									<td class='step'>
 										<input class='understroke' @keyup="optChUse(settings.req.model.v.v,ind)" v-model='opt[this.settings.req.model.v.v]["v"][ind]["step"]'>
 									</td>
+									<td class='round'><input class='understroke' v-model='opt[this.settings.req.model.v.v]["v"][ind]["rnd"]'></td>
 								</template>
 								<template v-else>
-									<td colspan='3' class='step'>a true/false param, nothing to configure</td>
+									<td colspan='4' class='step'>a true/false param, nothing to configure</td>
 								</template>
 								<td class='use'>
 									<input class='understroke' type='checkbox' v-model='opt[this.settings.req.model.v.v]["v"][ind]["use"]'>
@@ -824,7 +826,7 @@ Ctrl+right or right click will generate a new message trying to use the messages
 					</template>
 				</template>
 				<tr>
-					<td colspan='5' class='right'><span class='lnk' id='optRun' title="start the experiment" @click='optimizeRun()'>->Run</span></td>
+					<td colspan='6' class='right'><span class='lnk' id='optRun' title="start the experiment" @click='optimizeRun()'>->Run</span></td>
 				</tr>
 			</table>
 		</template>
@@ -857,11 +859,11 @@ Ctrl+right or right click will generate a new message trying to use the messages
 					<tr>
 						<td class='header'>{{settings.req.model.v.l[mi].n}}</td>
 					</tr>
-					<template v-for='i in m.v' >
+					<template v-for='(i,ind) in m.v' >
 						<tr>
 							<td class='justify'>
 								<opt-res :m='m' :i='i'></opt-res>
-								{{i.c}}
+								<span class='green header'>{{ind+1}}:</span> {{i.c}}
 							</td>
 						</tr>
 					</template>
@@ -1222,14 +1224,10 @@ li {
 	text-align: right;
 	min-width: 175px;
 }
-#optL .start, #optL .end, #optL .step {
+#optL .start, #optL .end, #optL .step  {
 	text-align: center;
-	max-width: 100px;
+	max-width: 55px;
 	vertical-align: middle;
-}
-#optL .step {
-	text-align: cener;
-	min-width: 50px;
 }
 #optL .use {
 	text-align: center;
@@ -1237,7 +1235,16 @@ li {
 }
 #optL .start input, #optL .end input, #optL .step input {
 	text-align: center;
-	width: 95px;
+	width: 55px;
+}
+#optL .round {
+	text-align: center;
+	min-width: 35px;
+	max-width: 35px;
+}
+#optL .round input {
+	text-align: center;
+	width: 35px;
 }
 .nowrap * {
 	white-space: nowrap;
@@ -1482,7 +1489,7 @@ window.app=createApp({
 				'control':1,
 			},
 			configGlobal: {
-				version:						{ name:'Version',v:'1.9.2',def:'',d:'UI version, just for information and upgrades','f':'ro',qn:'ver',q:null,opt:false },
+				version:						{ name:'Version',v:'1.9.3',def:'',d:'UI version, just for information and upgrades','f':'ro',qn:'ver',q:null,opt:false },
 				themeWhite:					{ name:'Invert colors',v:false,d:"Inverted colors, if you are weird person preferring white backgrounds, you may check this. But it looks scary, beware.",def:false,f:'cb',q:false,qn:'clrs',opt:false},
 				setsDescrShow:			{ name:"Show descriptions for configuration values",v:true,d:"Enables showing descriptions for each parameter below parameter's name, otherwise shows only as a tooltip.",def:true,f:'cb',q:null,opt:false},
 				rooms:							{ name:'Use single prompt to send the chat',v:true,def:true,d:"If true, all messages are concatenated and sent to AI as one big prompt, AI will take all the chat as a single input prompt generated by user. If it's off, chat is sent as a set of messages, then AI can see which messages were created by AI and which ones by user. Which one is better depends on the model.",f:'cb',q:false,qn:'sngl',opt:true},
@@ -1780,7 +1787,7 @@ window.app=createApp({
 						const i=j[key];
 						if(!i.opt) continue;
 						if(this.opt[m]['v'].hasOwnProperty(key)) continue;
-						this.opt[m]['v'][key]={start:'',end:'',step:'',v:'',use:false};
+						this.opt[m]['v'][key]={start:'',end:'',step:'',v:'',use:false,rnd:''};
 					}
 				}
 				//this.opt.res[m]={v:[],k:[],count:0};
@@ -1870,14 +1877,20 @@ window.app=createApp({
 						if(!ht[i][key].opt) continue;
 						if(!this.opt[m].v[key].use) continue;
 						if(ht[i][key].f=='cb') {
-							this.opt[m].v[key]['start']=0;
-							this.opt[m].v[key]['end']=1;
-							this.opt[m].v[key]['step']=1;
+							this.opt[m].v[key].start	=0;
+							this.opt[m].v[key].end		=1;
+							this.opt[m].v[key].step		=1;
+							this.opt[m].v[key].rnd		='';
 						} else {
 							if(!/^\d{1,14}$/.test(this.opt[m].times)) {
 								this.opt.run=false;
 								alert(`Amount of replies per combination should be a sane value.`);
 								scroll('optTimes');
+								return;
+							}
+							if(!/^\d{0,16}$/.test(this.opt[m].v[key].rnd)) {
+								this.opt.run=false;
+								alert(`Field's ${ht[i][key].name} "Round up to N decimals" value ${this.opt[m].v[key].rnd} for model ${this.settings.req.model.v.l[m].n} is not a positive integer, please correct it.`);
 								return;
 							}
 							for(const p of ['start','end','step']) {
@@ -1910,7 +1923,13 @@ window.app=createApp({
 				t.w({index:i,p:p});
 				const P=p[i];
 				t.w({from:P.start,to:P.end,step:P.step});
-				for(let v=P.start*1;v<=P.end*1;v+=P.step*1) { //>
+				let v;
+				for(let V=P.start*1;V<=P.end*1;V+=P.step*1) { //>
+					if(P.rnd!='') {
+						v=t.rnd(V,P.rnd);
+					} else {
+						v=V;
+					}
 					t.w(`going with value ${p[i].key} ${v}`);
 					P.lnk.v=v;
 					vals[i]=v;
@@ -1985,7 +2004,10 @@ window.app=createApp({
 			await nextTick();
 			this.scroll('optRes',true);
 		},
-
+		rnd(n,d) {
+		  return Number(Math.round(n+'e'+d)+'e-'+d);
+		},
+		
 		//db methods
 		prune() {
 			if(
@@ -2363,6 +2385,17 @@ window.app=createApp({
 					}
 					t.updateAddParams(d,'pState');
 					t.updateAddParams(d,'opt');
+					t.w(`upgraded to version ${d.configGlobal.version.v}`);
+					parse(d);
+					return;
+				} else if (ver=="1.9.2") {
+					t.w(`upgrading from version ${d.configGlobal.version.v}`);
+					d.configGlobal.version.v='1.9.3';
+					for(const m in d.opt) {
+						for(const p in d.opt[m].v) {
+							d.opt[m].v[p].rnd='';
+						}
+					}
 					t.w(`upgraded to version ${d.configGlobal.version.v}`);
 					parse(d);
 					return;

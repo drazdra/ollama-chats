@@ -1,4 +1,4 @@
-# ollama-chats v1.9.2.
+# ollama-chats v1.9.3.
 Ollama chat client in Vue, everything you need to do your private text rpg in browser, with any amount of different characters.
 
 ## What this is..
@@ -289,6 +289,8 @@ New version v1.9 a huge major release. The changes are vast, so if you catch a b
 ## Changes (v.1.9.2 2024.04.26)
 * Big new feature: "Optimize", called with Shift+F9, it allows you to define ranges of model parameters to try and to come back seeing replies with all possible combinations of these. You can even specify these for several different models with custom ranges per model. In addition to trying out model params you can also try various configuration parameters of the script, like sending all chat by one message or an array of messages, etc. Results are normalized, so you can easily see if some parameters produce the same reply. 
 
+## Changes (v.1.9.3 2024.04.26)
+* Minor improvements: added rounding for parameter values in search for optimial param combinations, because JS creates stuff like "3.00000000000004", 0.799999999999999, etc. And added numbers to generated replies.
 
 ## Bonus
 I did some experiments to find the meaningful parameter ranges for llama3:8b and wizardlm2:7b
