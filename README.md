@@ -1,4 +1,4 @@
-# ollama-chats v1.9.3.
+# ollama-chats v1.9.4.
 Ollama chat client in Vue, everything you need to do your private text rpg in browser, with any amount of different characters.
 
 ## What this is..
@@ -291,6 +291,9 @@ New version v1.9 a huge major release. The changes are vast, so if you catch a b
 
 ## Changes (v.1.9.3 2024.04.26)
 * Minor improvements: added rounding for parameter values in search for optimial param combinations, because JS creates stuff like "3.00000000000004", 0.799999999999999, etc. And added numbers to generated replies.
+
+## Changes (v.1.9.4 2024.04.27)
+* Minor bug fix, sometimes edited message for some strange reason of internal browser/vue interaction mechanics could double the edited text. Fixed now.
 
 ## Bonus
 I did some experiments to find the meaningful parameter ranges for llama3:8b and wizardlm2:7b
