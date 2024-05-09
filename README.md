@@ -1,5 +1,5 @@
-# ollama-chats v1.9.4.
-Ollama chat client in Vue, everything you need to do your private text rpg in browser, with any amount of different characters.
+# ollama-chats v1.9.7.
+Ollama chat client in Vue, everything you need to do your private text rpg in browser, with any amount of different characters, rag, per character context and more.
 
 ## What this is..
 This "project" is a single web page desktop interface for chatting with your local Ollama server. It doesn't use any libraries apart from Vue and can be opened in browser as a regular web page.
@@ -20,8 +20,7 @@ It looks like this:
 ![image](https://github.com/drazdra/ollama-chats/blob/main/screenshots/6.png)
 
 You can run it just from disk in your browser, if you set an evironment variable or you can run it in a local web-server, like NGINX, Apache, etc.
-The reason for that is that Ollama's API is done via a local network server, and 
-locally opened web pages (from disk) by default are not allowed to access network resources (for safety reasons), even if it's your local Ollama server. Thus, to make it work you need either to configure Ollama to allow that or to use a local web-server software :).
+The reason for that is that Ollama's API is done via a local network server, and locally opened web pages (from disk) by default are not allowed to access network resources (for safety reasons), even if it's your local Ollama server. Thus, to make it work you need either to configure Ollama to allow that or to use a local web-server software :).
 
 ## Why:
 when i installed Ollama, i tried its built-in console chat interface but quickly realized it's nowhere enough to have fun, just enough to test the thing..
@@ -31,20 +30,11 @@ when i installed Ollama, i tried its built-in console chat interface but quickly
 2. or i'm too lazy to check all the code to ensure they do not send my local chats somewhere
 3. i want to have it my way - that is for desktop and keyboard, not for mobile phones.
 4. i want it to have a convenient keyboard driven interface and no unnecessary whistles.
-5. i want it to use as little 3rd party libraries as possible for security reasons. 
+5. i want it to use as few 3rd party libraries as possible for security reasons. 
+6. fully local, so nothing is uploaded anywhere.
+7. browser based.
  
-## What:
-Initially (version 0) i had spent several days to code this thing. My goals were:
-1. fully local, so nothing is uploaded anywhere.
-2. convenient chat interface for fun. (i.e. something unlike character.ai).
-3. no unneeded dependancies that can inject fun code without me knowing that.
-4. minimalistic.
-5. browser based.
-6. keyboard friendly.
- 
-And here we are. Whole thing is less than 30KB right now (actually 133KB already, lol), that's including the
-excerpts from Ollama documentation, html code and help page. The only imported thing is Vue
-which is a great web framework, probably used by millions of people, so it's pretty safe.
+And here we are. Whole thing is less than 30KB right now (actually 152KB already, lol), that's including the excerpts from Ollama documentation, html code and help page. The only imported thing is Vue which is a great web framework, probably used by millions of people, so it's pretty safe. 
 
 #### In other words, this UI is made with paranoia in mind, to prevent any chances of leaking our chats.
 
@@ -110,26 +100,28 @@ You will need to edit ollama.service. i use Nano editor, replace it with what yo
 Now, let me list the features this thing has:
 
 1. You can "prompt" the AI and see the replies in a chat form, as we all love. "Enter" button sends the reply, shift+enter allows making a line-break.
-2. You can ask AI for another reply to your last prompt, by clicking on the arrow next to the message	or simply by clicking "right" arrow on the keyboard. Left arrow works as well). If you have some text typed in your prompt and you are editing it, arrows will not slide replies, obviously, for your convenience, as you may move cursor through the typed text. Same if you are editing something else, like settings.
-3. You can do a similar thing with your own replies. Say, you are in a middle of conversation	and you see that AI doesn't like your reply, so you just click "right" arrow next to your	own message and it creates a new message. Then you just type in your new prompt, send it and that's it. You get a new "branch" of the conversation.
+2. You can ask AI for any amount of side-replies (alternative ones), by clicking on the arrow next to the message	or simply by clicking "right" arrow on the keyboard. Left arrow works as well). If you have some text typed in your prompt and you are editing it, arrows will not slide replies, obviously, for your convenience, as you may move cursor through the typed text. Same if you are editing something else, like settings.
+3. You can do a similar thing with your own replies. Say, you are in a middle of conversation	and you see that AI doesn't like your reply, so you just click "right" arrow next to your	own message and it creates a new message. Then you just type in your new prompt, send it and that's it. You get a new "branch" of the conversation. And at that your previous branch is still there and you can return to it at any time.
 4. Under the "left" and "right" arrows for every "turn" of your chat there are numbers. These show how many alternative replies you do have there.
 5. You can travel "up" and "down" the conversation with your arrows easily. It's super convenient when you "chat a story".
 6. You can stop AI reply if it takes too long or if it's obviously wrong. Just hit "Escape" button on your keyboard.
 7. You can see the number of every alternative reply, making it easy to remember which one you liked and return to it if no new ones are good.
-8. You can edit any of the old messages. To do that, just click on the text of a message you wish to edit and that's it, simply edit it in place. But pay attention, there is no way back once you click away from editing. Until then, you can use ctrl+z of your browser to revert things. Once you've edited, there is no more old version anywhere, AI will see only the edited version, you too. You can edit both your own and AI replies. So, if there is a minor mistake made by AI in an otherwise perfect answer, it's very easy to fix it and continue having fun. You even can edit the nicks for each message.
-9. You can specify nicknames - yours and of AI. These nicknames are used in prompts for AI.
+8. You can manually edit any of the messages - both your and AI ones. To do that, just click on the text of a message you wish to edit and that's it, simply edit it in place. But pay attention, there is no way back once you click away from editing. Until then, you can use ctrl+z of your browser to revert things. Once you've edited, there is no more old version anywhere, AI will see only the edited version, you too. So, if there is a minor mistake made by AI in an otherwise perfect answer, it's very easy to fix it and continue having fun. You even can edit the nicks for each message.
+9. You can specify nicknames - yours and of AI. These nicknames are used in prompts for AI, so they are important.
 10.	You can rate the messages by clicking -- or ++. This rating can actually be used to instruct the model within chat to try to copy their style. If you have more than ~7 messages it actually makes real big difference, which is very cool. And of course if you are into finetuning, you can save your chat with ratings. Later, on your own, you may extract the dataset from the saved file (with your ratings) and  use it in your finetuning project.
 11.	When you open the page, it pulls the list of locally available models and adds these to the list.	The list is under the prompt text area. You can easily choose the model you wish to get reply from. Yes, you can do it anytime within the chat. So, if your current model provides bad replies at some point, why not to change it to some other model and to go on?
 12.	If you do not have any installed models, it will suggest you to pull a model from ollama's library. Note: the page itself does not load anything, it just uses Ollama's functionality, and kindly asks Ollama to download a new model from its safe library. Ollama has that feature.
 13. It can work in two modes, sending messages as a single prompt and as an array of user messages. Models treat these differently, so you can try what fits you the best.
 14. Side messages can use your rating to instruct the model to produce something better. For that just use ctrl+right or right click on an arrow :).
-15. It has white and dark themes. Though white one is scary :).
+15. It has white and dark themes. Though the white one is scary :).
 16. You can create characters with totally different "memory" (context). For example, 2 of your characters can do something together and the 3rd character won't know anything about that, poor thing :). This allows a much more interesting roleplays.
 17. You can have separate settings per AI character, which means you can use different temperature etc and even different models for different characters!
-18. You can switch manually controlled character to be AI controlled and vice versa :). So you can make AI to play for the char you used to be, and you instead would continue to play for AI's char. Of course you can do it with any of the charactes in the story.
-19. You can automatically try ranges of various model parameters with configurable steps and see how model reacts to these. Find the best parameters to have fun with your model :).
-20. And many more features :).
-21.	Let's talk about lower menu:
+18. You can switch manually controlled character to be AI controlled and vice versa :). So you can make AI to play for the char you used to be, and you instead would continue to play for AI's char. Of course you can do it with any of the charactes in the story. To do that click an up/down arrow icon in the users list at the top-left.
+19. You can automatically try ranges of various model parameters with configurable steps and see how model reacts to these. Find the best parameters to have fun with your model :). To do that click F9 and reada small instruction on using it ;). 
+20. You can use RAG to store any amount of memories for characters, both per character and for all of them. You can enable/disable this as you wish, as well as define the amount of relevant memories for characters to "remember" before answering to you :). It also will show you which "memories" were used in the past reply of a character. To use it, just click shift+f4 for knowledge that all characters share or shift+f5 for personal memories of a given character. Then just enter "memories" as paragraphs of text. Size doesn't matter here, you can use any amount of data.
+21. It's possible to upload images for multimodal models, like llava or moondream! They will tell you what's on the image.
+22. And many more features :).
+23.	Let's talk about lower menu:
     
 #### 12.1. Settings: 
 Allows you to configure the script itself and Ollama. If the parameter value is left empty, Ollama uses values from its modelfile, or default ones if modelfile doesn't have these. Parameters are applied upon each request, and according to Ollama's docs, they should change the rules on the fly.
@@ -157,6 +149,12 @@ Yes, again, you can load your old chat with all of the settings from a saved fil
 
 #### 12.9. Optimize:
 Allows you to automatically try any possible combination of configuration and ollama settings for any models and see the results.
+
+#### 12.10. CH.mem:
+Character's memory. Allows you to enter any amount of data for character to rememember, so you are not limited with the context window anymore and you can define a very detailed characters with a lot of information they can remember when appropriate.
+
+#### 12.11. P.knlg:
+Public knowledge. Allows you to enter any amount of data for all character to know, so you are not limited with the context window anymore and you can define a lot of world descriptions for characters to remember, when appropriate.
  			 
 ### Enjoy!
 
@@ -294,6 +292,23 @@ New version v1.9 a huge major release. The changes are vast, so if you catch a b
 
 ## Changes (v.1.9.4 2024.04.27)
 * Minor bug fix, sometimes edited message for some strange reason of internal browser/vue interaction mechanics could double the edited text. Fixed now.
+
+## Changes (v.1.9.7 2024.05.09)
+### Major release
+* Huge new feature: Now we have RAG! You can now define any amount of data both per character and for all of characters. When you send new prompt, relevant information is searched for in these data storages and injected into the prompt. You can control how many memories are injected or disable it at all. I highly recommend running a second instance of Ollama on another port, configuration of my UI has a separate URL for that one. In this case your RAG won't slow down much new generations. If you use the same Ollama instance for RAG, the cache of an existing conversatoin is being erased in Ollama and the whole history is then recalculated, which takes huge time to complete. If you have 2 separate instances, that doesn't happen. I run at least 3 instances, 2 for 2 characters and 1 for embeddings, luckily, embedding models are tiny, less than 400mb usually, and models like llama3:8b q4 are very small, so 2 of them are easy to run on most computers.
+* Big new feature: Now it's possible to upload images! Although, the use is kind of limited, the only 2 models that support vision right now are llava and moondream. Also, i don't really see how it can be used in rpg :). By default only the last turn images are seen by a model, because vision is slow and takes a lot of time. 
+* Invisible but important feature: now it single-message mode, which is a default one, when you send an empty message it is not added to the conversation and all and the AI replies to the previous chat log. That allows you to have a much better AI to AI conversations, as now there won't be something like "You: continue" in between their lines, confusing them :). Yet, in the multi-message mode, empty messages are still replaced with "continue" because in that mode AIs are totally clueless when question/answer pattern is broken.
+* New feature: Now there is a second list of models "embedding" models. Theoretically any models could do embeddings, but to avoid misuse i've created a separate list for these. To use new RAG feature you will need to download at least one embedding model. Do pull "nomic-embed-text" or "snowflake-arctic-embed:335m", whichever you feel like.
+* Major design change: I've added a background image to the chat, to make it more appealing to people who like everything flashy :). Don't worry, you can always open settings, go to background image and remove it, if you prefer a classic black background. Also, you can make it either fixed background that doesn't move or repeated vertically.
+* Minor feature: Now you can limit the height of the chat log if you don't like a long page. This way the chat log is scrolled separately within a small sub window.
+* Minor feature: You can see which memories were used from your list when the reply was generated.
+* Minor feature: I've added "storiesUI" configuration option. Now you can separately hide stories UI but it will still work under the hood. If you wish to completely disable stories, you have a separate "stories" option now. If you disable it, all messages will be seen by any character.
+* Minor feature: right click on AI's nick under the prompt will auto submit the prompt now, this way it's much easier to make them talk to each other :).
+* Minot design change: there is a lot of settings now, so i've finally grouped them into separate tabs.
+* Update: i've slightly improved speed of the chat log rendering, it's not like it would be slow on any of the modern computers with a reasonable long chat log, but it just irritates me that things can work much more efficiently, so i've fixed several most outcrying non-optimal things.
+* Update: i've removed separate proxy url, there were reasons for having it but i changed my mind. Now, if you use proxy, just use its url as a main one. No more "fall back" option.
+* Minor bug fix, if pulling a model returns an error, it will be shown. Also, list of models automatically reloaded now after the pull.
+* Minor bug fix, sometimes character selections could not be set automatically on character list changes.
 
 ## Bonus
 I did some experiments to find the meaningful parameter ranges for llama3:8b and wizardlm2:7b
