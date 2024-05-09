@@ -7,17 +7,7 @@ This "project" is a single web page desktop interface for chatting with your loc
 
 It looks like this:
 
-![image](https://github.com/drazdra/ollama-chats/blob/main/screenshots/1.png)
-
-![image](https://github.com/drazdra/ollama-chats/blob/main/screenshots/2.png)
-
-![image](https://github.com/drazdra/ollama-chats/blob/main/screenshots/3.png)
-
-![image](https://github.com/drazdra/ollama-chats/blob/main/screenshots/4.png)
-
-![image](https://github.com/drazdra/ollama-chats/blob/main/screenshots/5.png)
-
-![image](https://github.com/drazdra/ollama-chats/blob/main/screenshots/6.png)
+![image](https://github.com/drazdra/ollama-chats/blob/main/screenshots/s1.png)
 
 You can run it just from disk in your browser, if you set an evironment variable or you can run it in a local web-server, like NGINX, Apache, etc.
 The reason for that is that Ollama's API is done via a local network server, and locally opened web pages (from disk) by default are not allowed to access network resources (for safety reasons), even if it's your local Ollama server. Thus, to make it work you need either to configure Ollama to allow that or to use a local web-server software :).
