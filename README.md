@@ -314,7 +314,7 @@ when you've >2 characters defined (including you), it switches to a different mo
 		
 
 
-##License
+## License
 Please note, it's not an open source project. It's a copyrighted proprietary software.
 The short version of the rules to use this project:
  
