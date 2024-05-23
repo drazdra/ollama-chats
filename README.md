@@ -1,4 +1,4 @@
-# ollama-chats v1.9.7.
+# ollama-chats v1.9.8.
 Ollama chat client in Vue, everything you need to do your private text rpg in browser, with any amount of different characters, rag, per character context and more.
 
 ## What this is..
@@ -110,8 +110,9 @@ Now, let me list the features this thing has:
 19. You can automatically try ranges of various model parameters with configurable steps and see how model reacts to these. Find the best parameters to have fun with your model :). To do that click F9 and reada small instruction on using it ;). 
 20. You can use RAG to store any amount of memories for characters, both per character and for all of them. You can enable/disable this as you wish, as well as define the amount of relevant memories for characters to "remember" before answering to you :). It also will show you which "memories" were used in the past reply of a character. To use it, just click shift+f4 for knowledge that all characters share or shift+f5 for personal memories of a given character. Then just enter "memories" as paragraphs of text. Size doesn't matter here, you can use any amount of data.
 21. It's possible to upload images for multimodal models, like llava or moondream! They will tell you what's on the image.
-22. And many more features :).
-23.	Let's talk about lower menu:
+22. Now it has a brilliant character generator! You can generate any personage with any parameters, from evil and creepy one to a saint! And it's going to be much more fun to chat than it is with a simple short or bad written system prompt that you can find in most cards online. Also, it generated memories for the character on any topics, if you use rag (included) you can have even more complicated personalities created!
+23. And many more features :).
+24.	Let's talk about lower menu:
     
 #### 12.1. Settings: 
 Allows you to configure the script itself and Ollama. If the parameter value is left empty, Ollama uses values from its modelfile, or default ones if modelfile doesn't have these. Parameters are applied upon each request, and according to Ollama's docs, they should change the rules on the fly.
@@ -145,52 +146,73 @@ Character's memory. Allows you to enter any amount of data for character to reme
 
 #### 12.11. P.knlg:
 Public knowledge. Allows you to enter any amount of data for all character to know, so you are not limited with the context window anymore and you can define a lot of world descriptions for characters to remember, when appropriate.
+
+#### 12.12. Gen.Char.:
+Character generator. Allows you to easily generate a complicated personality of a new personage in a few steps :).
  			 
 ### Enjoy!
 
-## Changes (v.1.1 2024.03.30):
-New version v1.1. (let's say previous one was v0). A lot of minor things was changed and a huge major change is introduced.
-New features:
-### Most important:
-Now it allows you to have so called "rooms", which means you can define as many characters as you wish to to chat with these, by choosing who speaks next. You can have conversations with any amount of people now!
-	
-#### Please note (valid for this version only)
-when you've >2 characters defined (including you), it switches to a different mode and the consistency of replies changes. i, personally, find that this multi-user mode provides much better results than regular chat mode, so i recomment to add a 3rd user even if you don't use it in the conversation. But you can try and decide what you like more :).
+## Changes (v.1.9.8 2024.05.22)
+### Major release!
+* Now we have a character generator! Sounds as something small but took about two weeks of hard work. I was thinking for adding public cards support but after looking at a lot of them, the structure and content, level of support and so on, i've decided to avoid that for now. Instead we have a much more interesting random character generator now :). You can define starting points such as age, gender or anything else you believe is important and it will generate the rest. What it does is making a name, a system prompt for your character and also a lot of memories to fill the RAG data if you use it. You can define how many childhood good and bad memories you wish to add to character, as well as how many recent memories and any amount of *custom* random memories on topics you predefine. Even more, you can make it automatically generate memories about any of the generated parameters! For example, if you have a parameter "Hobby" and model will generate a hobby "Photography", you can automatically generate for your character any amount of "photography" related memories! And the best part is, it actually allows you to set any amount of your own parameters, so you are not restrained with anything! Wish it to generate "facial features" description? Why not? Wish it to generate "Length of fur" or "Amount of plasma cannons", why not either? :) And the cherry top on that is my own concept of the core parameters for every character. I've spent quite some time on making up the most interesting yet key characterists and here they are: toxicity/charm, destrutive/constructive and "lieful/honest". You can define these before every generation tailoring the new character to be precisely what you want (or leave it random!). And of course you can also prefedine any of your custom parameter values! Once i made it work and tried, the chats turned x5 as interesting :). Characters are way more alive and diverse in behavior now :). 
+* Memories now can be generated live during the chat, just define the topics for new memories and click generate!
+* RAG now allows enabling/disabling shuffling ot the top found results. Shuffling may add randomness but takes longer to evaluate your side-prompts as these can't be cached. 
+* Now script on exit saves to the session used urls and chosen models and reloads it on the next time you open the script. So you don't have to choose the model from the list every time or configure a non-standard url, or an url for embeddings :). Data is saved for global settings, if you have per character settings it's presumed you just "save" and "load" to keep everything the same.
 
-#### New features:
-* You can add and remove any user controlled characters you speak for. For example, one is your	main hero, another one is "World" or "Narrator" to drop in changes in the world when something happens, like "Narrator: Suddenly a comet fell upon the head of a ..". And of course you can add any amount of just personages you speak for.
+## Changes (v.1.9.7 2024.05.09)
+### Major release
+* Huge new feature: Now we have RAG! You can now define any amount of data both per character and for all of characters. When you send new prompt, relevant information is searched for in these data storages and injected into the prompt. You can control how many memories are injected or disable it at all. I highly recommend running a second instance of Ollama on another port, configuration of my UI has a separate URL for that one. In this case your RAG won't slow down much new generations. If you use the same Ollama instance for RAG, the cache of an existing conversatoin is being erased in Ollama and the whole history is then recalculated, which takes huge time to complete. If you have 2 separate instances, that doesn't happen. I run at least 3 instances, 2 for 2 characters and 1 for embeddings, luckily, embedding models are tiny, less than 400mb usually, and models like llama3:8b q4 are very small, so 2 of them are easy to run on most computers.
+* Big new feature: Now it's possible to upload images! Although, the use is kind of limited, the only 2 models that support vision right now are llava and moondream. Also, i don't really see how it can be used in rpg :). By default only the last turn images are seen by a model, because vision is slow and takes a lot of time. 
+* Invisible but important feature: now it single-message mode, which is a default one, when you send an empty message it is not added to the conversation and all and the AI replies to the previous chat log. That allows you to have a much better AI to AI conversations, as now there won't be something like "You: continue" in between their lines, confusing them :). Yet, in the multi-message mode, empty messages are still replaced with "continue" because in that mode AIs are totally clueless when question/answer pattern is broken.
+* New feature: Now there is a second list of models "embedding" models. Theoretically any models could do embeddings, but to avoid misuse i've created a separate list for these. To use new RAG feature you will need to download at least one embedding model. Do pull "nomic-embed-text" or "snowflake-arctic-embed:335m", whichever you feel like.
+* Major design change: I've added a background image to the chat, to make it more appealing to people who like everything flashy :). Don't worry, you can always open settings, go to background image and remove it, if you prefer a classic black background. Also, you can make it either fixed background that doesn't move or repeated vertically.
+* Minor feature: Now you can limit the height of the chat log if you don't like a long page. This way the chat log is scrolled separately within a small sub window.
+* Minor feature: You can see which memories were used from your list when the reply was generated.
+* Minor feature: I've added "storiesUI" configuration option. Now you can separately hide stories UI but it will still work under the hood. If you wish to completely disable stories, you have a separate "stories" option now. If you disable it, all messages will be seen by any character.
+* Minor feature: right click on AI's nick under the prompt will auto submit the prompt now, this way it's much easier to make them talk to each other :).
+* Minot design change: there is a lot of settings now, so i've finally grouped them into separate tabs.
+* Update: i've slightly improved speed of the chat log rendering, it's not like it would be slow on any of the modern computers with a reasonable long chat log, but it just irritates me that things can work much more efficiently, so i've fixed several most outcrying non-optimal things.
+* Update: i've removed separate proxy url, there were reasons for having it but i changed my mind. Now, if you use proxy, just use its url as a main one. No more "fall back" option.
+* Minor bug fix, if pulling a model returns an error, it will be shown. Also, list of models automatically reloaded now after the pull.
+* Minor bug fix, sometimes character selections could not be set automatically on character list changes.
 
-* You can add and remove any amount of AI controlled characters. Every character has its own system prompt you define and its own instruction for the next turn that you define as well. You can have conversations between characters and with multiple characters over any situations you imagine in your rpg.
+## Changes (v.1.9.4 2024.04.27)
+* Minor bug fix, sometimes edited message for some strange reason of internal browser/vue interaction mechanics could double the edited text. Fixed now.
 
-* If you add more than 2 characters, chat changes the way it works internally, helping AI to differentiate who said what. You don't need to start every time with "Name:" and to force AI to do the same, it will work out of the box. I love it :).
+## Changes (v.1.9.3 2024.04.26)
+* Minor improvements: added rounding for parameter values in search for optimial param combinations, because JS creates stuff like "3.00000000000004", 0.799999999999999, etc. And added numbers to generated replies.
 
-* Added configuration of the script features, a few parameters there:
-	-  hideEmptyOwn 0/1 which hides your empty messages, when you just click "enter" and wish to see how characters talk to each other or wish them to continue. So your empty messages won't litter the chat log. If you set this to 0, you will see these and it makes it possible to branch chat at any point if you wish.
-	- showEmptyOwnSide 0/1 that will force-show the empty own messages IF these are not the only ones at a turn. Single empty replies are still hidden. Showing these is useful if you have multiple own different replies at some turn and you wish to see these to compare the results of different attempts. If an empty one would be hidden, you wouldn't be able to scroll left/right at the turn like that. So, enabling it allows it.
+## Changes (v.1.9.2 2024.04.26)
+* Big new feature: "Optimize", called with Shift+F9, it allows you to define ranges of model parameters to try and to come back seeing replies with all possible combinations of these. You can even specify these for several different models with custom ranges per model. In addition to trying out model params you can also try various configuration parameters of the script, like sending all chat by one message or an array of messages, etc. Results are normalized, so you can easily see if some parameters produce the same reply. 
 
-* Added "keep-alive" parameter for Ollama, controlling the time in seconds to offload the model from memory. they load so slowly that default 5 minutes is too little. you can set it to -1 to make it keep the model "forever" in memory.
+## Changes (v.1.9 2024.04.19)
+New version v1.9 a huge major release. The changes are vast, so if you catch a bug (or a dozen), let me know :).
 
-* When editing the reply in the chat log, "enter" now leaves the field, which is convenient. Shift+enter adds a line-break.
+* Major *unique* feature: each character can have its own context memory. And each message has its own "access" list where you can set who can actually "know" what happens in that turn.
 
-* Chat log messages now show the line-breaks as they should.
+* New major feature: you can make different settings per character! Now each char can have its own settings, including the model.
 
-* Clicking "enter" upon radio buttons choosing who replies next sends the message. So there is no need to click back on the prompt with the mouse. You can just use "tab" button to move from prompt to the AI character selector, click space on the one you wish to answer and then hit enter. easy. Obviously "Shift-tab" moves you back and this way you can select your own character to reply for.
+* New major feature: now you can switch manually controlled character to become AI controlled and vice versa :). So you can take control of any characted in the roleplay, letting AI play for what used to be your one.
 
-* Clicking on "system prompt" or "instr" now scrolls to the opened text area for convenience.
+* New feature: now chars can be organized into "presets" which are groups for fast access with configured access settings. So, you can have 2 groups of chars and easily switch between these when you want to continue the dialog for another group.
 
-* An upgrade script for old version chats was written, so if you had a funny chat in the previous version, it should be fine to load it and get all the new features to continue it. It was irritating to write it :).
+* Models select list now a part of the settings and can be added/removed to the quick access list of settings
 
-* Enter button in the chat will not add a line-break anymore at the time of sending.
+* A setting to auto-remove emojis, in case if you don't want these.
 
-* All sent messages are trimmed now, so useless line-breaks and spaces on the end are removed.
+* fixed several bugs found in v1.6.
 
-* If you send an empty message, internally it's replaced with "Continue" prompt for AI, it's done to for to things: 
-	- avoid AI treating it like "oh, you are silent" which is irritating. 
-	- sometimes models reply with the same message to an empty one
-	- sometimes models just reply with an empty message to your empty message.
+* NOTE: i've added vue.prod.js file to the project, if CDN dies (again), you can use it instead.
 
-* Multiple "design" improvements - colors, transitions, etc.
-		
+
+## Changes (v.1.6 2024.03.09):
+New version v1.6, it's a minor release.
+
+* Main new feature: Quick settings. now you can configure which parameters you wish to have at hand next to models list and then you can change them without searching in the long list. By default the most important ones are there. You always can disable quick settings if you don't like them :).
+
+* Minor improvement in cleaning garbage in replies.
+
+* Bottom menu removes functional button numbers when you switch off these in the settings.
 
 ## Changes (v.1.5 2024.03.08):
 New version v1.5. (versions 1.2-1.4 were not published), several major changes and a lot of smaller ones.
@@ -246,59 +268,61 @@ New version v1.5. (versions 1.2-1.4 were not published), several major changes a
 
 * Several minor outdated bugs were updated to a new improved ones.
 
-## Changes (v.1.6 2024.03.09):
-New version v1.6, it's a minor release.
 
-* Main new feature: Quick settings. now you can configure which parameters you wish to have at hand next to models list and then you can change them without searching in the long list. By default the most important ones are there. You always can disable quick settings if you don't like them :).
+## Changes (v.1.1 2024.03.30):
+New version v1.1. (let's say previous one was v0). A lot of minor things was changed and a huge major change is introduced.
+New features:
+### Most important:
+Now it allows you to have so called "rooms", which means you can define as many characters as you wish to to chat with these, by choosing who speaks next. You can have conversations with any amount of people now!
+	
+#### Please note (valid for this version only)
+when you've >2 characters defined (including you), it switches to a different mode and the consistency of replies changes. i, personally, find that this multi-user mode provides much better results than regular chat mode, so i recomment to add a 3rd user even if you don't use it in the conversation. But you can try and decide what you like more :).
 
-* Minor improvement in cleaning garbage in replies.
+#### New features:
+* You can add and remove any user controlled characters you speak for. For example, one is your	main hero, another one is "World" or "Narrator" to drop in changes in the world when something happens, like "Narrator: Suddenly a comet fell upon the head of a ..". And of course you can add any amount of just personages you speak for.
 
-* Bottom menu removes functional button numbers when you switch off these in the settings.
+* You can add and remove any amount of AI controlled characters. Every character has its own system prompt you define and its own instruction for the next turn that you define as well. You can have conversations between characters and with multiple characters over any situations you imagine in your rpg.
 
-## Changes (v.1.9 2024.04.19)
-New version v1.9 a huge major release. The changes are vast, so if you catch a bug (or a dozen), let me know :).
+* If you add more than 2 characters, chat changes the way it works internally, helping AI to differentiate who said what. You don't need to start every time with "Name:" and to force AI to do the same, it will work out of the box. I love it :).
 
-* Major *unique* feature: each character can have its own context memory. And each message has its own "access" list where you can set who can actually "know" what happens in that turn.
+* Added configuration of the script features, a few parameters there:
+	-  hideEmptyOwn 0/1 which hides your empty messages, when you just click "enter" and wish to see how characters talk to each other or wish them to continue. So your empty messages won't litter the chat log. If you set this to 0, you will see these and it makes it possible to branch chat at any point if you wish.
+	- showEmptyOwnSide 0/1 that will force-show the empty own messages IF these are not the only ones at a turn. Single empty replies are still hidden. Showing these is useful if you have multiple own different replies at some turn and you wish to see these to compare the results of different attempts. If an empty one would be hidden, you wouldn't be able to scroll left/right at the turn like that. So, enabling it allows it.
 
-* New major feature: you can make different settings per character! Now each char can have its own settings, including the model.
+* Added "keep-alive" parameter for Ollama, controlling the time in seconds to offload the model from memory. they load so slowly that default 5 minutes is too little. you can set it to -1 to make it keep the model "forever" in memory.
 
-* New major feature: now you can switch manually controlled character to become AI controlled and vice versa :). So you can take control of any characted in the roleplay, letting AI play for what used to be your one.
+* When editing the reply in the chat log, "enter" now leaves the field, which is convenient. Shift+enter adds a line-break.
 
-* New feature: now chars can be organized into "presets" which are groups for fast access with configured access settings. So, you can have 2 groups of chars and easily switch between these when you want to continue the dialog for another group.
+* Chat log messages now show the line-breaks as they should.
 
-* Models select list now a part of the settings and can be added/removed to the quick access list of settings
+* Clicking "enter" upon radio buttons choosing who replies next sends the message. So there is no need to click back on the prompt with the mouse. You can just use "tab" button to move from prompt to the AI character selector, click space on the one you wish to answer and then hit enter. easy. Obviously "Shift-tab" moves you back and this way you can select your own character to reply for.
 
-* A setting to auto-remove emojis, in case if you don't want these.
+* Clicking on "system prompt" or "instr" now scrolls to the opened text area for convenience.
 
-* fixed several bugs found in v1.6.
+* An upgrade script for old version chats was written, so if you had a funny chat in the previous version, it should be fine to load it and get all the new features to continue it. It was irritating to write it :).
 
-* NOTE: i've added vue.prod.js file to the project, if CDN dies (again), you can use it instead.
+* Enter button in the chat will not add a line-break anymore at the time of sending.
 
-## Changes (v.1.9.2 2024.04.26)
-* Big new feature: "Optimize", called with Shift+F9, it allows you to define ranges of model parameters to try and to come back seeing replies with all possible combinations of these. You can even specify these for several different models with custom ranges per model. In addition to trying out model params you can also try various configuration parameters of the script, like sending all chat by one message or an array of messages, etc. Results are normalized, so you can easily see if some parameters produce the same reply. 
+* All sent messages are trimmed now, so useless line-breaks and spaces on the end are removed.
 
-## Changes (v.1.9.3 2024.04.26)
-* Minor improvements: added rounding for parameter values in search for optimial param combinations, because JS creates stuff like "3.00000000000004", 0.799999999999999, etc. And added numbers to generated replies.
+* If you send an empty message, internally it's replaced with "Continue" prompt for AI, it's done to for to things: 
+	- avoid AI treating it like "oh, you are silent" which is irritating. 
+	- sometimes models reply with the same message to an empty one
+	- sometimes models just reply with an empty message to your empty message.
 
-## Changes (v.1.9.4 2024.04.27)
-* Minor bug fix, sometimes edited message for some strange reason of internal browser/vue interaction mechanics could double the edited text. Fixed now.
+* Multiple "design" improvements - colors, transitions, etc.
+		
 
-## Changes (v.1.9.7 2024.05.09)
-### Major release
-* Huge new feature: Now we have RAG! You can now define any amount of data both per character and for all of characters. When you send new prompt, relevant information is searched for in these data storages and injected into the prompt. You can control how many memories are injected or disable it at all. I highly recommend running a second instance of Ollama on another port, configuration of my UI has a separate URL for that one. In this case your RAG won't slow down much new generations. If you use the same Ollama instance for RAG, the cache of an existing conversatoin is being erased in Ollama and the whole history is then recalculated, which takes huge time to complete. If you have 2 separate instances, that doesn't happen. I run at least 3 instances, 2 for 2 characters and 1 for embeddings, luckily, embedding models are tiny, less than 400mb usually, and models like llama3:8b q4 are very small, so 2 of them are easy to run on most computers.
-* Big new feature: Now it's possible to upload images! Although, the use is kind of limited, the only 2 models that support vision right now are llava and moondream. Also, i don't really see how it can be used in rpg :). By default only the last turn images are seen by a model, because vision is slow and takes a lot of time. 
-* Invisible but important feature: now it single-message mode, which is a default one, when you send an empty message it is not added to the conversation and all and the AI replies to the previous chat log. That allows you to have a much better AI to AI conversations, as now there won't be something like "You: continue" in between their lines, confusing them :). Yet, in the multi-message mode, empty messages are still replaced with "continue" because in that mode AIs are totally clueless when question/answer pattern is broken.
-* New feature: Now there is a second list of models "embedding" models. Theoretically any models could do embeddings, but to avoid misuse i've created a separate list for these. To use new RAG feature you will need to download at least one embedding model. Do pull "nomic-embed-text" or "snowflake-arctic-embed:335m", whichever you feel like.
-* Major design change: I've added a background image to the chat, to make it more appealing to people who like everything flashy :). Don't worry, you can always open settings, go to background image and remove it, if you prefer a classic black background. Also, you can make it either fixed background that doesn't move or repeated vertically.
-* Minor feature: Now you can limit the height of the chat log if you don't like a long page. This way the chat log is scrolled separately within a small sub window.
-* Minor feature: You can see which memories were used from your list when the reply was generated.
-* Minor feature: I've added "storiesUI" configuration option. Now you can separately hide stories UI but it will still work under the hood. If you wish to completely disable stories, you have a separate "stories" option now. If you disable it, all messages will be seen by any character.
-* Minor feature: right click on AI's nick under the prompt will auto submit the prompt now, this way it's much easier to make them talk to each other :).
-* Minot design change: there is a lot of settings now, so i've finally grouped them into separate tabs.
-* Update: i've slightly improved speed of the chat log rendering, it's not like it would be slow on any of the modern computers with a reasonable long chat log, but it just irritates me that things can work much more efficiently, so i've fixed several most outcrying non-optimal things.
-* Update: i've removed separate proxy url, there were reasons for having it but i changed my mind. Now, if you use proxy, just use its url as a main one. No more "fall back" option.
-* Minor bug fix, if pulling a model returns an error, it will be shown. Also, list of models automatically reloaded now after the pull.
-* Minor bug fix, sometimes character selections could not be set automatically on character list changes.
+
+##License
+Please note, it's not an open source project. It's a copyrighted proprietary software.
+The short version of the rules to use this project:
+ 
+1. You use it as is, with no warrantees, no guarantees, at your own risk, etc.
+2. It's totally free for personal non-commercial use. In fact it's being made for people to have a free tool to chat to models in a private and convenient way. That's why the sources are open. So if you just wish to chat with models, enjoy!
+3. It's not allowed to repack it or its parts and to use in your product or as your product. I might agree to this after a discussion but by default it's prohibited.
+4. It's totally not allowed to be used by any business or corporation. It's not allowed to be used for any commercial purpose or in commercial products without my agreement.
+5. It's not allowed to remove the original link to github, usage conditions or any other similar materials from the code.
 
 ## Bonus
 I did some experiments to find the meaningful parameter ranges for llama3:8b and wizardlm2:7b
