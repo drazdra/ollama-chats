@@ -152,6 +152,13 @@ Character generator. Allows you to easily generate a complicated personality of 
  			 
 ### Enjoy!
 
+## Changes (v.1.9.8b 2024.05.22)
+### A small bugfix release
+* Session could overwrite the link to a list of models with a fixed list and then it wouldn't update. Fixed.
+* "Chilhood" -> "Childhood" Thanks to GuruMeditation for the report.
+* "F9 Sets" renamed to "F9 Settings"
+
+
 ## Changes (v.1.9.8 2024.05.22)
 ### Major release!
 * Now we have a character generator! Sounds as something small but took about two weeks of hard work. I was thinking for adding public cards support but after looking at a lot of them, the structure and content, level of support and so on, i've decided to avoid that for now. Instead we have a much more interesting random character generator now :). You can define starting points such as age, gender or anything else you believe is important and it will generate the rest. What it does is making a name, a system prompt for your character and also a lot of memories to fill the RAG data if you use it. You can define how many childhood good and bad memories you wish to add to character, as well as how many recent memories and any amount of *custom* random memories on topics you predefine. Even more, you can make it automatically generate memories about any of the generated parameters! For example, if you have a parameter "Hobby" and model will generate a hobby "Photography", you can automatically generate for your character any amount of "photography" related memories! And the best part is, it actually allows you to set any amount of your own parameters, so you are not restrained with anything! Wish it to generate "facial features" description? Why not? Wish it to generate "Length of fur" or "Amount of plasma cannons", why not either? :) And the cherry top on that is my own concept of the core parameters for every character: toxicity/charm, destrutive/constructive and "lieful/honest". You can define these before every generation tailoring the new character to be precisely what you want (or leave it random!). And of course you can also prefedine any of your custom parameter values! Once i made it work and tried, the chats turned x5 as interesting :). Characters are way more alive and diverse in behavior now :). 
