@@ -1,11 +1,10 @@
-<!-- This is a code that is a part of this project: https://github.com/drazdra/ollama-chats -->
 <!-- It's totally free for personal non-commercial use. Please enjoy. -->
 <!-- It's not allowed to use this commercially and/or by/for any business or corporation. -->
 <!-- It's not allowed to use this in your product or project without my agreement. -->
 <!-- Read more at github page mentioned above -->
 <html id='html'>
 <head>
-
+<!--			"vue": 		"https://unpkg.com/vue@3/dist/vue.esm-browser.prod.js"-->
 <!--			"vue": 		"/vue.prod.js" -->
 <script type="importmap">
 	{
@@ -25,7 +24,28 @@
 				<tr>
 					<td colspan='3' id='heading'><a href='https://www.github.com/drazdra/ollama-chats' target='new' class='nobg'>Ollama-chats (v{{config.version.v}})</a></td>
 				</tr>
-				<template v-if='this.connection==1'>
+				<template v-if='inited==2'>
+					<tr>
+						<td class='center'>
+							<div class='nobg'>
+								Loading..<br><br>
+								<template v-if='this.modelsLoading.inited==2'>
+									Models loaded {{ this.modelsLoading.done }} / {{ this.modelsLoading.total }}
+								</template>
+							</div>
+						</td>
+					</tr>
+				</template>
+				<template v-else-if='cardSave.loading'>
+					<tr>
+						<td class='center'>
+							<div class='nobg'>
+								Loading card..<br><br>
+							</div>
+						</td>
+					</tr>
+				</template>
+				<template v-else-if='this.connection==1'>
 					<tr>
 						<td colspan='3'  id='nicks'>
 							<table width='100%' cellspacing=0 cellpadding=0>
@@ -68,143 +88,22 @@
 							<table width='100%'>
 								<tbody id='chatLogC' :style='{display:(this.config.chatHeight.v!=""?"block":"table"),maxHeight: this.config.chatHeight.v+"px"}'>
 									<template v-for="(i,index) in turns">
-										<tr class='chatRow' v-if='index<=turn&&i.branch>=0&&!hideMsg(...tbma(index))' :class='msgFilterRow(index)'>
-											<template v-if='index>0&&index<=turn'>
-												<template v-for='(m) in [msga(index)]'>
-													<td class='prev'>
-														<div class='prevC'>
-															<div class='nobg' @click='listmsgs(0,index)'>
-																<template v-if='msgIndex(index,i.branch)!=0'>
-																	&lt;<br>
-																	{{msgIndex(index,i.branch)}}
-																</template>
-															</div>
-														</div>
-													</td>
-													<td 
-														:id		='"msg"+index'
-														:class='"nobg "+(index===turn?"lastmsg":"msg")' 
-														width	='100%' 
-													>
-														<transition name="slide-fade" mode="out-in">
-															<div :key='msgIndex(index,i.branch)' class='msgTextCont' :id='"msgC"+index'>
-																<div :class='i.role==="user"?"nicku":"nickai"'>
-																	<span contenteditable='true' @blur='edit($event,"n",index)'>{{msga(index).nick}}</span> #{{msgIndex(index,i.branch)+1}}:
-																</div>
-																<div 
-																	class						='msgText' 
-																	:style					='"font-size:"+this.config.msgFontSize.v' 
-																	:tabindex				='10000+index*1'
-																	contenteditable	='true' 
-																	@blur						="edit($event,'c',index)"
-																>
-																	<template v-if="i.role==='user'">
-																		<template v-if='m.waiting'>
-																			..input new variant into the prompt, please..
-																		</template>
-																		<template v-else>
-																			{{m.content}}
-																		</template>
-																	</template>
-																	<template v-else-if='m.waiting'>
-																		..wait for it..
-																	</template>
-																	<template v-else>
-																		{{m.content}}
-																	</template>
-																</div>
-																<template v-if='m.images&&m.images.length'>
-																	<br><br>
-																	<div>
-																		<template v-for='(img,ind) in m.images'>
-																			<span class='chatLogImg'>
-																				<img @click='img.s=img.s==0?1:0' :class='img.s==0?"imgEmbed":"imgBig"' :src='`data:image/gif;base64,${img.c}`'>
-																			</span>
-																		</template>
-																	</div><br>
-																</template>
-																<div class='msgFooter'>
-																	<span class='msgNicks' v-if='config.storiesUI.v'>
-																		<template v-if='msgUserListAllAvail(m,this.group).length'>
-																			<template v-if='!msgUserListOn[index+""+msgIndex(index,i.branch)]'>
-																				<span class='lnk' @click='msgUserListOn[index+""+msgIndex(index,i.branch)]=true'>add</add></span>
-																			</template>
-																			<template v-else>
-																				<span class='msgUserList'>
-																					<template v-for='uid in msgUserListAllAvail(m,this.group)'>
-																						<span class='lnk' @click='msgUserAdd(m,uid,index+""+i.branch)'><nick :id='uid' :name='nicks[uid].n'></nick></span>
-																						&nbsp;
-																					</template>
-																				</span>
-																			</template>
-																		</template>
-																		&nbsp;
-																		<template v-for='(u) in m.nicksArr'>
-																			<span @click='msgUserDel(m,u)' class='lnk'><nick :id='u' :name='nicks[u].n'></nick></span> 
-																			&nbsp;
-																		</template>
-																	</span>
-																	<template v-if='!msgWaiting(m)'>
-																		<template v-if='msgEmpty(...tbma(index))'><span class='empty'>empty message</span></template>
-																		<template v-if='m.status==msgStatusId("error")'><span class='error'>error</span></template>
-																	</template>
-																	<span 
-																		class='tokens' 
-																		v-show='i.role==="assistant"&&tokensTotal(index,null)'
-																	>
-																		Tokens: 
-																		<template v-if='tokensTotal(index,null)'>
-																			<!--span title='History token'>{{tokens(index,null,'tp')}}</span>
-																				+
-																			<span title='Response tokens'>{{tokens(index,null,'tr')}}</span>
-																			= -->
-																			<span title='Whole history tokens'>
-																				{{tokensTotal(index,null)}}
-																			</span>
-																			<template v-if='this.settings.options["num_ctx"].v.length'>
-																				of 
-																				<span title='Configured context window'>
-																					{{this.settings.options.num_ctx.v}}
-																				</span>
-																			</template>
-																		</template>
-																	</span>
-																	&nbsp;&nbsp;
-																	<span class='rating'>
-																		<span :class='m.rating===0&&"litn"' @click='msgRating(index,0)'>--</span>
-																		 / 
-																		<span :class='m.rating===1&&"litp"' @click='msgRating(index,1)'>++</span>
-																	</span>
-																</div>
-															</div>
-														</transition>
-													</td>
-													<td 
-														class='next' 
-														@click='listmsgs(1,index)' 
-													>
-														<div class='nextC'>
-															<div
-																v-if="m.side!=1"
-																class='nobg'
-																title="This will generate an alternative message."
-															>
-																><br>
-																{{msgMore(index,i.branch)||">"}}<br>
-															</div>
-															<div 
-																@click.prevent='listmsgs(2,index)' v-if='m.side!=1&&i.role==="assistant"&&i.branches[i.branch].rated' 
-																class='nobg'
-																title="This (ctrl+right on keyboard) will generate a new message trying to use the messages you've rated in this turn as good/bad examples for AI"
-															>
-																+-<br>
-																><br>
-															</div>
-														</div>
-													</td>
-												</template>
-											</template>
-										</tr>
+										<chat-row
+											v-if='this.turn>0&&index<=turn&&i.branch>=0&&!hideMsg(...tbma(index))'
+											:turn			='index'
+											:turn-end	='turn'
+											:branch		='i.branch'
+											:fontSize	='this.config.msgFontSize.v'
+											:trinity	='this.config.trinity.v'
+											:u				='userS("u")'
+											:ai				='this.userS("a")'
+											:stories	='this.config.storiesUI.v'
+											:nicks		='this.nicks'
+											:group		='this.group'
+											:tokens		='this.config.tokensCount.v'
+											:ctx			='this.settings.options["num_ctx"].v'
+											:branch-moving='this.branchMoving'
+										></chat-row>
 									</template>
 									<tr><td id='chatLogEnd'></td></tr>
 								</tbody>
@@ -423,7 +322,7 @@
 									</transition>
 								</template>
 								<template v-else>
-									<p class='small nobg center'>Memories (rag) are disabled, please enable in settings if you wish to use it.</p>
+									<p class='small nobg center'>Memories (rag) are disabled, please enable in configuration if you wish to use it.</p>
 								</template>
 								<br>
 							</div>
@@ -432,8 +331,8 @@
 								<template v-for='(g,gind) in configGroups'>
 									<template v-for='j of [config,settings.options,settings.req]'>
 										<template v-for='(i,ind) of j'>
-											<template v-if='i!=null&&i.q===true&&i.g==gind'>
-												<fields :n='ind' :id='ind' :i='i' n-show='1'/>
+											<template v-if='i!=null&&i.q===true&&i.g==gind&&!i.hidden'>
+												<div style='display:inline-block;'><fields :n='ind' :id='ind' :i='i' n-show='1'/></div>
 											</template>
 										</template>
 									</template>
@@ -444,7 +343,7 @@
 								<table id='sets' class='nobg'>
 									<tr>
 										<td colspan='3' class='green heading understroke center'>
-											Settings
+											Configuration
 										</td>
 									</tr>
 									<tr>
@@ -480,7 +379,7 @@
 										</tr>
 										<template v-for='j in [config,settings["req"],settings["options"]]'>
 											<template v-for='(i,ind) in j'>
-												<template v-if='i!=null&&i.g==gind'>
+												<template v-if='i!=null&&i.g==gind&&!i.hidden'>
 													<transition name='ta'>
 														<template v-if='pState["sets_"+gind]'>
 															<tr :id='"sets_"+gind' class='setsRow'>
@@ -488,7 +387,7 @@
 																	<div :class='config.setsDescrShow.v&&"green"'>
 																	{{i.name?i.name:ind}}
 																	</div>
-																	<div v-if='config.setsDescrShow.v' class='justify txt'>
+																	<div v-if='config.setsDescrShow.v' class='justify txt pre descr'>
 																		{{i.d}}<br>
 																		Default: <span>{{i.def===''?"empty":i.def}}</span>
 																	</div>
@@ -506,6 +405,84 @@
 								</table>
 							</div>
 							<div id='howto' class='nobg' v-if='pState["howto"]'><help></help></div>
+							<div v-if='pState["cardSave"]' id='cardSave'>
+								<br>
+								<div class='nobg'>
+									<table class='center'>
+										<tr>
+											<td colspan='2'><span class='green header center understroke'>Character card saving</span></td>
+										</tr>
+										<tr>
+											<td colspan='2' class='justify'>
+												Here you can choose the characters you wish to save to a file. Later you can import them into existing conversation or just share with somebody else if they use my UI.
+											</td>
+										</tr>
+										<tr>
+											<td class='right green'>Character</td>
+											<td class='green'>Save</td>
+										</tr>
+										<template v-for='n in this.nicks'>
+											<template v-if='!n.del&&n.t!="s"'>
+												<tr>
+													<td class='right' width='50%'>
+														<nick :id='n.id' :name='nicks[n.id].n'/>
+													</td>
+													<td width='50%'>
+														<input class='understroke' type='checkbox' v-model='cardSave.nicks[n.id]'>
+													</td>
+												</tr>
+											</template>
+										</template>
+									</table><br>
+									<div class='center' style='width:90%'>
+										<div class='justify'>
+											You also may add several messages to start the story.<br><br>
+											Select lists in the left column let you choose the message author 
+											(from the ones you've selected for saving).
+											Text area is the message that will be added on behalf of that user.
+											Please specify both for every message or these will not be saved.<br><br>
+											On loading these messages will be added as first ones, if the chat log is empty.
+											In case if card is loaded when there is some chat log, it will create
+											a new branch at the first turn, keeping the existing chat log branch untouched.
+											This doesn't support features like trinity and stories and is just plain 
+											messages that will be converted into the settings of the person who imports it.
+											The reason for that is that using whole features list would pose a lot of 
+											question on what to do with the existing settings of the user who loads and
+											also it would require a lot of changes to the code while too few would use it.
+											Maybe i will do it in the future, tho.
+											<br><br>
+										</div>
+									</div>
+									<table class='center' id='msgs'>
+										<tr>
+											<td class='green center'>Character</td>
+											<td class='green center'>Message</td>
+											<td class='green center'>Del</td>
+										</tr>
+										<template v-for='(m,mey) in cardSave.msgs'>
+											<tr>
+												<td class='nick'>
+													<select v-model="m.u">
+														<template v-for="(u,uind) in this.nicks">
+															<template v-if='!u.del&&cardSave.nicks[u.id]'>
+																<option :value='u.id'><nick :id='u.id' :name='u.n'/></option>
+															</template>
+														</template>
+													</select>
+												</td>
+												<td class='content'>
+													<textarea width='100%' rows=7 v-model='m.content'></textarea>
+												</td>
+												<td class='del'>
+													(<span @click='cardSave.msgs.splice(mey,1)' class='del'>x</span>)
+												</td>
+											</tr>
+										</template>
+									</table>
+									<span class='lnk center' @click='this.cardSaveDo()'>Save</span>
+									<br><br>
+								</div>
+							</div>
 							<div v-if='pState["pull"]' id='pull'>
 								<br>
 								<div class='nobg'>
@@ -737,7 +714,9 @@
 																</td>
 															</tr>
 															<tr>
-																<td class='green center'>System prompt, these 2 parts will be united:<br>
+																<td class='green center'>System prompt, these 3 parts will be united:<br>
+																	<textarea v-model='charNew.parts.sysPre' rows='4'></textarea>
+																	+
 																	<textarea v-model='charNew.parts.sysKq' rows='4'></textarea>
 																	+
 																	<textarea v-model='charNew.parts.sys' rows='7'></textarea>
@@ -948,45 +927,45 @@
 							<table v-if='pState["menu"]'>
 								<tr>
 									<td></td>
-									<td><span class='lnk nobgt' @click='pToggle("howto")'><menun k='F1' t='Help'/></span></td>
+									<td><span class='lnk nobgt' @click='pToggle("howto")' title='Help'><menun k='F1' t='Help'/></span></td>
 									<td></td>
-									<td><span class='lnk nobgt' @click='save()'><menun k='F2' t='Save'/></span></td>
+									<td><span class='lnk nobgt' @click='save()' title='Save state'><menun k='F2' t='Save'/></span></td>
 									<td></td>
-									<td><span class='nobgt'><input id='load' type='file' @change='load()'/><label class='lnk' for="load" id="loadlabel"><menun k='F3' t='Load'></label></span></td>
+									<td><span class='nobgt' title='Load old state'><input id='load' type='file' @change='load()'/><label class='lnk' for="load" id="loadlabel"><menun k='F3' t='Load'></label></span></td>
 									<td></td>
-									<td><span class='lnk nobgt' @click='pToggle("sys")'><menun k='F4' t='Sys prompt'/></span></td>
+									<td><span class='lnk nobgt' @click='pToggle("sys")' title='System prompt'><menun k='F4' t='Sys.pr.'/></span></td>
 									<td></td>
-									<td><span class='lnk nobgt' @click='pToggle("instr")'><menun k='F5' t='Instr'/></span></td>
+									<td><span class='lnk nobgt' @click='pToggle("instr")' title='Instruction'><menun k='F5' t='Instr'/></span></td>
 									<td></td>
-									<td><span class='lnk nobgt' @click='list()'><menun k='F6' t='Reload models'/> </span></td>
+									<td><span class='lnk nobgt' @click='list()' title='Reload models'><menun k='F6' t='Rld.mdls'/> </span></td>
 									<td></td>
-									<td><span class='lnk nobgt' @click='pToggle("pull")'><menun k='F7' t='Pull'/></span></td>
+									<td><span class='lnk nobgt' @click='pToggle("pull")' title='Pull a model'><menun k='F7' t='Pull'/></span></td>
 									<td></td>
-									<td><span class='lnk nobgt' @click='this.prune()'><menun k='F8' t='Prune'/></span></td>
+									<td><span class='lnk nobgt' @click='this.prune()' title='Prune'><menun k='F8' t='Prune'/></span></td>
 									<td></td>
-									<td><span class='lnk nobgt' @click='pToggle("sets")'><menun k='F9' t='Settings'/></span></td>
+									<td><span class='lnk nobgt' @click='pToggle("sets")' title='Configuration and settings'><menun k='F9' t='Config'/></span></td>
 									<td></td>
-									<td><span class='lnk nobgt' @click='quit()'><menun k='F10' t='Quit'/></span></td>
+									<td><span class='lnk nobgt' @click='quit()' title='Quit'><menun k='F10' t='Quit'/></span></td>
 								</tr>
 								<tr>
 									<td><span class='nobgt'>Shift+</span>&nbsp;</td>
 									<td><span class='gray nobgt'><menun k='F1' t='None'/></span></td>
 									<td></td>
-									<td><span class='gray nobgt'><menun k='F2' t='None'/></span></td>
+									<td><span class='lnk nobgt' @click='cardSaveToggle()' title='Save characters card'><menun k='F2' t='Sv ch.'/></span></td>
 									<td></td>
-									<td><span class='gray nobgt'><menun k='F3' t='None'/></span></td>
+									<td><span class='nobgt' title='Load characters card'><input id='loadcard' type='file' @change='loadFile("card")'/><label class='lnk' for="loadcard" id="loadLabelCard"><menun k='F3' t='Ld.ch.'/></label></span></td>
 									<td></td>
 									<td><span class='lnk nobgt' @click='pToggle("ragG")' title='Public knowledge'><menun k='F4' t='P.knlg'/></span></td>
 									<td></td>
-									<td><span class='lnk nobgt' @click='pToggle("ragU")' title="Character's memory"><menun k='F5' t='Ch.mem'/></span></td>
+									<td><span class='lnk nobgt' @click='pToggle("ragU")' title="Character's memory"><menun k='F5' t='Mem'/></span></td>
 									<td></td>
 									<td><span class='gray nobgt'><menun k='F6' t='None'/></span></td>
 									<td></td>
-									<td><span class='lnk nobgt' @click='pToggle("charNew")' title="Generate a new character"><menun k='F7' t='Gen.char'/></span></td>
+									<td><span class='lnk nobgt' @click='pToggle("charNew")' title="Generate a new character"><menun k='F7' t='Gen.ch.'/></span></td>
 									<td></td>
-									<td><span class='gray nobgt'><menun k='F8' t='None'/></span></td>
+									<td><span class='lnk nobgt' @click='clear()' title='Clear'><menun k='F8' t='Clear'/></span></td>
 									<td></td>
-									<td><span class='lnk nobgt' @click='optToggle()'><menun k='F9' t='Optimize'/></span></td>
+									<td><span class='lnk nobgt' @click='optToggle()' title='Try different combinations of parameters automatically'><menun k='F9' t='Tune'/></span></td>
 									<td></td>
 									<td><span class='gray nobgt'><menun k='F10' t='None'/></span></td>
 								</tr>
@@ -1061,10 +1040,149 @@
 			</table>
 		</div>
 	</div>
+	<template id='tmplChatRow'>
+		<tr :class='chatRowClass'>
+			<td class='prev'>
+				<div class='prevC'>
+					<div :class='"nobg "+branchDelClass' @click='this.$root.listmsgs(0,this.turn,this.m)'>
+						<template v-if='msgIndex!=0'>
+							&lt;<br>
+							{{msgIndex}}
+						</template>
+					</div>
+				</div>
+			</td>
+			<td 
+				:class='"nobg "+(msgLast?"lastmsg":"msg")+" "+msgDelClass'
+				width	='100%'
+			>
+				<transition name="slide-fade" mode="out-in">
+					<div :key='msgIndex' :class='this.msgContClass' :id='divId'>
+						<div :class='nickClass'>
+							<span contenteditable='true' @blur='editNick($event)'>{{m.nick}}</span> #{{msgIndex+1}}:
+						</div>
+						<div>
+							<template v-for='(tr,trey) in this.trinityFields'>
+								<div 
+									:class='msgClass(tr)'
+									:style					='"font-size:"+fontSize'
+									:tabindex				='tabIndex+trey'
+									:contenteditable='msgEditable'
+									@blur						="edit($event,tr)"
+									:key='trinity+"_"+this.uType'
+								>
+									{{ content(tr) }}
+								</div>
+							</template>
+						</div>
+						<template v-if='m.images&&m.images.length'>
+							<br><br>
+							<div>
+								<template v-for='(img,ind) in m.images'>
+									<span class='chatLogImg'>
+										<img @click='img.s=img.s==0?1:0' :class='img.s==0?"imgEmbed":"imgBig"' :src='`data:image/gif;base64,${img.c}`'>
+									</span>
+								</template>
+							</div><br>
+						</template>
+						<div class='msgFooter'>
+							<span :class='"small "+statusClass'>{{status}}</span>
+							<span class='msgNicks' v-if='stories'>
+								<template v-if='usersAvail.length'>
+									<span v-if='!msgUserListOn' class='lnk' @click='usersAvailShow(true)'>add</add></span>
+									<template v-else>
+										<span class='msgUserList'>
+											<template v-for='uid in usersAvail'>
+												<span class='lnk' @click='msgUserAdd(uid)'><nick :id='uid' :name='nicks[uid].n'></nick></span>
+												&nbsp;
+											</template>
+										</span>
+									</template>
+								</template>
+								&nbsp;
+								<template v-for='(u) in m.nicksArr'>
+									<span @click='msgUserDel(u)' class='lnk'><nick :id='u' :name='nicks[u].n'></nick></span> 
+									&nbsp;
+								</template>
+							</span>
+							<span 
+								class='tokens' 
+								v-show='tokensShow'
+							>
+								Tokens: 
+								<template v-if='tokensTotal'>
+									<!--span title='History token'>{{tokens('tp')}}</span>
+										+
+									<span title='Response tokens'>{{tokens('tr')}}</span>
+									= -->
+									<span title='Whole history tokens'>
+										{{ tokensTotal }}
+									</span>
+									<template v-if='ctx.length'>
+										of 
+										<span title='Configured context window'>
+											{{ ctx }}
+										</span>
+									</template>
+								</template>
+							</span>
+							&nbsp;&nbsp;
+							<span class='rating'>
+								<span :class='m.rating===0&&"litn"' @click='msgRating(0)'>--</span>
+								 / 
+								<span :class='m.rating===1&&"litp"' @click='msgRating(1)'>++</span>
+							</span>
+							&nbsp;&nbsp;
+							<span v-if='branchMoving' turn='this.turn' branch='this.branch'>
+								<span v-if='!this.$root.branchMoving.self[msgUserListId]' class='red' @click='branchMvEnd()'>Graft to this branch</span>
+								 or 
+								<span @click='branchMvCancel()' class='red'>cancel moving</span>
+								&nbsp;&nbsp;
+							</span>
+							<span v-else>
+								(<span @click='branchMvStart()' class='del' title="You can move the branch growing from this place (everything to the bottom from here including side-replies) to any place in the chat. Well, apart from moving it into itself, that's a prohibited magic.">Mv</span>)
+								<span title='Delete the whole branch' @mouseEnter='this.delShow(1)' @mouseLeave='this.delShow(0)'>
+									(<span class='del' @click='this.branchDel()'>X</span>)
+								</span>
+							</span>
+							<!--span title='Delete this message and move everything below up one turn. It means that the messages from the next turn will merge into the current turn and everything below will just move up' @mouseEnter='this.mvShow(1)' @mouseLeave='this.mvShow(0)'>
+								(<span class='del' @click='this.branchMerge()'>X</span>)
+							</span-->
+						</div>
+					</div>
+				</transition>
+			</td>
+			<td 
+				class='next'
+				@click='this.$root.listmsgs(1,this.turn,this.m)'
+			>
+				<div class='nextC'>
+					<div
+						v-if="m.side!=1"
+						:class='"nobg "+branchDelClass'
+						title="This will generate an alternative message."
+					>
+						><br>
+						{{msgMore||">"}}<br>
+					</div>
+					<div 
+						v-if	='m.side!=1&&msgRole==="a"&&branchRated'
+						class	='nobg'
+						title	="This (ctrl+right on keyboard) will generate a new message trying to use the messages you've rated in this turn as good/bad examples for AI"
+						@click.prevent='this.$root.listmsgs(2,this.turn,this.m)'
+					>
+						+-<br>
+						><br>
+					</div>
+				</div>
+			</td>
+		</tr>
+	</template>
 	<div id='tmplNick'><span>({{id}}) {{name}}</span></div>
 	<div id='tmplMenuN'><span v-show='config.fKeys.v' class='menuHK'>{{k}}&nbsp;</span>{{t}}</div>
-	<div id='tmplField'>
-		<div style='display:inline-block' :title='n+": "+i.d' class='nobg'>
+	<div id='tmplField' style='height:auto'>
+		<div style='display: flex;align-items:center;height:100%;justify-content:center' :title='n+": "+i.d'>
+			<span class='nobg' :style='(i.f==="ta"||i.f==="tb")&&"height:100%;width:100%;padding: 5px"'>
 			<template v-if='nShow'>{{i.qn??n}}: </template>
 			<template v-if='i.f==="ro"'>
 				{{i.v}}
@@ -1074,14 +1192,14 @@
 					<input :title='n+": "+i.d' type='checkbox' v-model='i.v' :id='"field"+id'/>
 				</template>
 				<template v-else-if='i.f==="sel"'>
-					<select v-model="i.v.v" :id='"field"+id'>
+						<select v-model="i.v.v" :id='"field"+id'>
 						<template v-for="(j,jind) in i.v.l">
 							<option :value='jind'>{{j.n}}</option>
 						</template>
 					</select>
 				</template>
 				<template v-else-if='i.f==="mis"'>
-					<template v-for='(k,kind) in i.v'> 
+						<template v-for='(k,kind) in i.v'> 
 						<span class='nobreak'>{{kind+1}}: 
 							<input class='understroke' type='input' v-model='i.v[kind]' :id='"field"+id+kind'/>
 						</span><br>
@@ -1094,10 +1212,18 @@
 						or <span class='lnk' @click='i.v=""'>remove existing</span>
 					</template>
 				</template>
+				<template v-else-if='i.f==="ta"'>
+						<textarea rows='4' style='height:100%;min-width:100%' v-model='i.v' :id='"field"+id'></textarea>
+					</span>
+				</template>
+				<template v-else-if='i.f==="tb"'>
+					<textarea rows='7' style='height:100%;min-width:100%' v-model='i.v' :id='"field"+id'></textarea>
+				</template>
 				<template v-else>
 					<input v-model='i.v' :id='"field"+id'/>
 				</template>
 			</template>
+			</span>
 		</div>
 	</div>
 	<div id='tmplNickAdd'>
@@ -1259,7 +1385,7 @@
 						Also you can use it for describing the location of personages, for whatever.
 						Use it throughout the chat process, changing accordingly.</li>
 				<li>Click on instr to hide it, if you don't want to see the text area.</li>
-				<li>Before start, check the settings and set the num_ctx param to a desired value.
+				<li>Before start, check the configuration (F9) and set the num_ctx param to a desired value.
 						It's a size of the context memory in tokens that AI remembers. 
 						Check other settings you may need, like temperature, etc.</li>
 				<li>Below the "prompt" text area in the select list choose the model you wish to get reply from.
@@ -1281,7 +1407,7 @@
 				<li>If you decide that your own message is no good, you can edit it too. or, you can
 						create an alternative side-reply, by clicking the "right" arrows on the right
 						from your message. Then just type new prompt as usually and send it.</li>
-				<li>Use rating buttons for AI messages. By default AI is instructed to follow the style of these. You can disable it in settings, if you wish to use the rating for future finetuning project but do not wish the model to see it in the chat.</li>
+				<li>Use rating buttons for AI messages. By default AI is instructed to follow the style of these. You can disable it in configuration, if you wish to use the rating for future finetuning project but do not wish the model to see it in the chat.</li>
 				<li>Also, you can use the rating of model's answers in the last turn to instruct the model. If you click "ctrl+right" or (-/+ button to the right from message, it's shown only if you have a rated messages), the model will be instructed to provide a new reply unlike bad ones and alike to the good ones. It may help if the answers are really bad.</li>
 				<li>If you are bored with the story development you can anytime use up/down arrows to go up in the story and start another branch there or continue an existing alternative branch.</li>
 				<li>It's a good idea to post situation changes from the name of the
@@ -1292,14 +1418,16 @@
 				<li>You can choose which character replies next by clicking on the respective
 						radio button under the prompt box. You even can send empty messages,
 						to make them talk to each other, that's half of the fun. Empty messages are hidden by default,
-						so it looks like they just talk to each other, but you can change it in the settings.
+						so it looks like they just talk to each other, but you can change it in the configuration.
 						If they don't want to talk to each other, use "instr" field with sth like
 						"now i should reply to.." or add some message from the world. To save a click
 						on a prompt, if you just want another ai character to reply, just do a right click on it,
 						it will make it choose that character and submit the current prompt right away.</li>
-				<li>If you feel you need more control over the character's memory, you can use "Stories", it's enabled in the settings. With this feature on, you can define the access list for all messages, so you can have characters that don't know what's going or who plan something and others have no clue, or just characters that come late and being unaware, etc.</li>
-				<li>If you wish, you can define different settings per AI with personal settings in.. settings. This way, for example, you could use 2 different models for 2 characters without need to change them every time.</li>
+				<li>If you feel you need more control over the character's memory, you can use "Stories", it's enabled in the configuration. With this feature on, you can define the access list for all messages, so you can have characters that don't know what's going or who plan something and others have no clue, or just characters that come late and being unaware, etc.</li>
+				<li>If you wish, you can define different settings per AI with personal settings in.. configuration. This way, for example, you could use 2 different models for 2 characters without need to change them every time.</li>
 				<li>To expand the memory and world knowledge of the characters, you can fill in their memories with shift+f4 and shift+f5 keys (P.knlg and Ch.mem. in the menu). You can put any amount of data there and it will be searched by relevance to your last chat context and injected as something that character remembers. To have the best effect, use a lot of synonyms in each line. You can make these relevant not just text, but to moods.</li>
+				<li>You can save the created characters with SHIFT+F2 and load with SHIFT+F3 into existing chat or share with your friends</li>
+				<li>3ty (trinity) mode makes characters to reply in 2 parts: thoughts + actions. You can deactivate this mode if you don't like it.</li>
 				<li>Repeat the process till the alarm clock is ringing telling you it's time to wake up.
 						it was good idea to set alarm clock in your phone to the evening time, so
 						you still have time to sleep tonight.</li>
@@ -1320,7 +1448,7 @@
 						<transition name='slide-fade'>
 							<div v-if='pState["optHelp"]' id='optHelp' :key='pState["optHelp"]'>
 								<p class='justify'>
-									Here you can try to optimize parameters to get the replies you like.
+									Here you can try to tune parameters to get the replies you like.
 									How? Simple, it allows you to set starting value and final value of the range to try,
 									as well as step size for next iteration. Then you just see which parameter combinations
 									produce the best replies.
@@ -1334,7 +1462,7 @@
 											logical reasons of various use cases.
 										</li>
 										<li>
-											Before starting this, remember to set everything in settings to 
+											Before starting this, remember to set everything in configuration to 
 											default, unless you actually want to use your manual configuration
 											together with this. 
 										</li>
@@ -1823,6 +1951,22 @@ li {
 	vertical-align: top;
 	padding: 0 0 0 0 !important;
 }
+#cardSave #msgs {
+	border-spacing: 0px 0px;
+	width:100%;
+}
+#cardSave #msgs td {
+	vertical-align: middle;
+}
+#cardSave #msgs .nick {
+	min-width: 150px;
+}
+#cardSave #msgs .content {
+	width: 100%;
+}
+#cardSave #msgs .del {
+	min-width: 30px;
+}
 #memGen {
 	width: 100%;
 }
@@ -1936,7 +2080,7 @@ li {
 	border-image: linear-gradient(to right, #141414, #306530, #306030, #143514) 3/2px 0px 2px 0px;
 }
 .filterDark {
-	filter: brightness(50%);
+	filter: brightness(75%);
 }
 .filterGray {
 	filter: saturate(0%) brightness(60%);
@@ -1968,6 +2112,13 @@ li {
 .msgNicks {
 	margin-right: 15px;
 	vertical-align: middle;
+}
+.msgDelShow {
+	background-color: #210000 !important;
+	filter: brightness(68%);
+}
+.msgMvShow {
+	background-color: #003800 !important;
 }
 #chat .nicku {
 	float: left;
@@ -2088,25 +2239,30 @@ li {
 	padding: 0 0 0 0;
 }
 #sets {
-	max-width: 800px;
+	//max-width: 100%;
 	width: 800px;
 	text-align: center;
 }
 #sets .title {
-	width: 400px;
+	width: 300px;
 	text-align: right;
+}
+#sets .descr {
+	max-height: 125px;
+	overflow: auto;
 }
 #sets .def {
 	width: 180px;
 	vertical-align: middle;
 }
 #sets .val {
-	width: 200px;
+	width: 300px;
+	height: 100%;
 	overflow: clip;
-	max-width: 200px;
+	//max-width: 200px;
 	min-width: 200px;
 	border-image: linear-gradient(to right, #141414, #306530, #306030, #143514) 3/0px 0px 2px 0px;
-	padding: 0px;
+	padding: 5px;
 	margin: 7 10 5 10;
 	vertical-align: middle;
 }
@@ -2339,6 +2495,10 @@ input[type="radio"] {
 .msgText[contenteditable]:focus {
   outline: 0px solid darkgreen;
 }
+.msgText:hover {
+  //background-color: #002500;
+  color: white;
+}
 .heardBy {
 	display:block;
 	clear: none;
@@ -2449,6 +2609,9 @@ input[type="radio"] {
 	background-color: #002500;
 	border-radius: 14px;
 }
+.pre {
+	white-space: pre-wrap;
+}
 #sets .setsRow {
 }
 #sets .header {
@@ -2521,6 +2684,7 @@ window.app=createApp({
 							"content":	'',
 							"nick":		'',
 							"nicks":{},
+							"nId":-1,
 							an:{}
 						}]}],
 					'tree':{0:{ 0:0 }},//parent's branch:{selected msg:local branch growing from that msg}
@@ -2528,20 +2692,22 @@ window.app=createApp({
 			],
 			models: [],
 			modelsEmb: [],
+			modelsLoading: { done:0,total:0,inited:0 },
 			pState: {
-				sys:		1,
-				instr:	0,
-				sets:		0,
-				pull: 	0,
-				howto: 	0,
-				optHelp:0,
-				opt: 		0,
-				menu:		1,
-				control:1,
-				ragU:		0,
-				ragG:		0,
-				charNew:0,
-				ragMemGen:0,
+				sys:				1,
+				instr:			0,
+				sets:				0,
+				pull: 			0,
+				howto: 			0,
+				optHelp:		0,
+				opt: 				0,
+				menu:				1,
+				control:		1,
+				ragU:				0,
+				ragG:				0,
+				charNew:		0,
+				ragMemGen:	0,
+				cardSave	:	0,
 			},
 			configGroups: {
 				ver:		{ name:'Version'									},
@@ -2557,12 +2723,88 @@ window.app=createApp({
 				ollama:	{ name:'Ollama settings'					},
 			},
 			configGlobal: {
-				version:						{ g:'ver',name:'Version',v:'1.9.8b',def:'',d:'UI version, just for information and upgrades','f':'ro',qn:'ver',q:null,opt:false },
+				version:						{ g:'ver',name:'Version',v:'1.9.9',def:'',d:'UI version, just for information and upgrades','f':'ro',qn:'ver',q:null,opt:false },
 				themeWhite:					{ g:'design',name:'Invert colors',v:false,d:"Inverted colors, if you are weird person preferring white backgrounds, you may check this. But it looks scary, beware.",def:false,f:'cb',q:false,qn:'clrs',opt:false},
 
-				rooms:							{ g:'logic',name:'Use single prompt to send the chat',v:true,def:true,d:"If true, all messages are concatenated and sent to AI as one big prompt, AI will take all the chat as a single input prompt generated by user. If it's off, chat is sent as a set of messages, then AI can see which messages were created by AI and which ones by user. Which one is better depends on the model.",f:'cb',q:false,qn:'sngl',opt:true},
+				raw:								{ g:'logic',name:'Raw mode',v:false,def:false,d:"Raw mode. Don't use it, unless you know what you are doing. The template can be edited in the respective configuration field. Please note: Ollama doesn't support token count api and doesn't cut the log in raw mode, therefore it's impossible to implement proper context size. In other words, once your log is longer than context window, things will break.",f:'cb',q:false,qn:'raw',opt:true },
+				rawTmpl:						{ g:'logic',name:'Raw mode template',v:`{{img}}[img-{{imgIndex}}]{{/img}}
+
+{{start}}<|start_header_id|>system<|end_header_id|>\n\n{{sys}}<|eot_id|>{{/start}}
+
+{{user}}<|start_header_id|>user<|end_header_id|>\n\n{{img}}{{msg}}<|eot_id|>\n{{/user}}
+
+{{assistant}}<|start_header_id|>assistant<|end_header_id|>\n\n{{msg}}<|eot_id|>\n{{/assistant}}
+
+{{singleMsgMode}}{{img}}{{msg}}
+
+{{/singleMsgMode}}
+
+{{end}}<|start_header_id|>assistant<|end_header_id|>{{/end}}`,def:'\n{{img}}[img-{{imgIndex}}]{{/img}}\n{{start}}<|start_header_id|>system<|end_header_id|>\n\n{{sys}}<|eot_id|>{{/start}}\n{{user}}<|start_header_id|>user<|end_header_id|>\n\n{{msg}}<|eot_id|>\n{{/user}}\n{{assistant}}<|start_header_id|>assistant<|end_header_id|>\n\n{{msg}}<|eot_id|>\n{{/assistant}}\n{{singleMsgMode}}{{img}}{{msg}}\n\n{{/singleMsgMode}}\n{{end}}<|start_header_id|>assistant<|end_header_id|>{{/end}}',d:`Raw mode template. Template has six parts:
+				
+{{start}} your start of the template {{/start}}
+Text between these will be used at the start of the template. message related variables are not accessible here, as no message is processed yet.
+
+{{user}} your line for every user message {{/user}}
+Once start text is inserted, it will loop over each message in the log. The text between these will be inserted for every message originating from a user character. In a single message mode it will wrap all messages joined by singleMsgMode template, in that case previous message data here is empty as it's the "first message" and current user data equals to the "replyTo" data.
+				
+{{assistant}} for every AI character message {{/assistant}}
+Same but for every message originating from an AI character.
+
+{{singleMsgMode}} for every message if single message mode enabled{{/singleMsgMode}}
+If you have single message mode enabled in settings (chat logic), all messages are joined into one and then packed into "user" template above. Here you can define how each message will look like within single "user" container. If single message mode is off, it's not used.
+
+{{end}} final part of the template {{/end}}
+Once log message is over, this part will finish the template. Current message text is empty, current char data equals to replier, previous message is the last one in the log.
+
+{{img}}[img-{{imgIndex}}]{{/img}}
+When you add images they should be attached to a certain message. To do that a template [img-0] is usually used, where 0 is index of the image. For example, in llama.cpp (used by ollama) all the text _before_ [img-N] (down to previous [img-N]) is used as a prefix for the image. Therefore it makes sense to put it into the end of the message. However, there is a thing i believe is a bug, if you have certain symbols in the prefix, like ":", everything is broken. That is why it is easier to put the placeholder into beginning of the message right now. This placeholder will replace the {{img}} in the messages loop. In other parts it is not used. {{imgIndex}} is automatically replaced with the id of the image in array that is sent to the server.'. 
+
+All 6 parts should be there even if some are empty. Please note, certain chat modes add messages to the end of chat log, to additionally instruct your model.
+
+Template variables:
+
+{{replierId}},{{replierName}
+Id and name of the ai character that will generate new reply
+	
+{{replyToUserId}},{{replyToName}},{{replyToText}}
+Id, name and text of the message AI will generate a reply to. Depending on the setting "Prevent ReplyTo template to refer to own msg" it might be last message in the chat, or last message in the chat not belonging to the character that will reply.
+	
+{{replyToTextRaw}}
+Same, but without mods (like: "Name:", rating marks, etc), it's message text "as is"
+	
+{{sys}}
+System prompt
+	
+{{charId}},{{charName}},{{msg}},{{msgRaw}}
+Respective data of a particular message in the log that is processed
+	
+{{charIdPrev}},{{charNamePrev}},{{msgPrev}},{{msgRawPrev}}
+Same but for previous message in the log
+
+{{img}}
+Replaced by the image template above to attach an image to a message
+	
+When there is no appropriate data, the value is empty. Variable names case sensitive.
+
+				`,f:'tb',q:false,qn:'rawTmpl',opt:false },
+				rawLog:							{ g:'logic',name:'Raw mode log',v:false,def:false,d:"To ease understanding of what's going on, you can enable this to see the template construction steps in the browser console.",f:'cb',q:false,qn:'rawLog',opt:false },
+
+				trinity:						{ g:'logic',name:'Trinity: thinking/action reply mechanism',v:true,def:true,d:"A big problem with regular chats is that model posts thoughts and actions in the same reply and other characters can read these, even when they are not supposed to know the thoughts of another person. Also, often models omit to write their thinking which is the most curious part in replies for me, or they write thinking part but omit the action part. This is the solution to overcome these, coming at a cost of a little slow down in generation. Model is instructed to produce thoughts/feelings and actions separately, then these are stored in a way that other ai characters see only the actions part, while you see all of these. If you switch it off in the middle of a chat, chat log will use the full messages as usually. Please note, usual mode and trinity modes have separate data, so editing in one mode doesn't change data stored in another mode. P.S. It's called trinity because originally i also experimented with separating emotions but it didn't add anything interesting to the chat, so i removed it.",f:'cb',q:true,qn:'3ty',opt:true },
+				trinityReqTh:				{ g:'logic',name:'Request to be sent to generate thoughts',v:'Now, in-character of {{replierName}} with above in mind, write only what you think and feel (up to 100 words) about """{{replyToText}}""", nothing else, no comments, no notes, no dialogues, only the thoughts.',def:'Now, in-character of {{replierName}} with above in mind, write only what you think and feel (up to 100 words) about """{{replyToText}}""", nothing else, no comments, no notes, no dialogues, only the thoughts.',d:"This is the instruction sent for model to generate the thinking/feeling reaction towards last text. {{replierName}} is replaced with the name of the character that speaks and {{replyToText}} is replaced with the text of the message it replies to (it's required because otherwise model might be confused what to reply about, considering there might be various instructions injected into chat log)",f:'ta',q:false,qn:'3tyTh',opt:false },
+				trinityReqA:				{ g:'logic',name:'Request to be sent to generate actions',v:'Now, {{replierName}}, in-character with your system prompt and with things you said above, react with actions/words (if you will) at """{{replyToText}}""", up to 100 words.',def:'Now, {{replierName}}, in-character with your system prompt and with things you said above, react with actions/words (if you will) at """{{replyToText}}""", up to 100 words.',d:"This is the instruction sent for model to generate the outer reaction towards last text. {{replierName}} is replaced with the name of the character that speaks and {{replyToText}} is replaced with the text of the message it replies to (it's required because otherwise model might be confused what to reply about, considering there might be various instructions injected into chat log)",f:'ta',q:false,qn:'3tyA',opt:false },
+				trinityChancesTh:		{ g:'logic',name:'Chances to see thoughts of AI',v:0.5,def:0.5,d:"This sets the chance for model to produce the internal thoughts in addition to actions. Originally i had this at 100% but models repeat things too much, so i got an idea to show their thinking only at times. Number should between 0 and 1. 0 means you will never see the thoughts, 1 means you will always see them. 0.3 means 1/3 of replies will have it. As the chances are random, it's only approximate probability, while even with low chances you may get several thoughtful replies in a line.",f:'',q:false,qn:'3ThCh',opt:true },
+				
+				rooms:							{ g:'logic',name:'Use single prompt to send the chat',v:false,def:false,d:"If true, all messages are concatenated and sent to AI as one big prompt, AI will take all the chat as a single input prompt generated by user. If it's off, chat is sent as a set of messages, then AI can see which messages were created by AI and which ones by user. Which one is better depends on the model.",f:'cb',q:false,qn:'sngl',opt:true},
 				otherAiAsUser:			{ g:'logic',name:'Other AI personages are "users" for AI',v:true,d:"When multi-message mode is used to send chat log to AI (that is single-message format is off) mark messages of other AI characters as created by the user. If you have 3 personages, only the current character's messages are marked for AI as AI generated ones. Experimental thing, i think the reaction will be model dependant.",def:true,f:'cb',q:false,qn:'ai usr',opt:true},
 				sysNick:						{ g:'logic',name:'System nick instructing model',v:'World',d:"Sometimes we inject special messages into the stuff sent to AI. For example, rating instructions. To do that we need to have some name of the user sending it. We could do it on behalf of AI but it's less flexible. This is the nick of that 'special person' that injects hidden messages for AI.",def:'World', f:'',q:false,qn:'s-nick',opt:false },
+				noAiReplyToSelf:		{ g:'logic',name:'Prevent replying of ai to self',v:true,d:"Sometimes it may happen that last message belongs to ai and you expect it to write more. If you just send an empty message, and before that there was always strict order of user/ai turns, AI will try to keep the pattern and reply on behalf of a user, ignoring its system prompt. If you have 'instruction' or 'trinity' it has way less chances to happen as there are additional messages instructing AI how to reply. But if you don't have these, it might be very irritating. To fix that, this will add a message from the system user 'World', it will ask model to continue in accordance with the system prompt. Then Ai will answer for itself with a much higher chances.",def:true,f:'cb',q:false,qn:'aiNoSlfRp',opt:true },
+				noReplyToSelf:			{ g:'logic',name:'Prevent ReplyTo template to refer to own msg',d:"Templating in trinity and raw modes has 'ReplyTo' placeholder which refers to last message in the log. But sometimes it might be the own message of an AI, to prevent AI to react to its own last message, mark this. Then it will search for last message belonging to someone else and use it as 'ReplyTo' content. If there is none, it will be empty.",def:true,f:'cb',q:false,qn:'rpToNoSlf',opt:true },
+				namesAdd:						{ g:'logic',name:'Add names',v:true,def:true,d:"If you have more than one character talking, the model can not understand well which of the messages belong to itself and which are not, despite the system prompt. To fix this, each message gets a name prefix before being sent to the model. Usually it produces much more adequate behavior during chats, even with 1 character. If you don't need that, you can switch it off here.",f:'cb',q:false,qn:'nmAdd',opt:true },
+				emptyToSth:					{ g:'logic',name:'Replace empty messages with text',v:false,def:false,d:"If you just hit enter, it creates an empty message. By default it will be ignored and not sent, however with this 'on' empty message internally will be converted into some text, like 'Continue'. You can specify it in the settings as well.",f:'cb',q:false,qn:'emp2Sth',opt:true },
+				emptyToTxt:					{ g:'logic',name:'Text to replace empty messages with',v:'Continue',def:'Continue',d:"If you just hit enter, it creates an empty message. By default it will be ignored and not sent, however if you have 'Replace empty message with text' setting on, it will replace it with this text internally. Original log is unchanged, so every time you change this, all empty messages will get new content within new request.",f:'',q:false,qn:'emp2Txt',opt:false },
+
+				//didn't work well, hidden
+				aiIsYou:						{ g:'logic',name:'Ai is named "You"',v:false,def:false,d:"If Ai character changes name during the story, it confuses model. This will always you 'You' as model's name, which should help model to undersand which messages belong to it, despite the changes in name of its character.",f:'cb',q:false,qn:'aiYou',opt:true,hidden:true },
 
 				stories:						{ g:'stories',name:'Stories: separate context memory per character',v:false,d:"In all of the other UI i know (on the moment of writing this) characters see all of the chat history. I came up with a new idea, with this feature every personage can have each own context within the chat. For example, you may talk to a character A and do various things. Then you can introduce character B and that character will not know anything about things you did with character A. Every message is marked with the list of characters that can see it. You define it when you send the message for both your message and AI's one. You can see the 'access list' under every message and change it. The chat log is automatically filtered when you choose your and ai chars for the next messages. You can change the filter mode under the chat log at the right. Obvious usage for this can be: two different stories intersecting at some point, where one group plans something or does something and another doesn't know about it. A classic scenario of talking on the phone. Or when character 'thinks' and you don't want other characters to know these thoughts, you can with one click remove them from the message's access list. In other words, it makes it possible to simulate real stories and there is no more need to persuade AI that it shouldn't be aware of something in the chat log :). It comes at a cost of more complicated interface. I've spent a lot of time, much more than coding, on coming up with this interface, to make it as convenient as possible and intuitive. It's still harder than usual one but i believe it's a good one and trust me, as obvious as it seems when you see it, it wasn't easy to form the idea into UI :). Turning this off will disable all existing limits and all characters will see everything.",def:false,f:'cb',q:false,qn:'strz',opt:true },
 				storiesUI:					{ g:'stories',name:'Show stories UI',v:false,d:"Show or hide stories interface without disabling it under the hood. If you wish it to work but don't want to see it all the time, just disable it here. If you turn it on, it will automatically turn on the stories feature as well, to prevent the confusion. Stories feature is separate context per character, every message can have its own list of characters that can 'know/see' it.",def:false,f:'cb',q:true,qn:'strz-ui',opt:false },
@@ -2654,7 +2896,8 @@ window.app=createApp({
 			log:					0,
 			chatHeight:		'300',
 			imgs:					[],
-			inited:				false,
+			inited:				0,
+			branchMoving:	false,
 			memNew: {
 				working:	0,
 				cancel:		0,
@@ -2750,6 +2993,7 @@ window.app=createApp({
 					{n:'honest',pnl:'lying/deceitful/lieful',pnr:'honest',min:0,max:11,v:0,p:'',b:'',vp:'',vh:''},
 				]
 			},
+			cardSave: { nicks:{},msgs:[this.cardSaveMsgsTmpl()],loading:false }
 		}
 	},
 	computed: {
@@ -2766,124 +3010,133 @@ window.app=createApp({
 			return this.settingsGlobal;
 		},
 		branchac() {
-	    return this.turns[this.turn].branches[this.branch(this.turn)];
-	  },
+			return this.turns[this.turn].branches[this.branch(this.turn)];
+		},
 	},
 	created() {
 		window.addEventListener('beforeunload',this.close);
 	},
 	mounted() {
-		this.w('mounting');
-		
-		this.charNew.parts=this.charNewTmpl(this.charNew),
-		this.memNew.parts	=this.memNewTmpl(this.memNew),
-		
-		this.groupAdd('Every1',[]);
-		
-		this.userAdd('u','User');
-		this.userAdd('a','AI');
-		this.userAdd('u','World');
-		
-		this.groupAdd('1st set',[0,1,2]);
-		this.group=1;
-		
+		(async()=>{
+			this.w('mounting');
+			this.inited=2;
 
-		for(const k in this.settings.options) {
-			if(!this.settings.options[k].hasOwnProperty('name')) this.settings.options[k]["name"]=k;
-		}
-		for(const k in this.settings.req) {
-			if(!this.settings.req[k].hasOwnProperty('name')) this.settings.req[k]["name"]=k;
-		}
+			this.charNew.parts=this.charNewTmpl(this.charNew),
+			this.memNew.parts	=this.memNewTmpl(this.memNew),
 
-		this.rag['g']=this.ragStrct();
-		for(const u in this.nicks) {
-			this.rag[u]=this.ragStrct();
-		}
-		
-		this.bgSet(this.config.bgImg.v);
-		this.bgFix(this.config.bgFixed.v);
-		
-		this.charCreateReset(this.charNew);
-		
-		let def={};
-		for(const k in this.$data) {
-			this.copy(this.$data,def,k);
-		} this.def=def;
-		
-		this.sessLoad();
-		this.urlTest();
-		this.inited=1;
+			this.groupAdd('Every1',[]);
 
-		window.addEventListener("keyup",(event)=>{
-			this.ctrl=((event.ctrlKey||event.metaKey)?this.ctrl:0);
-		});
-		window.addEventListener("keydown",(event)=>{
-			if(this.opt.run) return;
+			await this.userAdd('u','User',{});
+			await this.userAdd('a','AI',{});
+			await this.userAdd('u','World',{});
+
+			this.groupAdd('1st set',[0,1,2]);
+			this.group=1;
+
+			for(const k in this.settings.options) {
+				if(!this.settings.options[k].hasOwnProperty('name')) this.settings.options[k]["name"]=k;
+			}
+			for(const k in this.settings.req) {
+				if(!this.settings.req[k].hasOwnProperty('name')) this.settings.req[k]["name"]=k;
+			}
+
+			this.rag['g']=this.ragStrct();
+			for(const u in this.nicks) {
+				this.rag[u]=this.ragStrct();
+			}
+
+			this.bgSet(this.config.bgImg.v);
+			this.bgFix(this.config.bgFixed.v);
+
+			this.charCreateReset(this.charNew);
+
+			let def={};
+			for(const k in this.$data) {
+				this.copy(this.$data,def,k);
+			} this.def=def;
 			
-			this.ctrl=((event.ctrlKey||event.metaKey)?1:0);
-			
-			const k=event.keyCode;
-			this.w(`keycode detected: ${k}`);
+			this.sessLoad();
+			this.urlTest().then(res=>{
+				this.inited=1;
+			});
 
-			if(this.config.fKeys.v&&k>=112&&k<122) { //>
-				if(!event.shiftKey) {
-					if			(k===112) { this.pToggle('howto') 	}
-					else if (k===113) { this.save() 						}
-					else if (k===114) { this.click('loadlabel')	}
-					else if (k===115) { this.pToggle('sys') 		}
-					else if (k===116) { this.pToggle('instr') 	}
-					else if (k===117) { this.list() 						}
-					else if (k===118) { this.pToggle('pull')		} 
-					else if (k===119) { this.prune() 						} 
-					else if (k===120) { this.pToggle('sets') 		} 
-					else if (k===121) {
-						this.quit()
+			window.addEventListener("keyup",(event)=>{
+				this.ctrl=((event.ctrlKey||event.metaKey)?this.ctrl:0);
+			});
+			window.addEventListener("keydown",(event)=>{
+				if(this.opt.run) return;
+				
+				this.ctrl=((event.ctrlKey||event.metaKey)?1:0);
+				
+				const k=event.keyCode;
+				this.w(`keycode detected: ${k}`);
+
+				if(this.config.fKeys.v&&k>=112&&k<122) { //>
+					if(!event.shiftKey) {
+						if			(k===112) { this.pToggle('howto') 	}
+						else if (k===113) { this.save() 						}
+						else if (k===114) { this.click('loadlabel')	}
+						else if (k===115) { this.pToggle('sys') 		}
+						else if (k===116) { this.pToggle('instr') 	}
+						else if (k===117) { this.list() 						}
+						else if (k===118) { this.pToggle('pull')		} 
+						else if (k===119) { this.prune() 						} 
+						else if (k===120) { this.pToggle('sets') 		} 
+						else if (k===121) {
+							this.quit()
+						}
+					} else {
+						if			(k===120) { this.optToggle() 						}
+						else if (k===113) { this.cardSaveToggle() 			}
+						else if (k===114) { this.click('loadcard')			}
+						else if (k===115) { this.pToggle('ragG') 				}
+						else if (k===116) { this.pToggle('ragU') 				}
+						else if (k===118) { this.pToggle("charNew")			}
+						else if (k===119) { this.clear() 								}
 					}
-				} else {
-					if			(k===120) { this.optToggle() 						}
-					else if (k===115) { this.pToggle('ragG') 				}
-					else if (k===116) { this.pToggle('ragU') 				}
-					else if (k===118) { this.pToggle("charNew")			} 
+					event.preventDefault();
+					return;
 				}
-				event.preventDefault();
-				return;
-			}
 			
-			if(k==27&&this.working==1) {
-				this.cancel=1;
-				if(this.charNew.working==1) this.charNew.cancel=1;
-				if(this.memNew.working==1) 	this.memNew.cancel=1;
-				return;
-			}
-
-			if((document.activeElement.tagName=='TEXTAREA'&&document.activeElement.value.length)||this.turn===0) return;
-			if(document.activeElement.tagName=='INPUT') {
-				return;
-			}
-
-			if(document.activeElement.className.includes('msgText')) {
-				if(event.key==='Enter'&&!event.shiftKey) {
-					document.activeElement.blur();
+				if(k==27&&this.working==1) {
+					this.cancel=1;
+					if(this.charNew.working==1) this.charNew.cancel=1;
+					if(this.memNew.working==1) 	this.memNew.cancel=1;
+					return;
 				}
-				return;
-			}
 
-			if(k==38) {
-				this.turnUp();
-				return;
-			} else if(k==40) {
-				this.turnDown(event.shiftKey?1:0);
-				return;
-			}
+				if((document.activeElement.tagName=='TEXTAREA'&&document.activeElement.value.length)||this.turn===0) return;
+				if(document.activeElement.tagName=='INPUT') {
+					return;
+				}
 
-			if (k===39) {
-				this.listmsgs(1,this.turn);
-			} else if (k===37) {
-				this.listmsgs(0,this.turn);
-			}
-		});
-		
-		this.w('mounted')
+				if(document.activeElement.className.includes('msgText')) {
+					if(event.key==='Enter'&&!event.shiftKey) {
+						document.activeElement.blur();
+					}
+					return;
+				}
+
+				if(k==38) {
+					this.turnUp();
+					return;
+				} else if(k==40) {
+					this.turnDown(event.shiftKey?1:0);
+					return;
+				}
+
+				if(k===39) {
+					this.listmsgs(1,this.turn,this.msga(this.turn));
+				} else if (k===37) {
+					this.listmsgs(0,this.turn,this.msga(this.turn));
+				}
+				if(k===46) {
+					this.msgDelNext(...this.tbma(this.turn));
+				}
+			});
+			
+			this.w('mounted')
+		})();
 	},
 	provide() {
 		return {
@@ -2915,9 +3168,12 @@ window.app=createApp({
 		'settings.options.stop.v': {
 			handler(v) {
 				if(!v) return;
-				if(v[v.length-1].length!=0) v.push('')
+				if(v[v.length-1]!=='') v.push('')
 				for(let i=0;i<(v.length-1);i++) { //>
-					if(v[i]==='') v.splice(i,1);
+					if(v[i]==='') {
+						v.splice(i,1);
+						i--;
+					}
 				}
 			},
 			deep:true,
@@ -2995,8 +3251,116 @@ window.app=createApp({
 			},
 			deep:true,
 		},
+		'cardSave.msgs': {
+			handler(v) {
+				if(!v) return;
+				if(v[v.length-1].content.length!=0) v.push(this.cardSaveMsgsTmpl());
+				for(let i=0;i<(v.length-1);i++) { //>
+					if(v[i].content==='') v.splice(i,1);
+				}
+			},
+			deep:true,
+		},
 	},
 	methods: {
+		tbmId(t,b,m) {
+			return `${t}_${b}_${m}`;
+		},
+		msgRole(m) {
+			//this.w({msgRole:m});
+			return this.nicks[m.nId].t;
+		},
+		cardSaveMsgsTmpl() {
+			return {content:'',u:''};
+		},
+		cardSaveToggle(u) {
+			this.pToggle('cardSave');
+		},
+		cardSaveDo() {
+			this.w({cardSave:this.cardSave});
+			let card={ver:0.1,type:'card',chars:[],msgs:[]},name='card.';
+			for(const u in this.cardSave.nicks) {
+				let tmp={};
+				tmp.id		=u;
+				tmp.n			=this.nicks[u].n;
+				tmp.t			=this.nicks[u].t;
+				tmp.system=this.nicks[u].system;
+				tmp.instr	=this.nicks[u].instr;
+				tmp.mem		=this.rag[u].t;
+				tmp.knlg	=this.rag.g.t;
+				card.chars.push(tmp);
+				name+=tmp.n+'-';
+			}
+			if(!card.chars.length) return;
+			for(const m of this.cardSave.msgs) {
+				if(!m.content.length||m.u==='') continue;
+				this.w({p:this.cardSave.nicks.hasOwnProperty(m.u),n:this.cardSave.nicks[m.u]});
+				if(!this.cardSave.nicks.hasOwnProperty(m.u)||!this.cardSave.nicks[m.u]) continue;
+				card.msgs.push({content:m.content,nId:m.u});
+			}
+			
+			name=name.slice(0,-1);
+			this.w({SavingCard:card});
+			this.saveDl(card,name);
+		},
+		async cardLoad(d) {
+			this.w({loadedCard:d});
+			this.cardSave.loading=true;
+			try {
+				d=JSON.parse(atob(d.replace(/^data:\w+\/\w+;base64,/,'')));
+			} catch(e) {
+				this.w(`couldn't parse card ${e}`);
+				alert(`Couldn't parse card.\n${e}`);
+				this.cardSave.loading=false;
+				return;
+			}
+			this.w({card:d});
+			if(d.type!='card') {
+				alert("It's not a card");
+				this.cardSave.loading=false;
+				return;
+			}
+			const pbak=this.pState.sysinstr;
+			this.pState.sysinstr=false;
+			let ids={};
+			for(const u of d.chars) {
+				if(u.t!='a'&&u.t!='u') continue;
+				if(u.n.length			>32)					continue;
+				if(u.system.length>1024*100)		continue;
+				if(u.instr.length	>1024*100)		continue;
+				if(u.mem.length		>1024*10000)	continue;
+				if(u.knlg.length	>1024*10000)	continue;
+				let id=await this.userAdd(u.t,u.n,{system:u.system,instr:u.instr,mem:u.mem,knlg:u.knlg});
+				this.userGroupAdd(this.group,id);
+				ids[u.id]=id;
+			}
+
+			if(d.msgs.length) {
+				this.turn=0;
+				for(let mey=0;mey<d.msgs.length;mey++) { //>
+					const m	=d.msgs[mey];
+					if(!ids.hasOwnProperty(m.nId)) {
+						this.w('Error: for some reason messag links to a non-existing user');
+						continue;
+					}
+					const u	=ids[m.nId];
+					const ut=this.nicks[u].t;
+					const un=(d.msgs.length-1)>mey?ids[d.msgs[mey+1].nId]:null;
+
+					if((this.turns.length-1)<=this.turn) { //>
+						this.turnnew(this.turn,u,this.group);
+						let b=this.brancha(this.turn);
+						b.msgs[b.msg]=this.msgTmpl(u,m.content,this.group);
+					} else {
+						this.turn++;
+						this.msgNew(this.turn,u,un,m.content,this.group);
+					}
+					this.msgaStatusSet(this.turn,'done');
+				}
+				this.branchu(this.turn);
+			}
+			this.cardSave.loading=false;
+		},
 		sessLoad() {
 			let sess=localStorage.getItem('sess');
 			this.w({load_session:sess});
@@ -3044,8 +3408,8 @@ window.app=createApp({
 			}
 		},
 		sessSave() {
-			if(!this.inited) return;
-			let sess={VER:0.1};
+			if(this.inited!=1) return;
+			let sess={};
 			let store=[
 				{ l:this.configGlobal,p:'cfg' },
 				{ l:this.settingsGlobal.options,p:'opt' },
@@ -3072,7 +3436,7 @@ window.app=createApp({
 		},
 		delAtWork(o) {
 			if(o.working) {
-				alert("Can't delete while working");
+				alert("Can't do while working");
 				return 0;
 			}
 			return 1;
@@ -3139,6 +3503,7 @@ window.app=createApp({
 			let ms=[],req='';
 			let rgparams	=new RegExp('\{PARAMS\}','si');
 			let rgcparams	=new RegExp('\{COREPARAMS\}','si');
+			let aid=this.userS('a');
 			
 			this.charNew.stepShow=this.charNew.step=m+1;
 			
@@ -3176,13 +3541,32 @@ window.app=createApp({
 					req=this.charNew.parts.system[0].req[0].req.replace(rgparams,ps);
 
 					this.charNew.parts.tmp=this.msgTmpl('-1',null,0);
-					this.chatAiMsPush(ms,sys,'system');
-					this.chatAiMsPush(ms,req,'user',[]);
+					
+					this.chatFinalPush(ms,{
+						nId:			-1,
+						nick:			this.nicks[-1].n,
+						content:	req,
+						rating:		'',
+						images:		[],
+					});					
+					
 					let i=0;
 					while(i++<=10)  { //>
 						if(this.charNew.cancel==1) break;
-						await this.chatSend(this.charNew.parts.tmp,ms,this.charNewParse,null);
 
+						await this.chatSend({
+							msg:				this.charNew.parts.tmp,
+							finalTurn:	ms.length-1,
+							final:			ms,
+							extra:			[false],
+							sys:				sys,
+							rooms:			false,
+							raw:				false,
+							func:				this.charNewParse,
+							d:					null,
+							nicks:			this.chatMsNicks({aId:-1,uId:-1}),
+						});
+						//if(i<3) this.charNew.parts.params[i].c='';
 						let parsedCount=0,parseds='',ready={};req='';
 						for(const p of this.charNew.parts.params) {
 							if(p.n==null||p.n==='') continue;
@@ -3198,10 +3582,24 @@ window.app=createApp({
 							}
 						}
 						if(!Object.keys(ready).length) continue;
-						this.chatAiMsPush(ms,parseds,'assistant',[]);
+
+						this.chatFinalPush(ms,{
+							nId:			aid,
+							nick:			this.nicks[aid].n,
+							content:	parseds,
+							rating:		'',
+							images:		[],
+						});
+						
 						if(parsedCount==paramsCount) break;
 						req=this.charNew.parts.system[0].req[1].req.replace(rgparams,req);
-						this.chatAiMsPush(ms,req,'user',[]);
+						this.chatFinalPush(ms,{
+							nId:			-1,
+							nick:			this.nicks[-1].n,
+							content:	req,
+							rating:		'',
+							images:		[],
+						});
 					}
 					
 					this.charNew.step=2;
@@ -3224,17 +3622,34 @@ window.app=createApp({
 					alert('You have to define at least 1 parameter to generate');
 					this.charNew.step=0;
 				} else {
-					this.charNew.parts.sysKq='';
-					this.charNew.parts.sys='';
-					this.charNew.parts.tmp=this.msgTmpl('-1',null,0);
-					this.chatAiMsPush(ms,this.charNew.parts.system[1].sys,'system');
-					this.chatAiMsPush(ms,this.charNew.parts.system[1].req[0].req.replace(rgcparams,kq).replace(rgparams,ps),'user',[]);
-				
+					this.charNew.parts.sysKq	='';
+					this.charNew.parts.sys		='';
+					this.charNew.parts.tmp		=this.msgTmpl('-1',null,0);
+					
+					this.chatFinalPush(ms,{
+						nId:			-1,
+						nick:			this.nicks[-1].n,
+						content:	this.charNew.parts.system[1].req[0].req.replace(rgcparams,kq).replace(rgparams,ps),
+						rating:		'',
+						images:		[],
+					});					
+					
 					let i=0;
 					const rgsys=new RegExp(`<prompt>([^<]+?)</prompt>`,'si');
 					while(i++<10) { //>
 						if(this.charNew.cancel==1) break;
-						await this.chatSend(this.charNew.parts.tmp,ms,null,null);
+						await this.chatSend({
+							msg:				this.charNew.parts.tmp,
+							finalTurn:	ms.length-1,
+							final:			ms,
+							extra:			[false],
+							sys:				this.charNew.parts.system[1].sys,
+							rooms:			false,
+							raw:				false,
+							func:				null,
+							d:					null,
+							nicks:			this.chatMsNicks({aId:-1,uId:-1}),
+						});
 						this.w(`got system prompt reply: ${this.charNew.parts.tmp.content}`);
 						const tmp=rgsys.exec(this.charNew.parts.tmp.content);
 						if(!tmp||!tmp[1]||tmp[1].trim().length<1000) continue; //>
@@ -3261,12 +3676,13 @@ window.app=createApp({
 				
 				this.charNew.step=4;
 			} else if(m==3) {
-				const id=this.userAdd('a',(this.charNew.parts.name.c??''));
+				const id=await this.userAdd('a',(this.charNew.parts.name.c??''),{
+					system: this.charNew.parts.sysPre+this.charNew.parts.sysKq+this.charNew.parts.sys,
+				});
+				this.charNew.parts.copy.sysPrompt=1;
+				
 				this.charNew.parts.u=id;
 				this.charNew.parts.copy.userAdd=id;
-				
-				this.nicks[id].system=this.charNew.parts.sysKq+this.charNew.parts.sys;
-				this.charNew.parts.copy.sysPrompt=1;
 				
 				this.userGroupAdd(this.group,id);
 				this.charNew.parts.copy.add2group=1;
@@ -3282,8 +3698,8 @@ window.app=createApp({
 			}
 			
 			if(this.charNew.step<3) { //>
-				this.charNew.parts.sysKq='';
-				this.charNew.parts.sys='';
+				this.charNew.parts.sysKq	='';
+				this.charNew.parts.sys		='';
 			}
 			if(this.charNew.step<4) { //>
 				this.charNew.parts.m2do=[];
@@ -3380,6 +3796,7 @@ window.app=createApp({
 				copy:		{},
 				sys:		'',
 				sysKq:	'',
+				sysPre:	`Never speak in third person about yourself! Use ONLY first person when you speak of yourself or your actions!\n\n`,
 				params: [],
 				paramsCore: [],
 				system: [],
@@ -3398,6 +3815,7 @@ window.app=createApp({
 			if(this.rag[u].t.length) this.rag[u].t+='\n\n';
 			this.rag[u].t+=`A memory of ${this.nicks[u].n}: `+o.parts.m.join(`\n\nA memory of ${this.nicks[u].n}: `);
 			await this.ragU(u);
+			this.memGenParsedReset(this.memNew,0)
 		},
 		async memGen4rag(u) {
 			let o=this.memNew;
@@ -3421,11 +3839,24 @@ window.app=createApp({
 			let rgparams	=new RegExp('\{PARAMS\}','si');
 			const rgtopic	=new RegExp(`\{TOPIC\}`,'gsi');
 			o.parts.m2do	=[];
+			let aid=this.userS('a');
 			this.memGenParsedReset(o,1);
 				
-			this.chatAiMsPush(ms,sys.sys,'system');
-			this.chatAiMsPush(ms,sys.req[0].req.replace(rgparams,udata),'user',[]);
-			this.chatAiMsPush(ms,sys.req[1].req,'assistant',[]);
+			this.chatFinalPush(ms,{
+				nId:			-1,
+				nick:			this.nicks[-1].n,
+				content:	sys.req[0].req.replace(rgparams,udata),
+				rating:		'',
+				images:		[],
+			});
+			this.chatFinalPush(ms,{
+				nId:			aid,
+				nick:			this.nicks[aid].n,
+				content:	sys.req[1].req,
+				rating:		'',
+				images:		[],
+			});
+			
 			this.w({ms:ms});
 			
 			for(const m of o.parts.memCount) {
@@ -3439,11 +3870,11 @@ window.app=createApp({
 				if(o.cancel==1) break;
 				if(mc.v==''||mc.v==null) continue;
 				if(!/^\d{1,4}$/.test(mc.q)) mc.q=3;
-				await this.memGenDo(ms,o.parts.tmp,mc.q,3,sys.req[2].req.replace(rgtopic,mc.v),o);
+				await this.memGenDo(ms,o.parts.tmp,mc.q,3,sys.req[2].req.replace(rgtopic,mc.v),o,sys.sys);
 			}
 			this.w({memories:this.charNew.parts.m});
 		},
-		async memGenDo(ms,m,q,by,req,obj) {
+		async memGenDo(ms,m,q,by,req,obj,sys) {
 			let i=0,remains=0,startpos=obj.parts.m.length,done=0,lastpos=obj.parts.m.length;
 			const rgAm=new RegExp('\{AMOUNT\}','si');
 			while(i++<10) { //>
@@ -3454,12 +3885,36 @@ window.app=createApp({
 				this.w(`starting cycle: required: ${q}, done: ${done}, remains: ${remains}, lastpos: ${lastpos}`); //>
 				if(remains<=0) break; //>
 				
-				this.chatAiMsPush(ms,req.replace(rgAm,remains>by?by:remains),'user',[]);
-				await this.chatSend(m,ms,this.memParse,obj);
+				this.chatFinalPush(ms,{
+					nId:			-1,
+					nick:			this.nicks[-1].n,
+					content:	req.replace(rgAm,remains>by?by:remains),
+					rating:		'',
+					images:		[],
+				});
+				
+				await this.chatSend({
+					msg:				m,
+					finalTurn:	ms.length-1,
+					final:			ms,
+					extra:			[false],
+					sys:				sys,
+					rooms:			false,
+					raw:				false,
+					func:				this.memParse,
+					d:					obj,
+					nicks:			this.chatMsNicks({aId:-1,uId:-1}),
+				});
 
 				if(lastpos!=obj.parts.m.length) {
 					const tmp=obj.parts.m.slice(lastpos).map(mem=>`<memory>${mem}</memory>`).join('\n');
-					this.chatAiMsPush(ms,tmp,'assistant',[]);
+					this.chatFinalPush(ms,{
+						nId:			this.userS('a'),
+						nick:			this.nicks[this.userS('a')].n,
+						content:	tmp,
+						rating:		'',
+						images:		[],
+					});
 					lastpos=obj.parts.m.length;
 				} else {
 					ms.pop();
@@ -3578,8 +4033,16 @@ window.app=createApp({
 		},
 		w(a) {
 			if(!this.log) return;
+			this.wDo(a);
+		},
+		wDo(a) {
+			//console.log(a);
 			if(typeof a==='object') {
-				console.log(JSON.stringify(a,null,2));
+				let tmp=JSON.stringify(a,null,2);
+				console.log(tmp??a);
+			} else if(Array.isArray(a)) {
+				let tmp=JSON.stringify(a,null,2);
+				console.log(tmp??a);
 			} else {
 				console.log(a);
 			}
@@ -3588,15 +4051,15 @@ window.app=createApp({
 			const c=new MouseEvent('click',{view:window,bubbles:true,cancelable:true});
 			document.getElementById(id).dispatchEvent(c);
 		},
-		tokensTotal(turn,model) {
+		tokensTotal(m,model) {
 			if(!this.config.tokensCount.v) return;
 			
-			return this.tokens(turn,model,'tp')+this.tokens(turn,model,'tr');
+			return this.tokens(m,model,'tp')+this.tokens(m,model,'tr');
 		},
-		tokens(turn,model,id) {
+		tokens(m,model,id) {
 			//this.w(`connection=${this.connection} this.model=${JSON.stringify(this.settings.req.model.v.v)} models=${JSON.stringify(this.models,null,2)}`)
-			if(model==undefined) model=this.models[this.settings.req.model.v.v].n;
-			return this.msga(turn)[id][model];
+			if(model==null) model=this.models[this.settings.req.model.v.v].n;
+			return m[id][model];
 		},
 		pToggleDo(id,v) {
 			if(v==undefined) v=!this.pState[id];
@@ -3635,8 +4098,9 @@ window.app=createApp({
 			this.pToggle('opt');
 		},
 		msgFilter(turn,b,m) {
-			const t=this.turns[turn];
-			const msg=t.branches[b].msgs[m];
+			return this.msgFilterDo(this.turns[turn].branches[b].msgs[m]);
+		},
+		msgFilterDo(msg) {
 			if(!this.config.stories.v) {
 				return 0;
 			} else if(!this.context[0]&&!this.context[1]&&!this.context[2]) {
@@ -3651,6 +4115,7 @@ window.app=createApp({
 					if(!(msg.nicks[a]&&this.context[1])&&!(msg.nicks[u]&&this.context[2])) return 1;
 				}
 			}
+			return 0;
 		},
 		msgSkipped(turn,b,m) {
 			if(this.hideMsg(turn,b,m)) 		return 1;
@@ -3658,22 +4123,24 @@ window.app=createApp({
 			return 0;
 		},
 		hideMsg(turn,b,m) {
-			const t=this.turns[turn];
-			const msg=t.branches[b].msgs[m];
-			
-			if(t.role!=="user") return 0;
+			if(turn==0) return 1;
+			const t		=this.turns[turn];
+			const msg	=t.branches[b].msgs[m];
+
+			if(this.msgRole(msg)!=="u") return 0;
 			if(!this.config.hideEmptyOwn.v) return 0;
 			if(this.config.showEmptyOwnSide.v&&this.msgTotal(turn,b)>1) return 0; //force showing.
-			if(this.msgSide(turn,b,m)) return 0;
+			if(this.msgSide(msg)) return 0;
 			if(!this.msgEmpty(turn,b,m)) return 0;
 			return 1;
 		},
-		listmsgs(m,turn) {
-			this.w(`listing ${m} - turn ${turn}, m: ${m}, ctrl: ${this.ctrl} role: ${this.turns[turn].role}`);
+		listmsgs(m,turn,msg) {
+			const role=this.msgRole(msg);
+			this.w(`listing ${m} - turn ${turn}, m: ${m}, ctrl: ${this.ctrl} role: ${role}`);
 			if(this.opt.run) return 0;
 			if(this.userS('u')==null||this.userS('a')==null) return 0;
-			if(m==1&&this.ctrl&&this.turns[turn].role==='assistant') m=2;
-			if(m==2&&this.turns[turn].role==='user') m=1; //for right mouse click
+			if(m==1&&this.ctrl&&role==='a') m=2;
+			if(m==2&&role==='u') m=1; //for right mouse click
 			
 			if			(m==0) {	this.msgMvLeft(turn)						}
 			else if (m==1) {	this.msgMvRight(turn,0,true)		}
@@ -3697,7 +4164,7 @@ window.app=createApp({
 				alert('You need to have a chat log, before you may start this. It creates side-replies, so it needs to have some content for AI to create alternative versions of replies to it.');
 				return;
 			}
-			if(this.turnRole(this.turn)==='user') {
+			if(this.msgRole(this.msga(this.turn))==='u') {
 				alert('You need to stop at the AI reply in your chat log, right now last message in the chat log belongs to you.');
 				return;
 			}
@@ -3743,6 +4210,11 @@ window.app=createApp({
 									alert(`Field's ${ht[i][key].name} ${p} value ${val} for model ${this.settings.req.model.v.l[m].n} is not numeric, please correct it.`);
 									return;
 								}
+							}
+							if(this.opt[m].v[key].step==0) {
+								this.opt.run=false;
+								alert(`Field's ${ht[i][key].name} step is set to zero, that would mean endless loop.`);
+								return;
 							}
 						}
 						opts['v'][m].push({
@@ -3792,15 +4264,17 @@ window.app=createApp({
 
 						t.w(`trying new iteration`);
 						const coord=await t.msgMvRight(t.turn,0,true);
-						const c=t.turns[coord[0]].branches[coord[1]].msgs[coord[2]].content;
+						t.w({coords:coord});
+						let msg=t.turns[coord[0]].branches[coord[1]].msgs[coord[2]];
+						const ct=t.msgContent(msg,t.config.trinity.v,-1);
 						let found=0;
 						for(let j=0;j<res.length;j++) { //>
-							if(res[j]['c']!==c) continue;
+							if(res[j]['c']!==ct) continue;
 							res[j].ids.push(coord[2]);
 							res[j].v.push([...vals]);
 							found=1;
 						}
-						if(!found) res.push({c:c,ids:[coord[2]],v:[[...vals]]});
+						if(!found) res.push({c:ct,ids:[coord[2]],v:[[...vals]]});
 					}
 				}
 			}
@@ -3874,14 +4348,24 @@ window.app=createApp({
 					this.turns[i].branches.push(tmp);
 					tmp=this.msga(i);
 					this.turns[i].branches[0].msg	=0;
-					this.turns[i].branches[0].msgs=[];
 					this.turns[i].branches[0].msgs=[tmp];
+					this.turns[i].tree={};
 					this.treeu(i);
 					this.w(this.turns[i].branches);
 				}
 			}
 		},
-		load() {
+		clear() {
+			if(
+				confirm("Are you sure you wish to permanently erase all the chat log? Proceed?")
+				&&
+				confirm("Are you really sure you want to erase all the chat log?")
+			) {
+				this.turn=0;
+				this.turns.splice(1);
+			}
+		},
+		async load() {
 			this.w('drop all changes since load');
 			if(!confirm('Please do not trust files of other people, as they can inject something. The most obvious and easiest thing is to set your ollama url to something they control, so they can see your chat then. Another potential attack vector is some specially crafted prompt to exploit ollama, that can be in some of the fields sent to Ollama. In other words, load only your own chats. Load this file?')) return;
 			this.connection=0; //to prevent partial updates to dom
@@ -3900,17 +4384,19 @@ window.app=createApp({
 			//but so far it works and i don't want to make file bigger just with 
 			//copying all these default tables per version.
 			//if needed, then it has to be changed.
-			function parse(d) {
+			
+			async function parse(d) {
 				if(!d) {
 					t.w('parsing loaded file');
 					d=JSON.parse(fr.result);
 					delete d.def;
+					delete d.inited;
 					d.connection=0; //to prevent partial updates to dom
 				} else {
 					t.w(`recursive updating`);
 				}
 				t.w(d)
-				
+				//if(d.hasOwnProperty('nicks')) t.w({nicksd:d.nicks});
 				//patch for 1.8 shift.
 				if(t.$data.hasOwnProperty('configGlobal')) {
 					t.config=t.configGlobal;
@@ -3918,7 +4404,6 @@ window.app=createApp({
 					if(t.settingsGlobal.req.hasOwnProperty('model')) {
 						t.model=t.settingsGlobal.req.model.v.v;
 					}
-					
 				}
 				let ver;
 				if(d.hasOwnProperty('configGlobal')) {
@@ -4020,8 +4505,9 @@ window.app=createApp({
 					t.w(`upgrading from version ${d.config.version.v}`);
 					d.config.version.v=1.4;
 					let tmp=t.msgTmpl(1,null,0); //just to get new fields
-					for(const tu of d.turns) {
-						if(tu.role==='root') continue;
+					for(let tu=1;tu<d.turns.length;tu++) { //>
+						tu=d.turns[tu];
+						//if(tu.role==='root') continue;
 						for(const b of tu.branches) {
 							if(!b.msgs.length) continue;
 							for(const m of b.msgs) {
@@ -4041,8 +4527,13 @@ window.app=createApp({
 				} else if (ver==1.4) {
 					t.w(`upgrading from version ${d.config.version.v}`);
 					d.config.version.v=1.5;
-					t.settingsGlobal.options.stop.v=[d.settings.options.stop.v];
+					if(Array.isArray(d.settings.options.stop.v)) {
+						t.settingsGlobal.options.stop.v=d.settings.options.stop.v;
+					} else {
+						t.settingsGlobal.options.stop.v=[d.settings.options.stop.v];
+					}
 					d.settings.options=t.settingsGlobal.options;
+					t.w({testtt:d.settings.options});
 					//if we change userAdd or structures this will need rewriting
 					//clean current list
 					for(const i in t.nicks) {
@@ -4059,13 +4550,13 @@ window.app=createApp({
 					let tmp=t.msgTmpl(1,null,0); //just to get new fields
 					for(const tu of d.turns) {
 						if(tu.role==='root') continue;
-						let role;
-						if(tu.role==='user') role='u'
-						if(tu.role==='assistant') role='a';
-						if(tu.role==='system') role='s';
 						for(const b of tu.branches) {
 							if(!b.msgs.length) continue;
 							for(const m of b.msgs) {
+								let role;
+								if(tu.role==='user') role='u'
+								if(tu.role==='assistant') role='a';
+								if(tu.role==='system') role='s';
 								//set status done for all without of one
 								if(!m.hasOwnProperty('status')) m.status=t.msgStatusId('done');
 								if(m.status==null) m.status=t.msgStatusId('done');
@@ -4082,7 +4573,7 @@ window.app=createApp({
 								if(m.nId==null) {
 									//copy added deleted user to d
 									t.nick['n'][role]=m.nick;
-									t.userAdd(role,m.nick);
+									await t.userAdd(role,m.nick,{});
 									let id=t.amountNicks['idNext']-1;
 									t.nicks[id].del=1;
 									d.nicks[id]=t.nicks[id];
@@ -4131,11 +4622,12 @@ window.app=createApp({
 					}
 					t.w({'list of users before import':t.nicks,importing:d.nicks,sys:d.system});
 
-					let tmp={system:{},instr:{}};
+					let tmp={system:{},instr:{},ids:{}};
 					for(const u in d.nicks) {
 						if(d.nicks[u].t=='s') continue;
 						if(d.nicks[u].del) continue;
-						const id=t.userAdd(d.nicks[u].t,d.nicks[u].n);
+						const id=await t.userAdd(d.nicks[u].t,d.nicks[u].n,{});
+						tmp.ids[u]=id;
 						tmp.system[id]=d.system[u];
 						tmp.instr[id]=d.instr[u];
 						t.userGroupAdd(1,id);
@@ -4151,6 +4643,7 @@ window.app=createApp({
 						for(const b of tu.branches) {
 							if(!b.msgs.length) continue;
 							for(const m of b.msgs) {
+								m.nId=tmp.ids[m.nId];
 								m.nicks={};
 								for(const u in d.nicks) {
 									if(d.nicks[u].t!='u'&&d.nicks[u].t!='a') continue;
@@ -4358,7 +4851,6 @@ window.app=createApp({
 					return;
 				} else if (ver=="1.9.7") {
 					t.w(`upgrading from version ${d.configGlobal.version.v}`);
-
 					d.configGlobal.version.v='1.9.8';
 
 					t.updateAddParams(d,'pState');
@@ -4399,6 +4891,58 @@ window.app=createApp({
 					t.w(`upgraded to version ${d.configGlobal.version.v}`);
 					parse(d);
 					return;
+				} else if (ver=="1.9.8b") {
+					t.w(`upgrading from version ${d.configGlobal.version.v}`);
+					d.configGlobal.version.v='1.9.9';
+					t.updateAddParams(d,'configGlobal');
+					d.turns[0].branches[0].msgs[0].nId=-1;
+
+					for(let u in d.nicks) {
+						u=d.nicks[u];
+						if(!u.hasOwnProperty('settings')) continue;
+						t.copy(t.def.configGlobal,u.config,'raw');
+						t.copy(t.def.configGlobal,u.config,'trinity');
+						t.copy(t.def.configGlobal,u.config,'trinityReqTh');
+						t.copy(t.def.configGlobal,u.config,'trinityReqA');
+						t.copy(t.def.configGlobal,u.config,'rawTmpl');
+						t.copy(t.def.configGlobal,u.config,'rawLog');
+						t.copy(t.def.configGlobal,u.config,'aiIsYou');
+						t.copy(t.def.configGlobal,u.config,'noAiReplyToSelf');
+						t.copy(t.def.configGlobal,u.config,'noReplyToSelf');
+						t.copy(t.def.configGlobal,u.config,'namesAdd');
+						t.copy(t.def.configGlobal,u.config,'trinityChancesTh');
+						t.copy(t.def.configGlobal,u.config,'emptyToSth');
+						t.copy(t.def.configGlobal,u.config,'emptyToTxt');
+					}
+					
+					for(let turn=0;turn<d.turns.length;turn++) { //>
+						if(turn==0) continue;
+						const tr=d.turns[turn];
+						for(const b of tr.branches) {
+							for(const m of b.msgs) {
+								m.content3={};
+								t.msgContentSet(m,'a',m.content,false);
+								if(turn!=0) {
+									if(m.status==null&&(!m.side||m.side==0)) {
+										m.status=t.msgStatusSetDo(m,'done');
+									} else {
+										t.msgStatusSetDo(m,t.msgStatusId2W(m.status));
+									}
+									for(const bp in tr.tree) {
+										if(bp>=d.turns[turn-1].branches.length) {
+											delete tr.tree[bp]
+											continue;
+										}
+										for(const mp in tr.tree[bp]) {
+											if(mp>=d.turns[turn-1].branches[bp].msgs.length) {
+												delete tr.tree[bp][mp];
+											}
+										}
+									}
+								}
+							}
+						}
+					}
 				}
 				
 				
@@ -4425,10 +4969,14 @@ window.app=createApp({
 				t.charNew.working	=0; t.charNew.cancel=0;
 				t.memNew.working	=0; t.memNew.cancel=0;
 				
-				t.urlTest(); //will do list
+				await t.urlTest(); //will do list
 			}
 			this.w(l.files[0])
-			this.w(fr.addEventListener("load",function() { parse(d) }))
+			this.w(fr.addEventListener("load",async (event)=>{
+				t.inited=2;
+				await parse(d);
+				t.inited=1;
+			}));
 			fr.readAsText(l.files[0]);
 		},
 		save() {
@@ -4436,14 +4984,19 @@ window.app=createApp({
 			main: for(const i in this.nicks) {
 				name+=this.nicks[i].n+'-';
 			}
-			name=name.slice(0,-1);
-			name=name.replace(/[^\w0-9\.-]/gi,'');
-			name.match(/^(.{1,64})/); 
-			name=`chat.${name}.${Date().toString()}.json`;
+			name='chat.'+name.slice(0,-1);
 			
-			const blob=new Blob([JSON.stringify(this.$data)],{ type: "text/json" });
-			const l		=document.createElement("a");
-			l.download						=name;
+			this.saveDl(this.$data,name);
+		},
+		saveDl(d,n) {
+			n=n.replace(/[^\w\d\. -]/gis,'');
+			n=n.match(/^(.{1,32})/);
+			n=n[1]??'something';
+			n=`${n}.${Date().toString()}.json`;
+			
+			const blob						=new Blob([JSON.stringify(d)],{ type: "text/json" });
+			const l								=document.createElement("a");
+			l.download						=n;
 			l.href 								=window.URL.createObjectURL(blob);
 			l.dataset.downloadurl	=["text/json",l.download,l.href].join(":");
 
@@ -4453,7 +5006,7 @@ window.app=createApp({
 					bubbles: true,
 					cancelable: true,
 				})
-			)
+			);
 			l.remove()
 		},
 		optResSave() {
@@ -4475,15 +5028,23 @@ window.app=createApp({
 			l.remove()
 		
 		},
-		list() {
+		async list() {
+			this.inited=2;
+			await this.listDo();
+			this.inited=1;
+		},
+		async listDo() {
 			if(this.working) {
 				this.w('working right now, leaving');
 				return;
 			}
-			this.working=1;
+			this.working							=1;
+			this.modelsLoading.inited	=0;
+			this.modelsLoading.total	=0;
+			this.modelsLoading.done		=0;
 			this.w(`listing models`);
 			
-			fetch(this.url()+"/api/tags",{
+			await fetch(this.url()+"/api/tags",{
 				"method": "GET",
 			}).then(r=>{
 				if(!r.ok) throw new Error(r.statusText);
@@ -4500,6 +5061,9 @@ window.app=createApp({
 				this.models	=[]; this.modelsEmb	=[];
 				this.w({modelsDL:res});
 				let mdls=[];
+				this.modelsLoading.inited	=2;
+				this.modelsLoading.total	=Object.keys(res.models).length;
+				
 				for(const m of Object.keys(res.models).sort((a,b)=>{
 					return res.models[a].name.localeCompare(res.models[b].name.toLowerCase());
 				})) {
@@ -4515,6 +5079,7 @@ window.app=createApp({
 					});
 					await this.modelData(mdls,mdls.length-1);
 					this.w(`processed model ${md.name}`);
+					this.modelsLoading.done++;
 				}
 				this.w('processed new models');
 				for(const m of mdls) {
@@ -4607,11 +5172,13 @@ window.app=createApp({
 			}).catch((error)=>{
 				this.cancel	=0;
 				this.working=0;
+				this.modelsLoading.inited=0;
 				this.connectionErr=error.message;
 				this.connection=0;
 				this.w(`listing conneciton err: ${error.message}`);
 				return;
 			});
+			this.modelsLoading.inited=1;
 		},
 		async modelData(mdls,id) {
 			return fetch(this.url()+"/api/show",{
@@ -4622,7 +5189,9 @@ window.app=createApp({
 				return r.text();
 			}).then(r=>{
 				let res='';
-				try { res=JSON.parse(r) } catch (error) { console.error(`error: ${error}`) }
+				try { res=JSON.parse(r) } catch (error) {
+					console.error(`error: ${error}`)
+				}
 				this.w({'pulled model data':res});
 				if(res.hasOwnProperty('parameters')) {
 					this.w({'has parameters specified':res.parameters});
@@ -4665,6 +5234,8 @@ window.app=createApp({
 				} else if (n==='img') {
 					t.imgs.push(d.replace('data:','').replace(/^.+,/,''));
 					t.w(`loaded images ${t.imgs.length}`);
+				} else if (n==='card') {
+					t.cardLoad(d);
 				}
 			}
 			this.w(`file: ${l.files[0]}`);
@@ -4751,7 +5322,7 @@ window.app=createApp({
 					if(r===true||r==='cancel') {
 						t.connectionErr='';
 						t.pToggle('pull',0);
-						t.list();
+						t.listDo();
 					} else {
 						t.connectionErr=r;
 					}
@@ -4762,7 +5333,12 @@ window.app=createApp({
 					t.connection=0;
 					return;
 				});
-			})
+			}).catch((error)=>{
+				this.working=0;
+				this.cancel=0;
+				this.connectionErr=error.message;
+				return;
+			});
 		},
 		updateAddParams(d,p) {
 			this.w(`updateAddParams for key ${p}`);
@@ -4826,6 +5402,11 @@ window.app=createApp({
 		},
 		async ragU(u) {
 			if(u==null) return;
+			if(!this.settings.req.modelEmb.v.l.length) {
+				alert("Can not update memories (rag) as you've not downloaded any models for embeddings. Please pull at least one embedding model, like 'nomic-embed-text' or anything else with 'embed' in its name. Also, don't forget to run a second instance of Ollama on a different port and to configure 'Embeddings URL' in settings by pointing it to that URL. This way your prompts will not slow down when you use 'memories'. I will switch off your rag setting for now, to prevent showing you this message next time. Enjoy.");
+				this.ragDisable(1);
+				return;
+			}
 			this.workingRag	=true;
 			this.w(`updating rag for user ${u}`);
 
@@ -4987,14 +5568,25 @@ window.app=createApp({
 			}
 			this.groups.splice(g,1);
 		},
-		userAdd(t,n) {
+		async userAdd(t,n,d) {
 			const id=this.amountNicks['idNext']++;
 			this.amountNicks['t']++;
 			this.amountNicks[t]++;
-			this.nicks[id]		={ t:t,n:n,'id':id,del:0,system:'',instr:'',sets:false,setsDo:false };
+			this.nicks[id]		={ t:t,n:n,'id':id,del:0,system:(d.system??''),instr:(d.instr??''),sets:false,setsDo:false };
 			this.nick['n'][t]	='';
 			this.rag[id]=this.ragStrct();
 			this.userGroupAdd(0,id);
+
+			if(d.hasOwnProperty('mem')&&d.mem.length) {
+				this.rag[id].t=d.mem;
+				await this.ragU(id);
+			}
+			if(d.hasOwnProperty('knlg')&&d.knlg.length) {
+				this.rag.g.t+='\n'+d.knlg;
+				await this.ragU('g');
+			}
+			
+			this.w({user:this.nicks[id],d:d});
 			return id;
 		},
 		userVis(t,id) {
@@ -5013,7 +5605,7 @@ window.app=createApp({
 				this.w('chosen user nick has changed, let us update side msg if it is open and turns');
 				//this.turnLastFilteredGo();
 				const tbm=this.tbma(this.turn);
-				if(this.msgSide(...tbm)) this.msgSideNickUpdate(...tbm);
+				if(this.msgSide(this.msga(this.turn))) this.msgSideNickUpdate(...tbm);
 			}
 		},
 		userAiCh(v) {
@@ -5040,8 +5632,228 @@ window.app=createApp({
 				}
 				if(this.groups[g].sel[tn]==null) this.groups[g].sel[tn]=u;
 			}
+			if(t==='u') {
+				this.w(`searching for side msgs of a user`);
+				this.msgSideWipe(u);
+			}
 			this.amountNicks[t]--;
 			this.amountNicks[tn]++;
+		},
+		msgSideWipe(u) {
+			//used when user changes type or when we move/copy branches,
+			//to prevent adding branch after the side message, which is supposed to be always last.
+			for(let t=1;t<this.turns.length;t++) { //>
+				for(let b=0;b<this.turns[t].branches.length;b++) { //>
+					let mdel=[];
+					for(let m=0;m<this.turns[t].branches[b].msgs.length;m++) { //>
+						const msg=this.msgGet(t,b,m);
+						if((u==null||msg.nId==u)&&this.msgSide(msg)) {
+							this.w(`found a sidemsg ${t}/${b}/${m}: deleting`);
+							this.branchDel(t,b,m)
+							m--;
+						}
+					}
+				}
+			}
+		},
+		async msgDelNext(t,b,m) {
+			if(t<1) return; //>
+			const msg=this.msgGet(t,b,m);
+			if(this.working==1&&msg.working) return;
+			
+			const role=this.msgRole(msg);
+			if(role=='a'&&this.turns[t].branches[b].msgs.length==1) {
+				await this.msgMvRight(t,0,true);
+			}
+			this.branchDel(t,b,m);
+		},
+		branchMerge(t,b,m,t2,b2,mdel) {
+			if(!this.delAtWork(this.$data)) return;
+			this.msgSideWipe(null);
+			this.branchMv(t,b,m,t2,b2);
+			this.branchDel(t2,b2,mdel);
+			this.turns[t2].branches[b2].msg=this.turns[t2].branches[b2].msgs.length-1;
+		},
+		branchMv(t,b,m,t2,b2) {
+			if(!this.delAtWork(this.$data)) return;
+			this.w(`Moving branch ${t}/${b}/${m} -> ${t2}/${b2}`);
+			this.msgSideWipe(null);
+			let branch={msgs:[]};
+			this.branchCopy(branch,t+1,b,m);
+			let tmp=[]; this.copy(this.turns[t].branches[b].msgs,tmp,m);
+			this.turns[t2].branches[b2].msgs.push(tmp[m]);
+			let m2=this.turns[t2].branches[b2].msgs.length-1;
+			this.turns[t2].branches[b2].msg=m2;
+			if (branch.nested) this.branchAdd(branch.nested,t2+1,b2,m2);
+			this.w({turns:this.turns});
+			this.branchDel(t,b,m);
+			this.turns[t2].branches[b2].msg=this.turns[t2].branches[b2].msgs.length-1;
+			this.branchu(t2);
+		},
+		branchAdd(n,t,bp,mp) {
+			this.msgSideWipe(null);
+			let b=this.turns[t].branches.length;
+			this.turns[t].branches.push(n.branch);
+			let br=this.turns[t].branches[b];
+			this.treeuDo(this.turns[t].tree,bp,mp,b);
+			this.w({turn:t,bp:bp,mp:mp,b:b,newTree:this.turns[t].tree})
+			for(let m=0;m<br.msgs.length;m++) { //>
+				if(!br.msgs[m].hasOwnProperty('nested')) continue;
+				this.branchAdd(n.branch.msgs[m].nested,t+1,b,m);
+				delete br.msgs[m].nested;
+			}
+		},
+		branchCopy(msg,t,bp,mp) {
+			this.w(`moving branch: t:${t}, bp:${bp}, mp: ${mp}`);
+			if(this.turns[t]==undefined) return;
+			const tree=this.turns[t].tree;
+			if(tree==undefined) return;
+
+			if(!tree.hasOwnProperty(bp)||!tree[bp].hasOwnProperty(mp)) return;
+			msg.nested={}; let n=msg.nested;
+
+			let b=this.turns[t].tree[bp][mp];
+			let tmp={};	this.copy(this.turns[t].branches,tmp,b);
+			n.branch=tmp[b];
+			for(let i=0;i<n.branch.msgs.length;i++) { //>
+				let m=n.branch.msgs[i];
+				this.branchCopy(m,t+1,b,i);
+			}
+		},
+		branchDel(t,bp,mp) {
+			if(!this.delAtWork(this.$data)) return;
+			this.w({debug:t,bp:bp})
+
+			this.branchDelNext(t+1,bp,mp);
+			//we need to delete the message at this turn,
+			//so in the next one we will shift index ids, if the next turn exists.
+			if(this.turns[t+1]!=undefined) this.treeDelShift(this.turns[t].branches[bp].msgs.length-1,this.turns[t+1].tree[bp],mp);
+			
+			if(this.turns[t].branches[bp].msgs.length>(mp+1)) {
+				this.turns[t].branches[bp].msg=mp;
+			} else if (mp>0) {
+				this.turns[t].branches[bp].msg=mp-1;
+			} else {
+				//empty turn
+			}
+			
+			this.turns[t].branches[bp].msgs.splice(mp,1);
+			//if the branch is empty, let's delete the branch
+			if(!this.turns[t].branches[bp].msgs.length) {
+				//but for this we need first to find the parent branch/msg ids, to update the next turns index
+				let pb,pm;
+				for(const i in this.turns[t].tree) {
+					for(const j in this.turns[t].tree[i]) {
+						if(this.turns[t].tree[i][j]==bp) {
+							pb=i;pm=j;
+							break;
+						}
+					}
+				}
+				//del current emptied branch and shift everything below.
+				this.branchDelNext(t,pb,pm);
+			}
+			
+			//delete the turn if it was emptied.
+			this.branchDelTurnDel(t);
+			
+			this.branchu(t);
+		},
+		branchDelNext(t,bp,mpo) {
+			if(this.turns[t]==undefined) return;
+			
+			this.w(`deleting branch: t:${t}, bp:${bp}`);
+
+			let del=[];
+			
+			for(const mp in this.turns[t].tree[bp]) {
+				//for the first nested level we delete only 1 nested branch of the parent branch/msg, 
+				//as other nested branches are tied to other parent messages that are still there.
+				//but for the rest of levels we delete all nested branches for all parent messages as the whole tree gets deleted.
+				if(mpo!=null&&mp!=mpo) continue;
+				let b=this.turns[t].tree[bp][mp];
+
+				this.branchDelNext(t+1,b,null);
+				
+				del.push(b);
+				if(this.turns[t].branch==b) this.turns[t].branch=-1;
+			}
+
+			//process from end to beginning, so branch indexes to delete are not changed by deletions
+			del.sort((a,b)=>b-a);
+			this.w({delBranch:del});
+			for(let d=0;d<del.length;d++) { //>
+				let b=del[d];
+				this.branchDelDo(t,b);
+			}
+			//del the turn if it was emptied.
+			this.branchDelTurnDel(t);
+
+			this.branchu(t);
+		},
+		branchDelTurnDel(t) {
+			if(t>=this.turns.length) return;
+
+			if(this.turns[t].branches.length==0) {
+				this.turns.splice(t);
+				return true;
+			}
+			let count=0;
+			for(const b of this.turns[t].branches) {
+				count+=b.msgs.length;
+				//this.w({msgsl:b.msgs.length,turn:t,b:b})
+			}
+
+			if(!count) this.turns.splice(t);
+
+			return count==0?true:false
+		},
+		branchDelDo(t,b) {
+			this.w(`Deleting all local branches at ${t}: parent branch ${b}`);
+			this.treeDelShiftLocal(t,b);
+			this.treeDelShiftNested(t,b);
+			this.turns[t].branches.splice(b,1);
+		},
+		treeDelShiftNested(t,b) {
+			this.w(`Tree del shift at turn ${t} ${t+1}>=${this.turns.length}`);
+			if((t+1)>=this.turns.length) return;
+			this.w(`Doing tree del shift at turn ${t}`);
+			this.treeDelShift(this.turns[t].branches.length-1,this.turns[t+1].tree,b);
+		},
+		treeDelShiftLocal(t,b) {
+			//we have deleted a local branch, now the values pointing to the rest of them are wrong
+			//lets go and shift them.
+			this.w({treelocaldel:this.turns[t].tree});
+			for(const i in this.turns[t].tree) {
+				for(const j in this.turns[t].tree[i]) {
+					if(this.turns[t].tree[i][j]>b) {
+						this.turns[t].tree[i][j]--;
+					} else if (this.turns[t].tree[i][j]==b) {
+						delete this.turns[t].tree[i][j];
+					}
+				}
+			}
+			this.w({treelocaldeldone:this.turns[t].tree});
+		},
+		treeDelShift(total,tree,i) {
+			//we have deleted parent element - branch or message, now the index is wrong
+			//let's go over the index and shift keys linking parent elemets to local branches.
+			this.w(`The element #${i} is ${total-i} positions from the end`);
+			if(tree==undefined) {
+				this.w(`tree index doesn't exist`);
+				return;
+			}
+			this.w({treedel:tree,e:i+1,l:total});
+			delete tree[i];
+			let ps=Object.keys(tree).filter(k=>k>i).sort((a,b)=>a-b);
+			this.w({parentIdsToShift:ps});
+			//for(let e=i*1+1;e<=total;e++) { //>
+			for(const e of ps) { //>
+				this.w(`Updating index tree ${e} -> ${e-1}`);
+				tree[e-1]=tree[e];
+				delete tree[e];
+			}
+			this.w({treedeldone:tree})
 		},
 		groupAdd(n,u) {
 			if(!n.length) {
@@ -5182,6 +5994,7 @@ window.app=createApp({
 			this.turnBranchSet(t,-1);
 		},
 		turnwhose(turn) {
+			//sets the legacy turn.role which should not be used anymore
 			this.w(`searching for whose turn is at ${turn}`);
 			let prev	=this.turns[turn-1];
 			let ai		=prev.role=='user'?1:0;
@@ -5197,7 +6010,7 @@ window.app=createApp({
 				this.w(`the turn ${turn} doesn't exist, let's create it`);
 				let ai=this.turnwhose(turn);
 				this.turns.push({
-					'role':	(ai?'assistant':'user'),
+					'role':	(ai?'assistant':'user'), //should not be used anymore
 					'branches':[],
 					'branch':0,
 					'tree':{},
@@ -5222,6 +6035,7 @@ window.app=createApp({
 			return t-1;
 		},
 		turnRole(t) {
+			//should not be used anymore
 			return this.turns[t].role;
 		},
 		
@@ -5230,19 +6044,6 @@ window.app=createApp({
 				return;
 			}
 			this.chat(m,i,true);
-		},
-		edit(e,m,i) {
-			//e.preventDefault();
-			this.w(e);
-			if(m==='c') {
-				this.w(`setting content from ${this.msga(i).content} to ${e.target.innerText.trim()}`);
-				let txt=e.target.innerText.trim()??'';
-				this.msga(i).edited	=1;
-				this.msga(i).content=txt;
-				e.target.innerText=txt;
-			} else if (m==='n') {
-				this.msga(i).nick=e.target.innerText.trim()??'';
-			}
 		},
 		
 		//branch methods
@@ -5301,10 +6102,10 @@ window.app=createApp({
 				let [bn,b]=this.branchNested(i);
 				if(bn==undefined||!this.msgInited(i,bn,b.msg)) {
 					turnIncomplete=i;
-					this.w({'leaving updating, setting turn':turnIncomplete,'branch':b});
+					this.w({'leaving updating, setting turn':turnIncomplete,'branch':b,bn:bn});
 					break;
 				}
-				this.w(`updating turn: ${i}, branch ${this.turns[i].branch} -> ${bn} (content: ${b.msgs[b.msg].content})`);
+				this.w(`updating turn: ${i}, branch ${this.turns[i].branch} -> ${bn} (content: ${b.msgs[b.msg].content3.a})`);
 				this.turnBranchSet(i,bn);
 			}
 			
@@ -5319,9 +6120,12 @@ window.app=createApp({
 		treeu(turn) {
 			this.w(`updating index tree at ${turn}`);
 			let prev=this.turns[turn-1];
-			this.w({'parent branch':prev.branches[prev.branch]});
-			if(!this.turns[turn].tree[prev.branch]) this.turns[turn].tree[prev.branch]={};
-			this.turns[turn].tree[prev.branch][prev.branches[prev.branch].msg]=this.turns[turn].branch;
+			this.treeuDo(this.turns[turn].tree,prev.branch,prev.branches[prev.branch].msg,this.turns[turn].branch);
+		},
+		treeuDo(tree,bp,mp,b) {
+			this.w(`Creating tree index for parents: ${bp}, ${mp}, local: ${b}`);
+			if(!tree[bp]) tree[bp]={};
+			tree[bp][mp]=b;
 		},
 		
 		
@@ -5338,7 +6142,12 @@ window.app=createApp({
 			}
 			nicks[u]=true;
 			return {
-				'content':	(c!=undefined?c:null),
+				content:	(c!=undefined?c:null),
+				content3: {
+					e:			null,
+					th:			null,
+					a:			(c!=undefined?c:null)
+				},
 				'nick':			this.nicks[u].n,
 				'nId':			u,
 				'tp':				{},
@@ -5351,12 +6160,20 @@ window.app=createApp({
 			}
 		},
 		msgNew(turn,u,u2,c,g) {
-			this.w(`adding new message to turn ${turn}`);
+			this.w(`adding new message to turn ${turn}, u:${u}, u2:${u2}, c:${c}, g:${g}`);
 			let b=this.brancha(turn)
 			let m=this.msgTmpl(u,c,g);
-			b.msgs.push(m);
+			
+			if(b.msgs[b.msg].status==null) {
+				b.msgs[b.msg]=m;
+			} else {
+				b.msgs.push(m);
+			}
 			b.msg=this.msgTotal(turn,this.branch(turn))-1;
-			this.branchNew(turn+1,u2,g);
+			if(u2!=null) {
+				this.w(`Attention, skipping creation of a pair message, because second user id is not specified. Can be normal for loading cards only right now.`)
+				this.branchNew(turn+1,u2,g);
+			}
 		},
 		msgGet(t,b,m) {
 			return this.turns[t].branches[b].msgs[m];
@@ -5371,9 +6188,22 @@ window.app=createApp({
 		},
 		msgEmpty(t,b,m) {
 			const msg=this.msgGet(t,b,m);
+			//this.w({msg:msg});
+			return this.msgEmptyDo(msg);
+		},
+		msgEmptyDo(msg) {
 			if(msg.images&&msg.images.length) return 0;
-			if(!msg.content) return 1;
-			if(!msg.content.length) return 1;
+			if(!this.config.trinity.v) {
+				if(msg.content==null) return 1;
+				if(!msg.content.length) return 1;
+			} else {
+				let count=0,total=0;
+				for(const s in msg.content3) {
+					total++;
+					if(msg.content3[s]==null||!msg.content3[s].length) count++;
+				}
+				if(count===total) return 1;
+			}
 			return 0;
 		},
 		msgMvLeft(t) {
@@ -5400,7 +6230,7 @@ window.app=createApp({
 				this.w('working right now, leaving');
 				return 0;
 			}
-			if(this.msgSide(t,this.turns[t].branch,b.msg)) return;
+			if(this.msgSide(this.msga(t))) return;
 			let res;
 			if(!aw) {
 				this.chat((wSideRating?3:2),t,aw);
@@ -5409,8 +6239,7 @@ window.app=createApp({
 			}
 			return res;
 		},
-		msgSide(t,b,m) {
-			const msg=this.msgGet(t,b,m)
+		msgSide(msg) {
 			if(msg.side==1) return 1;
 			return 0;
 		},
@@ -5422,9 +6251,6 @@ window.app=createApp({
 		msgIndex(t,b) {
 			return this.turns[t].branches[b].msg;
 		},
-		msgMore(t,b) {
-			return this.msgTotal(t,b)-this.msgIndex(t,b)-1;
-		},
 		msgaStatusSet(t,s) {
 			let tmp=this.tbma(t);
 			this.msgStatusSet(...tmp,s);
@@ -5435,29 +6261,63 @@ window.app=createApp({
 		},
 		msgStatusSetDo(m,s) {
 			m.status=this.msgStatusId(s);
+			this.w(`set status: ${m.status} ${s}`);
+			let status={waiting:0,loading:0,done:0,error:0,working:0};
 			if(this.msgWaiting(m)) {
-				m.waiting=1;
-			} else {
-				delete m.waiting;
+				status.waiting=1;
+			} else if (m.status==3){
+				status.loading=1;
+			} else if (m.status==1){
+				status.done=1;
+			} else if (m.status==4){
+				status.error=1;
+			}
+			if(m.status==0||m.status==3||m.status==5||m.status==6||m.status==7||m.status==null) {
+				status.working=1;
+			}
+
+			for(const i in status) {
+				m[i]=status[i];
 			}
 		},
-		msgStatusId(m) {
-			if(m==='new') 		return null;
-			if(m==='waiting') return 0;
-			if(m==='done') 		return 1;
-			if(m==='cancel') 	return 2;
-			if(m==='loading') return 3;
-			if(m==='error') 	return 4;
+		msgStatusId2W(m) {
+			if(m==null)				return 'new';
+			if(m==0)					return 'waiting';
+			if(m==1)					return 'done';
+			if(m==2)					return 'cancel';
+			if(m==3)					return 'loading';
+			if(m==4)					return 'error';
+			if(m==5)					return 'embedding prompt';
+			if(m==6)					return 'embedding search';
+			if(m==7)					return 'templating';
 			throw new Error(`unknown status ${m}`);
+		},
+		msgStatusId(m) {
+			if(m==='new') 							return null;
+			if(m==='waiting') 					return 0;
+			if(m==='done') 							return 1;
+			if(m==='cancel') 						return 2;
+			if(m==='loading') 					return 3;
+			if(m==='error') 						return 4;
+			if(m==='embedding prompt')	return 5;
+			if(m==='embedding search') 	return 6;
+			if(m==='templating') 				return 7;
+			throw new Error(`unknown status ${m}`);
+		},
+		msgEditable(m) {
+			if(m.status==1||m.status==2||m.status==4) return true;
+			return false;
 		},
 		msgInited(t,b,m) {
 			let msg=this.msgGet(t,b,m);
+			//this.w(`msginited: ${t}/${b}/${m}: status=${msg.status}`);
 			return msg.status!=this.msgStatusId('new');
 		},
 		msgSideNickUpdate(t,b,m) {
 			//as we store non-normalized links, we have to update manually.
-			if(!this.msgSide(t,b,m)) return 0;
-			if(this.turns[t].role!=='user') return 0;
+			const msg=this.msgGet(t,b,m);
+			if(!this.msgSide(msg)) return 0;
+			if(this.msgRole(msg)!=='u') return 0;
 			this.w(`it's an unsent user side message, let's update the nick`);
 			this.msgNickSet(t,b,m,this.userS("u"));
 		},
@@ -5480,8 +6340,7 @@ window.app=createApp({
 				this.w(`couldn't find id to scroll to: ${id}`)
 			}
 		},
-		msgRating(i,v) {
-			const m=this.msga(i);
+		msgRating(i,m,v) {
 			if(m.rating==v) {
 				m.rating=null;
 			} else {
@@ -5498,17 +6357,11 @@ window.app=createApp({
 			this.w(`branch is rated=${this.brancha(i).rated}`);
 		},
 		msga(turn) {
-			let b=this.brancha(turn);
+			const b=this.brancha(turn);
 			return b.msgs[b.msg];
 		},
 		msgsa(turn) {
 			return this.brancha(turn).msgs;
-		},
-		msgFilterRow(t) {
-			const msg=this.msga(t);
-			if(this.msgFilter(...this.tbma(t))) {
-				return "filterGray"
-			}
 		},
 		msgUserAdd(msg,u,id) {
 			msg.nicks[u]=true;
@@ -5554,6 +6407,48 @@ window.app=createApp({
 			this.w(`list all users of the message: ${users}`);
 			return users;
 		},
+		msgC3ToC(m) {
+			m.content=this.msgC3To1(m);
+		},
+		msgC3To1(m) {
+			let c='';
+			for(const s in m.content3) {
+				if(m.content3[s]!=null&&m.content3[s].length) c+=m.content3[s]+'\n\n';
+			}
+			return c.trim();
+		},
+		msgContentAdd(m,trinity,c,owContent) {
+			if(!trinity) {
+				m.content+=c;
+				if(owContent) m.content3.a+=c;
+			} else {
+				m.content3[trinity]+=c;
+				if(owContent) this.msgC3ToC(m);
+			}
+		},
+		msgContentSet(m,trinity,c,owContent) {
+			if(!trinity) {
+				m.content=c;
+				if(owContent) m.content3.a=c;
+			} else {
+				m.content3[trinity]=c;
+				if(owContent) this.msgC3ToC(m);
+			}
+		},
+		msgContent(m,trinity,u) {
+			if(!trinity) {
+				return m.content;
+			}
+			
+			//no access to anything else
+			if(this.nicks[u].t==='a'&&u!=m.nId) return m.content3.a;
+			
+			if(trinity===true||trinity==1) {
+				return this.msgC3To1(m);
+			} else {
+				return m.content3[trinity];
+			}
+		},
 
 		//chat methods
 		async chat(m,turn,aw) {
@@ -5566,33 +6461,36 @@ window.app=createApp({
 			this.w(`chat mode: ${m} turn: ${turn}`);
 			let prompt=this.prompt.trim();
 			let rag=this.config.rag.v;
+			const uid=this.userS("u"),aid=this.userS("a");
+			
 			if(!turn) {
 				turn=this.turn;
 				this.w(`turn is not defined, getting current one: ${turn}`);
-				if(this.turnRole(turn)==='user') {
+				const msg=this.msga(turn);
+				if(this.msgRole(msg)==='u') {
 					this.w('we are at the user turn, so let us check if it is a side message or not');
-					if(!this.msgSide(...this.tbma(turn))) {
-						this.w("it's not a side message and the current turn belongs to a user, can't send two user turns in line");
-						alert("You can not reply to your own message");
-						this.working=0;
-						return;
+					if(!this.msgSide(msg)) {
+						this.w("it's not a side message and the current turn belongs to a user.");
+						//this.w("it's not a side message and the current turn belongs to a user, can't send two user turns in line");
+						//alert("You can not reply to your own message");
+						//this.working=0;
+						//return;
 					} else if(this.turnNotLast(turn)) {
 						this.w(`it's not the last turn, let's convert this to a side message request`);
-						this.chatUserSide(turn,prompt);
+						this.chatUserSide(turn,prompt,uid,aid);
 					}
 				} else {
 					this.w("it's a reply to AI turn, let's see if we need to make it a side message or a first one");
 					if(this.turnNotLast(turn)) {
 						this.w(`it's not the last turn, let's convert this to a side message request`);
 						this.turn=turn=turn+1;
-						this.chatUserSide(turn,prompt);
+						this.chatUserSide(turn,prompt,uid,aid);
 					}
 				}
 			}
-			let ms=[];
-			const side=this.msgSide(...this.tbma(turn));
+			let ms=[],final;
+			const side=this.msgSide(this.msga(turn));
 			this.w(`chat at turn ${turn}`);
-			const uid=this.userS("u"),aid=this.userS("a");
 			this.w(`reply by user ${uid} (${this.nicks[uid].n})`);
 			let tbm=[];
 			
@@ -5608,20 +6506,23 @@ window.app=createApp({
 				
 				turn++;
 				let b=this.brancha(turn);
-				//empty message was already created with the branch creation, 
+				//empty message was already created with the branch creation,
 				//either at new turn creation or with the parent side message creation.
-				b.msgs[b.msg]=this.msgTmpl(uid,prompt,this.group); 
+				b.msgs[b.msg]=this.msgTmpl(uid,prompt,this.group);
 				this.msgaStatusSet(turn,'done');
 				this.prompt='';
 				this.turnnew(turn,aid,this.group);
 				tbm=this.tbma(turn+1);
-				ms=await this.chatForAi(turn,this.config.rooms.v,aid,0,rag);
+				ms=await this.chatForAi({ turn:turn,uId:uid,aId:aid,sideReplyWRating:0,msg:this.msgGet(...tbm) });
 				turn++;
 			} else if (m===2||m===3) {
 				this.w('user is asking for a new side message');
 				this.prompt='';
-				if(this.turnRole(turn)==='user') {
-					this.chatUserSide(turn,null);
+				//we will get the message type according to the current one.
+				//if it's user, we will get next user message, if it's ai, we will get ai one.
+
+				if(this.msgRole(this.msga(turn))==='u') {
+					this.chatUserSide(turn,null,uid,aid);
 					this.working=0;
 					return;
 				} else {
@@ -5629,195 +6530,302 @@ window.app=createApp({
 					this.branchu(turn);
 					tbm=this.tbma(turn);
 					this.w(`user is asking for a new ai message, mode=${m}`);
-					const redo=m===3?1:0
-					ms=await this.chatForAi(turn-1,this.config.rooms.v,aid,redo,rag);
+					ms=await this.chatForAi({ turn:turn-1,uId:uid,aId:aid,sideReplyWRating:(m===3?1:0),msg:this.msgGet(...tbm) });
 				}
 			}
 			
 			if(aw) {
-				await this.chatSend(this.msgGet(...tbm),ms,null,null);
+				await this.chatSend(ms);
 				this.w('finished waiting for chatsend');
 			} else {
-				this.chatSend(this.msgGet(...tbm),ms,null,null);
+				this.chatSend(ms);
 				this.w('not waiting for chatsend');
 			}
+
 			this.working=0;
 			if(!this.opt.run) this.scroll(null,0);
 			
 			return tbm;
 		},
-		async chatSend(m,msgs,func,d) {
+		async chatSend(ms) {
+			let m=ms.msg;
 			let opt						=this.chatOptions();
-			opt['messages']		=msgs;
 			opt['stream']			=this.stream;
-			this.w({body:opt});
-			this.msgStatusSetDo(m,'waiting');
+			opt['raw']				=ms.raw;
+			
+			//opt['messages']		=msgs;
+				
 			const t=this;
-			let res='',buf='',r=''; m.content='';
-			try {
-				r=await fetch(t.url()+"/api/chat",{
-					"method": "POST",
-					"body": 	JSON.stringify(opt)
-				});
-				if(!r.ok) throw new Error(r.statusText);
-			} catch(err) {
-				t.w(`error: ${err}`);
-				t.connectionErr=`${err}`; //weird but lol
-				t.connection=0;
-				t.cancel		=0;
-				m.content=`${err}`;
-				t.msgStatusSetDo(m,'error');
-				return;
-			};
-
-			const reader	=r.body.getReader();
-			const decoder	=new TextDecoder('utf-8');
 			const rrtp		=new RegExp(`${t.rgEsc(t.chatRatingMod(1,''))}`,'g');
 			const rrtm		=new RegExp(`${t.rgEsc(t.chatRatingMod(0,''))}`,'g');
 			const rn			=new RegExp('^\\s*(?:as )?'+t.rgEsc(m.nick)+':[\\s\\r\\n]*','gim');
 			const remoji	=new RegExp('[\\p{Extended_Pictographic}\\p{Emoji_Modifier_Base}\\p{Emoji_Presentation}]*','gum');
+			let tmp;
 
-			main: while(true) {
-				const {done,value}=await reader.read();
-				t.w('dissecting response');
-				
-				if(done) {
-					m.content+=buf;
-					t.w({'Stream complete':res});
-					//there is a bug when ollama might not send anything for prompt_eval_count
-					if(res.hasOwnProperty('eval_count')) m.tr[t.models[t.settings.req.model.v.v].n]=res.eval_count;
-					if(res.hasOwnProperty('prompt_eval_count')) m.tp[t.models[t.settings.req.model.v.v].n]=res.prompt_eval_count;
-					t.msgStatusSetDo(m,'done');
-					t.cancel=0;
-					break;
+			trt: for(let trt of ms.extra) {
+
+				if(Array.isArray(trt)) {
+					if(trt[1]==null) continue trt;
+					ms.final.push(trt[1]);
+					trt=trt[0];
+				} else {
+					trt=false;
 				}
 				
-				if(t.cancel) {
-					t.w('cancelling');
-					m.content+=buf;
-					t.msgStatusSetDo(m,'cancel');
-					reader.cancel();
-					reader.releaseLock();
-					break;
-				}
-
-				//careful here, if there is some proxy halving stream, it may break :)
-				const chnks=decoder.decode(value).trim().split('\n');
-				//t.w({cnks:chnks})
-			
-				for (const ch of chnks) {
-					try { res=JSON.parse(ch) } catch (error) {
-						t.w({'error':error,data:ch});
-						t.connectionErr=`${error}`; //weird but lol
-						t.connection=0;
-						m.content+=error;
-						t.msgStatusSetDo(m,'error');
-						break main;
+				const endpoint={
+					chat:{
+						url:	"/api/chat",
+						param:'messages',
+						resp:	['message','content']
+					},
+					generate: {
+						url:	"/api/generate",
+						param:'prompt',
+						images: 'images',
+						resp:	['response']
 					}
-					buf+=res.message.content;
-					//t.w(`${buf} ${rn}`)
-					buf=buf.replace(rrtp,'').replace(rrtm,'').replace(rn,'');
-					if(t.config.emojiNo.v) buf=buf.replace(remoji,'');
-					m.trm++;
-					if(m.status==0) {
-						if(t.config.resClean.v) {
-							if(buf.length<t.config.resBufCleanSize.v) {//>
-								t.w(`accumulating buffer at start ${buf}`);
-								//return reader.read().then(processText);
-								continue;
-							}
+				};
+
+				const ep=ms.raw?'generate':'chat';
+				
+				const final=t.chatAiMs2Tmpl(ms);
+				opt[endpoint[ep].param]=final.prompt;
+
+				if(final.images.length) {
+					if(!endpoint[ep].hasOwnProperty('images')) {
+						this.w(`Don't know how to use images for endpoint ${ep}!`)
+					} else {
+						opt[endpoint[ep].images]=final.images;
+						for(const im in final.images) {
+							//opt[endpoint[ep].param]+=` [img-${im}] `
 						}
-						t.msgStatusSetDo(m,'loading');
 					}
-					m.content+=buf;
-					if(func!=null) {
-						func(m.content,d);
-					}
-					buf='';
 				}
-				//return await reader.read().then(processText);
-			}
+				
+				t.w({body:opt});
+				t.msgStatusSetDo(m,'waiting');
+				let res='',buf='',r=''; t.msgContentSet(m,trt,'',true);
+				
+				try {
+					r=await fetch(t.url()+endpoint[ep].url,{
+						"method": "POST",
+						"body": 	JSON.stringify(opt)
+					});
+					if(!r.ok) throw new Error(r.statusText);
+				} catch(err) {
+					t.w(`error: ${err}`);
+					t.connectionErr=`${err}`; //weird but lol
+					t.connection=0;
+					t.cancel		=0;
+					this.msgContentSet(m,trt,`${err}`,true);
+					t.msgStatusSetDo(m,'error');
+					return 'error';
+				};
 
-			t.cancel=0;
+				const reader	=r.body.getReader();
+				const decoder	=new TextDecoder('utf-8');
+
+				main: while(true) {
+					const {done,value}=await reader.read();
+					t.w('dissecting response');
+					
+					if(done) {
+						t.msgContentAdd(m,trt,buf,true);
+						t.w({'Stream complete':res});
+						//there is a bug when ollama might not send anything for prompt_eval_count
+						if(res.hasOwnProperty('eval_count')) m.tr[t.models[t.settings.req.model.v.v].n]+=res.eval_count;
+						if(res.hasOwnProperty('prompt_eval_count')) m.tp[t.models[t.settings.req.model.v.v].n]+=res.prompt_eval_count;
+						//t.cancel=0;
+						break;
+					}
+					
+					if(t.cancel) {
+						t.w('cancelling');
+						t.msgContentAdd(m,trt,buf,true);
+						reader.cancel();
+						reader.releaseLock();
+						break;
+					}
+    
+					//careful here, if there is some proxy halving stream, it may break :)
+					const chnks=decoder.decode(value).trim().split('\n');
+					//t.w({cnks:chnks})
+					
+					for (const ch of chnks) {
+						try { res=JSON.parse(ch) } catch (error) {
+							t.w({'error':error,data:ch});
+							t.connectionErr=`${error}`; //weird but lol
+							t.connection=0;
+							t.msgContentAdd(m,trt,error,true);
+							break main;
+						}
+
+						let rf=res;
+						for(const p of endpoint[ep].resp) { rf=rf[p] }
+						buf+=rf;
+						
+						//t.w(`${buf} ${rn}`)
+						buf=buf.replace(rrtp,'').replace(rrtm,'').replace(rn,'');
+						if(t.config.emojiNo.v) buf=buf.replace(remoji,'');
+						m.trm++;
+						if(m.status==0) {
+							if(t.config.resClean.v) {
+								if(buf.length<t.config.resBufCleanSize.v) {//>
+									t.w(`accumulating buffer at start ${buf}`);
+									//return reader.read().then(processText);
+									continue;
+								}
+							}
+							t.msgStatusSetDo(m,'loading');
+						}
+						t.msgContentAdd(m,trt,buf,true);
+						if(ms.hasOwnProperty('func')&&ms.func!=null) {
+							ms.func(m.content,ms.d);
+						}
+						buf='';
+					}
+				}
+
+				//t.cancel=0;
+				let content=t.msgContent(m,trt,m.nId);
+				if(t.config.resClean.v) {
+					content=content.trim().replace(rrtp,'').replace(rrtm,'').replace(rn,'');
+				}
+				if(t.config.emojiNo.v) {
+					content=content.replace(remoji,'');
+				}
+				t.msgContentSet(m,trt,content,true);
+
+				if(trt!=false) this.chatFinalPush(ms.final,{
+					nId:			m.nId,
+					nick:			ms.nicks.l[m.nId].n,
+					content:	this.msgContent(m,trt,m.nId),
+					rating:		'',
+					images:		[],
+				});
+				//t.chatAiMsTmpl(content,'assistant',m.nId,m.nick,'',null,content)
+
+				if(t.cancel) break;
+			}
 			t.w(`chat received`);
-			if(t.config.resClean.v) {
-				m.content=m.content.trim().replace(rrtp,'').replace(rrtm,'').replace(rn,'');
-			}
-			if(t.config.emojiNo.v) buf=buf.replace(remoji,'');
-			//t.working=0;
-		},
-		async chatForAi(turn,rooms,u,redo,rag) {
-			let ms=[],add=[],sh=this.shuffle();
 
-			this.w(`building list of chat for ai ${u} ${this.nicks[u].n}, up to ${turn}`);
+			//t.working=0;
+			if(t.connection==0) {
+				t.msgStatusSetDo(m,'error');
+			} else if(t.cancel) {
+				t.msgStatusSetDo(m,'cancel');
+			} else {
+				t.msgStatusSetDo(m,'done');
+			}
+			t.cancel=0;
+		},
+		chatForAiConfig(h) {
+			const cfgParams=['trinity','stories','replyWithRating','rag','instrWithSideRating','raw','namesAdd','aiIsYou','otherAiAsUser','imgsLastOnly','rawLog','rawTmpl','noAiReplyToSelf','rooms','trinityReqTh','trinityReqA','trinityChancesTh','noReplyToSelf','emptyToSth','emptyToTxt'];
+			for(const p of cfgParams) {
+				if(h.hasOwnProperty(p)) continue;
+				h[p]=this.config[p].v;
+			}
+		},
+		storiesMsgVisible(m,aId) {
+			if(m.nId!=this.nick['s']&&!m.nicks[aId]) return false;
+			return true;
+		},
+		ragDisable(m) {
+			this.config.rag.v=false;
+			if(!m) return;
+			for(const nick in this.nicks) {
+				if(!this.nicks[nick].hasOwnProperty('settings')) continue;
+				this.nicks[nick].config.rag.v=false;
+			}
+		},
+		chatMsNicks(h) {
+			let nicks={l:{},ai:h.aId,uid:h.uId};
+			for(let n in this.nicks) {
+				nicks.l[n]={ n:this.nicks[n].n,id:n,t:this.nicks[n].t };
+			}
+			return nicks;
+		},
+		async chatForAi(h) {
+			this.chatForAiConfig(h);
+			let ms={},add=[],sh=this.shuffle();
+
+			this.w(`building list of chat for ai ${h.aId} ${this.nicks[h.aId].n}, up to ${h.turn}`);
+			this.w({data:h});
 
 			let adds={
-				sys:'',
 				rag:[],
 				instr:'',
 				nredo:[],
 				predo:[],
-				wRating:''
+				wRating:'',
+				wSideRating:'',
 			};
 
 			if(this.imgs.length) {
 				this.w(`The prompt has ${this.imgs.length} images, let's add.`);
-				this.msga(turn).images=[];
+				this.msga(h.turn).images=[];
 				for(const img of this.imgs) {
-					this.msga(turn).images.push({c:img,s:0});
+					this.msga(h.turn).images.push({c:img,s:0});
 				}
 				this.imgs=[];
 			} else { this.w(`no images in the prompt`) }
 			
-			let final=[];
-			for(let i=1;i<=turn;i++) { //>
-				if(this.msga(i).content===''&&rooms) {
-					this.w(`skipping empty msg #${i} from ${this.nicks[this.msga(i).nId].n}`);
+			
+			let final=[],ratingUsed=0;
+			for(let i=1;i<=h.turn;i++) { //>
+				let msg=this.msga(i);
+				let content=this.msgContent(msg,h.trinity,h.aId).trim();
+				if(content===''&&h.emptyToSth) {
+					this.w(`Replacing empty msg #${i} from ${this.nicks[msg.nId].n} with ${h.emptyToTxt}`);
+					content=h.emptyToTxt;
+				}
+				if(content===''&&!h.emptyToSth) {
+					this.w(`skipping empty msg #${i} from ${this.nicks[msg.nId].n}`);
 					continue;
 				}
-				const tmp=this.chatAiTurn2Ms(turn,i,u);
-				if(tmp) final.push(tmp);
+				if(h.stories&&!this.storiesMsgVisible(msg,h.aId)) {
+					this.w(`Skipping msg #i due to stories`);
+					continue;
+				}
+				let images=(msg.hasOwnProperty('images')&&msg.images.length)?msg.images.map(img=>img.c):[];
+				let rating='';
+				if(msg.rating!=null&&msg.rating!==''&&msg.nId==h.aId) {
+					rating=msg.rating;
+					if(!ratingUsed) {
+						this.w(`found a set rating: ${msg.rating}`)
+						ratingUsed++;
+					}
+				}
+				this.chatFinalPush(final,{
+					nId:			msg.nId,
+					nick:			msg.nick,
+					content:	content,
+					rating:		rating,
+					images:		images,
+				});
 			}
 			const finalTurn=final.length-1;
 			
 			this.w(`We got ${finalTurn+1} chat log messages, now let's process additional parts`);
 			
-			adds['sys']=this.nicks[u].system??'';
-
-			if(this.config.replyWithRating.v) {
-				this.w('Reply with rating is enabled in config');
-				let ratingUsed=0;
-				for(let i=1;i<=turn;i++) { //>
-					if(this.config.stories.v&&!this.msga(i).nicks[u]) continue;
-					const rating=this.msga(i).rating;
-					//this.w(`checking rating ${rating}`);
-					if(rating!=null&&rating!=='') {
-						this.w(`found a set rating ${rating}`)
-						ratingUsed++;
-						break;
-					}
-				}
+			if(h.replyWithRating) {
 				if(ratingUsed) {
-					this.w('rating is used, modyfying the system prompt');
+					this.w('rating is used');
 					adds.wRating=1;
 				} else {
-					this.w("rating is enabled but not used, skipping adding the task for AI");
+					this.w("rating is enabled but not used, skipping");
 				}
 			} else { this.w(`Rating is disabled in config`) }
 			
-			this.rag[u].last=[];
+			this.rag[h.aId].last=[];
 			this.rag['g'].last=[];
-			if(rag) {
+			if(h.rag) {
 				this.w("rag is enabled");
 				if(!this.settings.req.modelEmb.v.l.length) {
 					alert("You have enabled memories (rag) feature but you've not downloaded any models for embeddings. Please pull at least one embedding model, like 'nomic-embed-text' or anything else with 'embed' in its name. Also, don't forget to run a second instance of Ollama on a different port and to configure 'Embeddings URL' in settings by pointing it to that URL. This way your prompts will not slow down when you use 'memories'. I will switch off your rag setting for now, to prevent showing you this message next time. Enjoy.");
-					this.configGlobal.rag.v=false;
-					for(const nick in this.nicks) {
-						if(!this.nicks[nick].hasOwnProperty('settings')) continue;
-						this.nicks[nick].config.rag.v=false;
-					}
+					this.ragDisable(1);
 				} else {
-					this.w(`searching in rag for prompt: ${this.msga(turn).content}`);
+					this.w(`searching in rag`);
 					let ragp=1;
 					if(!/^(\d{1,14})$/.test(this.config.ragPast.v)) {
 						this.config.ragPast.v=this.config.ragPast.def;
@@ -5835,18 +6843,20 @@ window.app=createApp({
 					}
 					this.w({'rag search content':rags});
 					
-					if((this.rag['g'].t.length+this.rag[u].t.length)==0) {
+					if((this.rag['g'].t.length+this.rag[h.aId].t.length)==0) {
 						this.w('global and user rags are empty, skipping rag');
 					} else if(rags.length==0) {
 						this.w('rag prompt is empty, skipping rag');
 					} else {
+						this.msgStatusSetDo(h.msg,'embedding prompt');
 						let e=await this.embed(`please find top related content to: """${rags.join("\n")}"""`); //
+						this.msgStatusSetDo(h.msg,'embedding prompt');
 						if(!e.length) {
 							alert("You have enabled memories (rag) feature but the embedding url returns an error. Please fix the issue and re-enabled rag. For now the rag is going to be disabled.");
-							this.configGlobal.rag.v=false;
+							this.ragDisable(0);
 						} else {
 							const memb=this.settings.req.modelEmb.v.l[this.settings.req.modelEmb.v.v].tag;
-							let rv={g:[]}; rv[u]=[];
+							let rv={g:[]}; rv[h.aId]=[];
 							let ra	={};
 							let min ='';
 							if(/^\d{1,14}(:?\.\d{1,14})?$/.test(this.config.ragMinSmlr.v)) {
@@ -5856,17 +6866,20 @@ window.app=createApp({
 							}
 							this.w(`lowest similarity configured is: ${min}`);
 							
-							ra[u]		=/^\d{1,14}$/.test(this.config.ragUAmount.v)?this.config.ragUAmount.v:2;
+							ra[h.aId]	=/^\d{1,14}$/.test(this.config.ragUAmount.v)?this.config.ragUAmount.v:2;
 							ra['g']	=/^\d{1,14}$/.test(this.config.ragGAmount.v)?this.config.ragGAmount.v:2;
-							for(const r of ['g',u]) {
+							
+							this.msgStatusSetDo(h.msg,'embedding search');
+
+							for(const r of ['g',h.aId]) {
 								if(memb!=this.rag[r].modelEmb) {
 									this.w(`embedding model has changed from ${this.rag[r].modelEmb} -> ${memb}, let's re-evaluate rag`);
 									this.rag[r].v=[];
 									await this.ragU(r);
 								}
 								for(let i=0;i<this.rag[r].v.length;i++) { //>
-									const R=this.rag[r].v[i];
-									const cos=this.cosine(R[0],e[0]);
+									const R		=this.rag[r].v[i];
+									const cos	=this.cosine(R[0],e[0]);
 									this.w(`got cos=${cos} for ${e[1]}=${R[1]}`);
 									if(min!==''&&cos<min) { //>
 										this.w(`Similarity is lower than defined ${cos}<${this.config.ragMinSmlr.v}`); //>
@@ -5899,166 +6912,491 @@ window.app=createApp({
 						}
 					}
 				}
+				this.msgStatusSetDo(h.msg,'templating');
 			} else { this.w(`memories are disabled in config`) }
 
-			if(this.nicks[u].instr.length) {
-				this.w(`we have instr text, let's see if we should add it: redo=${redo}, allow instr with side-rating:${this.config.instrWithSideRating.v}`);
+			if(this.nicks[h.aId].instr.length) {
+				this.w(`we have instr text, let's see if we should add it: sideReply=${h.sideReplyWRating}, allow instr with side-rating:${h.instrWithSideRating}`);
 				if(
-							(redo&&this.config.instrWithSideRating.v)
-						||(!redo)
+							(h.sideReplyWRating&&h.instrWithSideRating)
+						||(!h.sideReplyWRating)
 				) {
-					this.w(`got instr`);
-					adds.instr=this.nicks[u].instr;
+					this.w(`can use instr`);
+					adds.instr=this.nicks[h.aId].instr;
 				} else {
 					this.w(`instr is not appliable`);
 				}
 			} else { this.w('instr is empty') }
 			
-			if(redo) {
-				this.w("processing redo");
+			if(h.sideReplyWRating) {
+				this.w("processing rated sideReply rating");
 				let good=[],bad=[];
 
-				for(const m of this.msgsa(turn+1)) { //>
-					if(this.config.stories.v&&!m.nicks[u]) continue;
-					if(m.nId!=u) continue;
-					if			(m.rating==1) { good.push(m.content) }
-					else if	(m.rating==0) { bad.push(m.content)  }
+				for(const m of this.msgsa(h.turn+1)) {
+					if(h.stories&&!this.storiesMsgVisible(m,h.aId)) continue;
+					if(m.nId!=h.aId) continue;
+					if			(m.rating==1) { good.push(this.msgContent(m,h.trinity,h.aId)) }
+					else if	(m.rating==0) { bad.push(this.msgContent(m,h.trinity,h.aId))  }
 				}
 				
 				let exQ=this.config.badExForSideReply.v
 				if(bad.length&&exQ>0) {
 					for(const i of sh(bad,exQ)) {
-						adds.nredo.push(this.chatAiMsTmpl(i,'assistant',this.nicks[u].n,0,null).content);
-					} 
+						adds.nredo.push(i);
+					}
 				}
 				
 				exQ=this.config.goodExForSideReply.v;
 				if(good.length&&exQ>0) {
 					for(const i of sh(good,exQ)) {
-						adds.predo.push(this.chatAiMsTmpl(i,'assistant',this.nicks[u].n,1,null).content);
+						adds.predo.push(i);
 					}
 				}
-				this.w("finished taking redos");
-			} else { this.w(`redo is disabled in config`) }
+				this.w("finished taking sidereply examples");
+			} else { this.w(`not a rated sideReply, skipping sideReply rating`) }
 			
 			this.w({adds:adds});
 			this.w('starting templating the adds');
 			
-			let msgs={u:[],s:[]};
+			ms.msg			=h.msg;
+			ms.finalTurn=finalTurn;
+			ms.extra		=[];
+			ms.sys			=this.nicks[h.aId].system??'';
+			ms.rooms		=h.rooms;
+			ms.raw			=h.raw;
+			ms.nicks		=this.chatMsNicks(h);
+			ms.mods			={
+				replyWithRating:h.replyWithRating,
+				namesAdd:				h.namesAdd,
+				aiIsYou:				h.aiIsYou,
+				otherAiAsUser:	h.otherAiAsUser,
+				imgsLastOnly:		h.imgsLastOnly,
+				noReplyToSelf:	h.noReplyToSelf,
+				emptyToSth:			h.emptyToSth,
+				emptyToTxt:			h.emptyToTxt,
+			};
+
+			const logRaw=h.rawLog;
+			if(ms.raw) {
+				if(logRaw) this.wDo(`Raw mode is enabled`);
+				let tmpl={start:'',user:'',assistant:'',end:'',img:'',singleMsgMode:''};
+				for(const s in tmpl) {
+					let rg	=new RegExp(`{{${s}}}(.*?){{/${s}}}`,'s');
+					let tmp	=h.rawTmpl.match(rg);
+					if(tmp!=null&&tmp.length>1) {
+						tmpl[s]=tmp[1];
+						if(logRaw) this.wDo(`Found template part ${s}: ${tmpl[s]}`);
+					} else {
+						alert(`Haven't found a part of raw template: {{${s}}} {{/${s}}}, turning off raw mode for this request.`);
+						ms.raw=false;
+						if(logRaw) this.wDo(`Have not found template part ${s}, stopping.`);
+						break;
+					}
+				}
+				ms.rawTmpl=tmpl;
+				if(logRaw) this.wDo({rawModeTemplate:ms.rawTmpl});
+			} else {
+				if(logRaw) this.wDo(`Raw mode is disabled`);
+			}
+			
+			let msgs={u:[],s:[],f:{}};
 			if(adds.rag.length) {
 				msgs.u.push(`(in my mind i search for something relevant: """${adds.rag.join('\n')}""")`);
 			}
 			if(adds.nredo.length) {
 				msgs.u.push(
 					`in my reply i shall avoid messages like these: ${
-							adds.nredo.map(arr=>'"""'+arr+'"""').join(', ')
+						adds.nredo.map(arr=>'"""'+arr+'"""').join(', ')
 					}`
 				);
+				adds.wSideRating=1;
 			}
 			if(adds.predo.length) {
 				msgs.u.push(`Here are ready reply ideas in my head, i'll improvise keeping their logic, style and mood: ${adds.predo.map(arr=>'"""'+arr+'"""').join(", ")}`);
+				adds.wSideRating=1;
 			}
 			if(adds.instr.length) {
 				msgs.u.push(`Main thing on my mind: """${adds.instr}"""`);
 			}
 			if(adds.wRating==1) {
-				msgs.s.push(`Task: Messages with ${this.chatRatingMod(0,'')} are bad, imitate ${this.chatRatingMod(1,'')} messages in style, size, manner. Do not use ${this.chatRatingMod(1,'')} and ${this.chatRatingMod(0,'')} in your own messages. `);
+				const posr=this.chatRatingMod(1,''),negr=this.chatRatingMod(0,'');
+				msgs.s.push(`Task: Messages with ${negr} are bad, imitate ${posr} messages in style, size, manner. Do not use ${posr} and ${negr} in your own messages.`);
 			}
+			this.w({ulen:msgs.u});
 			if(finalTurn>=0) {
-				//as ${this.nicks[u].n} 
-				msgs.s.push(`Now, react to """${final[finalTurn].content}""", 1 in-character reaction only`);
+				//as we inject last message in these, we need to process it according to the rules
+				//we process other messages.
+				// but we don't want any mods here apart from name, if it's enabled.
+				//i need to move it to chattmpldo now
+				let htmp={}; for(const k in ms) { this.copy(ms,htmp,k) };
+				htmp.mods={namesAdd:h.namesAdd};
+				const replyTo=this.chatTmplDo(finalTurn,htmp,final[finalTurn]);
+				
+				if(!h.trinity) {
+					if(msgs.u.length||msgs.s.length) {
+						msgs.s.push(`Now, with above in mind react to """{{replyToText}}""", 1 in-character reaction only`);
+					}
+				} else {
+					let chance=h.trinityChancesTh+'';
+					if(!chance.match(/^(?:[01]|0.\d{1,14})$/)) {
+						chance=this.config.trinityChancesTh.def;
+						alert(`Wrong trinity thoughts chance set: ${h.trinityChancesTh}, reverting to: ${this.config.trinityChancesTh.def}`);
+						this.config.trinityChancesTh.v=this.config.trinityChancesTh.def;
+					}
+					if((chance*1)>Math.random()) {
+						this.w(`Chances for thinking were high :)`);
+						msgs.f.th	=h.trinityReqTh;
+					} else {
+						this.w(`Chances for thinking were low :)`);
+					}
+					msgs.f.a	=h.trinityReqA;
+				}
 			}
-			if(msgs.u.length) {
-				this.chatAiAdd(add,u,msgs.u.join("\n"),null);
+			for(const m of msgs.u) {
+				this.chatFinalPush(final,{
+					nId:			h.aId,
+					nick:			this.nicks[h.aId].n,
+					content:	m,
+					rating:		'',
+					images:		[],
+				});
 			}
-			if(msgs.s.length) {
-				if(!msgs.u.length) this.chatAiAdd(add,u,"\n",null);
-				this.chatAiAdd(add,this.nick['s'],msgs.s.join("\n"),null);
+			for(const m of msgs.s) {
+				this.chatFinalPush(final,{
+					nId:			this.nick['s'],
+					nick:			this.nicks[this.nick['s']].n,
+					content:	m,
+					rating:		'',
+					images:		[],
+				});
 			}
-			
-			this.w({'templated adds are':add});
-			
-			for(const i of add) {
-				final.push(this.chatAiMsTmpl(i.content,i.role,i.nick,i.rating,null));
-			}
-			
+			//add.push(this.msgTmpl(this.nick['s'],msgs.s.join("\n"),null));
+
 			this.w(`added adds, now ${final.length} messages`);
 			this.w({final:final});
 			
-			if(adds.sys.length) {
-				//adds.wRating
-				this.chatAiMsPush(ms,adds.sys,'system');
+			if(Object.keys(msgs.f).length) {
+				for(let i of ['th','a']) { //'e',
+					if(!msgs.f.hasOwnProperty(i)) continue;
+					this.w(`adding final: ${i} ${msgs.f[i]}`);
+
+					this.chatFinalPush(ms.extra,{
+						nId:			this.nick['s'],
+						nick:			this.nicks[this.nick['s']].n,
+						content:	msgs.f[i],
+						rating:		'',
+						images:		[],
+					});
+					ms.extra[ms.extra.length-1]=[i,ms.extra[ms.extra.length-1]];
+				}
+			} else {
+				ms.extra.push(false);
+				if(h.noAiReplyToSelf&&finalTurn>=0) {
+					//i used to keep the u/ai turn based order, but not anymore
+					//yes, it will confuse ai's at times, but this way there is more user control
+					//with trinity it's not needed as it states who should reply
+					//otherwise instruction says it
+					//otherwise model will be confused most likely.
+					//so ideally, if the last message with extras is ai's, we need to add this.
+					let fl=final.length-1;
+					if(final[fl].nId==h.aId) {
+						this.w(`No ai reply to self is enabled, it's not trinity and last msg is the same ai that will reply, let's add last msg to prevent it to reply to self.`);
+						this.chatFinalPush(final,{
+							nId:			this.nick['s'],
+							nick:			this.nicks[this.nick['s']].n,
+							content:	'continue in accordance with your system prompt, do not mention this message.',
+							rating:		'',
+							images:		[],
+						});
+					}
+				}
 			}
 			
-			if(rooms) {
+			ms.final=final;
+
+			this.w({ms:ms});
+			return ms;
+		},
+		chatFinalPush(final,h) {
+			let tmp={
+				nId:			null,
+				nick:			null,
+				content:	null,
+				rating:		null,
+				images:		[],
+			};
+			for(let i in tmp) {
+				if(!h.hasOwnProperty(i)) {
+					throw new Error(`can't find property ${i} for final msgs array!`);
+				}
+				tmp[i]=h[i];
+			}
+			final.push(tmp);
+		},
+		ucFirst(str) {
+			return str?str[0].toUpperCase()+str.substr(1):'';
+		},
+		rawTmplReplace(d,txt) {
+			this.w({rawData:d,txt:txt});
+			for(const r in d) {
+				const rg=new RegExp('{{'+r+'}}','gs');
+				txt=txt.replace(rg,d[r]);
+			}
+			return txt;
+		},
+		chatAiMs2Tmpl(ms) {
+			let final=[],tmp,res=[],d={},imgs=[],logRaw=this.config.rawLog.v,fl,ftRaw,ft;
+			
+			for(const i in ms.final) {
+				//this.copy(ms.final,final,i);
+				final.push(this.chatTmplDo(i,ms,ms.final[i]));
+			}
+			
+			fl=final.length-1;
+			
+			if(ms.hasOwnProperty('mods')&&ms.mods.noReplyToSelf&&ms.final[ms.finalTurn].nId==ms.nicks.ai) {
+				this.w(`Final message belongs to replier and noReplyToSelf set, searching for another reply.`);
+				if(logRaw) this.wDo(`Final message belongs to replier and noReplyToSelf set, searching for another reply.`);
+
+				for(let i=ms.finalTurn;i>=0;i--) {
+					if(ms.final[i].nId!=ms.nicks.ai) {
+						ftRaw	=ms.final[i];
+						ft		=final[i];
+					}
+				}
+				if(ft==undefined) {
+					this.w(`No message found to reply to, using empty data`);
+					if(logRaw) this.wDo(`No message found to reply to, using empty data`);
+					ft		=this.chatTmplRow('','','',[]);
+					ftRaw	=this.chatTmplRow('','','',[]);
+				}
+			} else {
+				ftRaw	=ms.final[ms.finalTurn];
+				ft		=final[ms.finalTurn];
+			}
+			
+			d={
+				replierId:					ms.nicks.ai,
+				replierName:				ms.nicks.l[ms.nicks.ai].n,
+				replyToUserId:			ftRaw.nId,
+				replyToName:				ft.nick,
+				replyToText:				ft.content,
+				replyToTextRaw:			ftRaw.content,
+				sys:								ms.sys,
+				charId:							'',
+				charName:						'',
+				msg:								'',
+				msgRaw:							'',
+				charIdPrev:					'',
+				charNamePrev:				'',
+				msgPrev:						'',
+				msgRawPrev:					'',
+				imgIndex:						'',
+				img:								'',
+			};
+			
+			//process extras like trinity.
+			for(let i=ms.finalTurn+1;i<=fl;i++) { //>
+				if(!final[i].content.length) continue;
+				final[i].content=this.rawTmplReplace(d,final[i].content);
+			}
+			
+			this.w({msgsFinal:final});
+			
+			if(ms.raw) {
+				if(logRaw) this.wDo(`Raw mode enabled, processing data.`);
+				this.w({nicks:ms.nicks})
+				
+				res.push(this.rawTmplReplace(d,ms.rawTmpl.start));
+				if(logRaw) this.wDo({part:'start',data:d,template:res[res.length-1]});
+
+				let msgs=[];
+				for(const i in final) {
+					const fRaw=ms.final[i];
+					const f		=final[i];
+					let txt='';
+					if			(ms.rooms)							{	txt=ms.rawTmpl.singleMsgMode	}
+					else if	(f.role==='user') 			{	txt=ms.rawTmpl[f.role]				}
+					else if	(f.role==='assistant')	{	txt=ms.rawTmpl[f.role]				}
+					else 		{
+						this.w(`Unknown role: ${f.role}, ignoring line: ${f.content}`);
+						if(logRaw) this.wDo(`Unknown role: ${f.role}, ignoring line: ${f.content}`);
+						continue;
+					}
+					
+					if(txt==null||!txt.length) {
+						if(logRaw) this.wDo(`Empty template for msg ${i}, skipping.`);
+						continue;
+					}
+
+					d.charId			=fRaw.nId;
+					d.charName		=f.nick;
+					d.msg					=f.content;
+					d.msgRaw			=fRaw.content;
+					d.img					='';
+					d.imgIndex		='';
+
+					if(i>0) {
+						const fp				=final[i-1];
+						const fpRaw			=ms.final[i-1];
+						d.charIdPrev		=fpRaw.nId;
+						d.charNamePrev	=fp.nick;
+						d.msgPrev				=fp.content;
+						d.msgRawPrev		=fpRaw.content;
+					} else {
+						d.charIdPrev		='';
+						d.charNamePrev	='';
+						d.msgPrev				='';
+						d.msgRawPrev		='';
+					}
+
+					tmp='';
+					if(f.images&&f.images.length) {
+						let imgTmpl=ms.rawTmpl.img;
+						tmp=[];
+						for(const img of f.images) {
+							imgs.push(img);
+							tmp.push(this.rawTmplReplace({imgIndex:imgs.length-1},imgTmpl));
+						}
+						tmp=tmp.join(' ');
+					}
+					d.img=tmp;
+
+					msgs.push(this.rawTmplReplace(d,txt));
+					if(logRaw) this.wDo({turn:i,role:f.role,data:d,template:msgs[msgs.length-1]});
+				}
+				
+				if(ms.rooms) {
+					d.charId			=d.replyToUserId;
+					d.charName		=d.replyToName;
+					d.msg					=msgs.join('');
+					d.msgRaw			=msgs.join('');
+					d.img					='';
+					d.imgIndex		='';
+					d.charIdPrev	='';
+					d.charNamePrev='';
+					d.msgPrev			='';
+					d.msgRawPrev	='';
+					//everything is already replaced but we just put it this way into the single msg template
+					res.push(this.rawTmplReplace(d,`${ms.rawTmpl.user}`));
+					this.w({chat:res[res.length-1],singleMsg:ms.rooms});
+					if(logRaw) {
+						this.wDo('Single message mode is activated, chat log will be joined into a single message..');
+						this.wDo({chatLog:res[res.length-1]});
+					}
+				} else {
+					for(const m of msgs) {
+						res.push(m);
+					}
+					this.w({chat:res,singleMsg:ms.rooms});
+					if(logRaw) this.wDo('Single message mode is disabled, building role based template.');
+				}
+				
+				d.charId		=d.replierId;
+				d.charName	=d.replierName;
+				d.msg				='';
+				d.msgRaw		='';
+				d.img				='';
+				d.imgIndex	='';
+
+				if(final.length) {
+					const fp				=final[fl];
+					const fpRaw			=ms.final[fl];
+					d.charIdPrev		=fpRaw.nId;
+					d.charNamePrev	=fp.nick;
+					d.msgPrev				=fp.content;
+					d.msgRawPrev		=fpRaw.content;
+				}
+				res.push(this.rawTmplReplace(d,ms.rawTmpl.end));
+				if(logRaw) this.wDo({part:'end',data:d,template:res[res.length-1]});
+
+				if(logRaw) this.wDo(`Resulting template: ${res.join('')}`);
+
+				return { prompt:res.join(''),images:imgs };
+			} else {
+				if(logRaw) this.wDo(`Raw mode is disabled, using standard data processing.`);
+			}
+			
+			if(ms.sys.length) {
+				this.chatAiMsPush(res,ms.sys,'system');
+			}
+			
+			if(ms.rooms) {
 				this.w("room mode, let's concatenate everything");
-				let imgs=[];
+				imgs=[];
 				for(const i of final) {
 					if(!i.images||!i.images.length) continue;
 					imgs.push(...i.images);
 				}
-				this.chatAiMsPush(ms,final.map(arr=>arr.content).join('\n\n'),'user',imgs);
+				this.w(`in rooms mode amount of images: ${imgs.length}`);
+				this.chatAiMsPush(res,final.map(arr=>arr.content).join('\n\n'),'user',imgs);
 			} else {
 				this.w("chat mode, let's add everything as messages");
 				for(const i of final) {
-					this.chatAiMsPush(ms,i.content,i.role,i.images);
+					this.chatAiMsPush(res,i.content,i.role,i.images);
 				}
 			}
-			
-			this.w({'final msgs':ms});
-			return ms;
+			return { prompt:res,images:[] };
 		},
 		chatAiMsPush(ms,c,r,i) {
 			ms.push({ content:c,role:r });
 			if(i&&i.length) ms[ms.length-1].images=i;
 		},
-		chatAiAdd(a,n,c,rt) {
-			a.push(this.msgTmpl(n,c,null));
-			//hack for chat style messages which needs role, making it look like it's user msg
-			if(this.nicks[n].t==='u') {
-				a[a.length-1]['role']='user';
-			} else if(this.nicks[n].t==='a') {
-				a[a.length-1]['role']='assistant';
-			} else if(this.nicks[n].t==='s') {
-				a[a.length-1]['role']='user';
-			}
-			a[a.length-1]['rating']=rt;
-		},
-		chatAiTurn2Ms(t,i,u) {
-			const m		=this.msga(i);
-			if(this.config.stories.v&&!m.nicks[u]) return;
-			const tmp	=this.turns[i];
-			let role;
-			if(this.turnRole(i)==='assistant'&&this.config.otherAiAsUser.v&&m.nId!=u) {
-				this.w(`overriding role of ${u}!=${m.nId} ${m.nick} to make it user`);
-				role='user';
-			} else {
-				role=tmp.role;
-			}
-			let img;
-			if(!this.config.imgsLastOnly.v||i==t) img=m.images;
+		chatTmplDo(turn,h,f) {
+			this.w(h);
+			let role	=h.nicks.l[f.nId].t==='a'?'assistant':'user';
+			let nick	=f.nick;
+			let ct		=f.content;
+			let images=f.images;
 
-			const msg=this.chatAiMsTmpl(
-				m.content,
-				role,
-				m.nick,
-				m.rating,
-				img
-			);
-			return msg
-		},
-		chatAiMsTmpl(c,r,n,rt,i) {
-			let tmp={
-				'content':	(c.length?c:'continue'),
-				'role':			r,
-				'nick':			n,
-				'rating':		rt,
-			};
-			if(this.config.replyWithRating.v) {
-				tmp.content=this.chatRatingMod(rt,`${tmp.nick}: ${tmp.content}`)
-			} else {
-				tmp.content=`${tmp.nick}: ${tmp.content}`
+			//this.w({role:role,mod:123,mods:h.mods,asd:`${role},${f.nId},${h.nicks.aid}`,f:f});
+			if(h.hasOwnProperty('mods')) {
+				if(h.mods.imgsLastOnly)			images=this.chatTmplImgsLastOnly(turn,h.finalTurn,images);
+				if(h.mods.otherAiAsUser)		role	=this.chatTmplOtherAiAsUser(role,f.nId,h.nicks.ai);
+				if(h.mods.aiIsYou)					nick	=this.chatTmplAiIsYou(nick,f.nId,h.aid);
+				if(h.mods.namesAdd)					ct		=this.chatTmplNameAdd(ct,nick);
+				if(h.mods.replyWithRating)	ct		=this.chatRatingMod(f.rating,ct);
 			}
+			return this.chatTmplRow(ct,role,images,nick);
+		},
+		chatTmplRow(ct,role,images,nick) {
+			return {
+				content:	ct,
+				role:			role,
+				images:		images,
+				nick:			nick,
+			};
+		},
+		chatTmplImgsLastOnly(turn,lastLogTurn,imgs) {
+			if(!imgs.length) return imgs;
+			this.w(`img filter: ${turn}!=${lastLogTurn}`);
+			if(lastLogTurn!=turn) return [];
+			return imgs;
+		},
+		chatTmplOtherAiAsUser(role,nId,aid) {
+			if(role!=='assistant'||nId==aid) return role;
+			this.w(`overriding role of ${nId}!=${aid} to make it user`);
+			return 'user';
+		},
+		chatTmplAiIsYou(nick,nId,aid) {
+			if(nId!=aid) return nick;
+			return 'You';
+		},
+		chatTmplNameAdd(ct,n) {
+			return `${n}: ${ct}`;
+		},
+		chatAiMsTmpl(c,r,nId,n,rt,i,cr,uRaw,uRating,uName) {
+			let tmp={
+				content:		c,
+				contentRaw:	cr,
+				role:				r,
+				nick:				n,
+				rating:			rt,
+				nId:				nId,
+				useRaw:			uRaw,
+				useRating:	uRating,
+				useName:		uName,
+			};
 			if(i!=null&&i.length) {
 				tmp.images=[];
 				for(const img of i) {
@@ -6068,20 +7406,23 @@ window.app=createApp({
 			return tmp;
 		},
 		chatRatingMod(rt,s) {
+			if(!(rt!=null&&rt!==''&&(rt==1||rt==0))) return s;
+			
 			let tmp='';
 			if(rt==1) {
 				tmp='((+))';
 			} else if(rt===0) {
 				tmp='((-))'
 			}
+			//this.w(`ratingmod: ${rt} ${s} ${tmp}`);
 			return `${tmp}${s}`;
 		},
-		chatUserSide(turn,c) {
+		chatUserSide(turn,c,u,u2) {
 			let b=this.brancha(turn);
-			this.msgNew(turn,this.userS("u"),this.userS("a"),(c??''),this.group); //contents needs to be inited
+			this.msgNew(turn,u,u2,(c??''),this.group); //contents needs to be inited
 			b.msgs[b.msg]['side']=1;
 			this.msgaStatusSet(turn,'waiting');
-			this.w(`user is asking for a new own message at ${turn}`);
+			this.w(`a new side message at ${turn} for user ${u}, next turn is ${u2}`);
 			turn=this.turn=turn-1;
 			this.branchu(turn);
 			this.w(`resetting turn to ${this.turn}`);
@@ -6123,7 +7464,7 @@ window.app=createApp({
 		url() {
 			return this.config.url.v;
 		},
-		urlTest(url) {
+		async urlTest(url) {
 			if(this.working) {
 				this.w('working right now, leaving');
 				return;
@@ -6143,16 +7484,16 @@ window.app=createApp({
 			}
 			this.connectionErr='';
 
-			fetch(url+"/api/tags",{
+			let res=await fetch(url+"/api/tags",{
 				"method": "GET",
 			}).then(r=>{
 				if(!r.ok) throw new Error(r.statusText);
 				return r;
-			}).then((r)=>{
+			}).then(async (r)=>{
 				this.working=0;
 				this.connectionErr=''
 				this.w(`connection established, running models listing`);
-				this.list();
+				await this.listDo();
 				return 1;
 			}).catch((error)=>{
 				this.connectionErr=error.message;
@@ -6209,8 +7550,8 @@ app.component(
 				this.userGroupAddId=i;
 				return false;
 			},
-			userAdd() {
-				this.$root.userAdd(this.t,this.userNickA);
+			async userAdd() {
+				await this.$root.userAdd(this.t,this.userNickA,{});
 				this.$root.userGroupAdd(this.group,this.amountNicks.idNext-1);
 				this.userNickA='';
 			},
@@ -6373,6 +7714,234 @@ app.component(
 			charNewCoreParamCh(r) {
 				this.$root.charNewCoreParamCh(r);
 			}
+		}
+	}).component('chatRow',{
+		template: '#tmplChatRow',
+		props: ['turn','branch','msg','fontSize','trinity','u','ai','stories','group','tokens','ctx','nicks','turnEnd','branchMoving'],
+		data() {
+			return {
+			}
+		},
+		watch: {
+		},
+		computed: {
+			t() {
+				return this.$root.turns[this.turn];
+			},
+			b() {
+				return this.t.branches[this.branch];
+			},
+			msgLast() {
+				return this.turn===this.turnEnd;
+			},
+			msgEditable() {
+				return this.$root.msgEditable(this.m);
+			},
+			m() {
+				return this.$root.msga(this.turn);
+			},
+			msgIndex() {
+				return this.$root.msgIndex(this.turn,this.branch);
+			},
+			divId() {
+				return 'msgC'+this.turn;
+			},
+			uType() {
+				const t=this.$root.msgRole(this.m);
+				return t;
+			},
+			nickClass() {
+				return this.uType==="u"?"nicku":"nickai";
+			},
+			tabIndex() {
+				return 10000+this.turn*2;
+			},
+			waitingTxt() {
+				return this.uType==='u'?'..input new variant into the prompt, please..':"..wait for it..";
+			},
+			msgEmpty() {
+				return this.$root.msgEmptyDo(this.m);
+			},
+			statusClass() {
+				if(this.m.error) return 'error';
+				return '';
+			},
+			status() {
+				if(this.m.waiting)			return 'waiting..';
+				if(this.m.loading)			return 'generating..';
+				if(this.m.error)				return 'error..';
+				if(this.m.status>=5)		return this.$root.msgStatusId2W(this.m.status)+'..';
+				if(this.msgEmpty)				return 'empty message';
+			},
+			msgUserListOn() {
+				return this.$root.msgUserListOn[this.msgUserListId];
+			},
+			msgUserListId() {
+				return this.turn+'_'+this.branch+'_'+this.msgIndex;
+			},
+			usersAvail() {
+				return this.$root.msgUserListAllAvail(this.m,this.group)
+			},
+			tokensShow() {
+				if(this.uType!=="a")	return false;
+				if(!this.tokens)			return false;
+				if(!this.tokensTotal)	return false;
+				return true;
+			},
+			tokensTotal() {
+				return this.$root.tokensTotal(this.m,null);
+			},
+			trinityFields() {
+				if(this.trinity) {
+					return this.uType=='a'?["th","a"]:['a']; //"e"
+				}
+				return [null];
+			},
+			msgMore() {
+				return this.$root.msgTotal(this.turn,this.branch)-this.msgIndex-1;
+			},
+			msgRole() {
+				return this.$root.msgRole(this.m);
+			},
+			branchRated() {
+				return this.b.rated
+			},
+			msgContClass() {
+				let tmp='msgTextCont';
+				return tmp;
+			},
+			msgDelClass() {
+				if			(this.m.delShow==1) { return 'msgDelShow'	}
+				else if	(this.m.delShow==2) { return 'msgMvShow'	}
+				return '';
+			},
+			branchDelClass() {
+				if			(this.b.delShow==1) { return 'msgDelShow'		}
+				else if	(this.b.delShow==2) { return 'msgMvShow'		}
+				return '';
+			},
+			chatRowClass() {
+				let tmp="chatRow ";
+				tmp+=this.msgFilterRow();
+				return tmp;
+			},
+		},
+		methods: {
+			msgClass(tr) {
+				let tmp='msgText';
+				tmp+=' '+this.msgFilterTrinity(tr);
+				return tmp;
+			},
+			editNick(e) {
+				this.m.nick=e.target.innerText.trim()??'';
+			},
+			edit(e,tr) {
+				if(!this.msgEditable) return;
+				this.m.edited=1;
+				const txt=e.target.innerText.trim()??'';
+				this.$root.msgContentSet(this.m,tr,txt,false);
+				e.target.innerText=txt;
+			},
+			msgFilterTrinity(tr) {
+				//user messages show only content, they do not show trinity even when it's turned.
+				//that's why we filter by usertype
+				if(this.uType==='a'&&this.trinity&&this.ai!=this.m.nId&&tr!=='a') return "filterGray";
+				return "";
+			},
+			content(tr) {
+				//user id there is needed only for getting content for building list to send to model,
+				//so it could filter things, here we just show all content, 
+				//so we just pass id of the owner of the message to bypass the check inside
+				const content=this.$root.msgContent(this.m,tr,this.m.nId); 
+				if(this.m.waiting&&content=='') return this.waitingTxt;
+				return content;
+			},
+			usersAvailShow(v) {
+				this.$root.msgUserListOn[this.msgUserListId]=v;
+			},
+			msgUserAdd(uid) {
+				this.$root.msgUserAdd(this.m,uid,this.msgUserListId)
+			},
+			msgUserDel(u) {
+				this.$root.msgUserDel(this.m,u);
+			},
+			tokens(t) {
+				this.$root.tokens(this.m,null,t);
+			},
+			msgRating(v) {
+				this.$root.msgRating(this.turn,this.m,v);
+			},
+			branchMerge() {
+				if(!confirm(`Are you sure you wish to delete this message and merge the branch below into this branch? It will move everything below into the place of the deleted message, moving it all up one turn.`)) return;
+				const t=this.turn;
+				const r=this.$root;
+				const bn=r.turns[t+1].branch;
+				r.branchMerge(t+1,bn,r.msgIndex(t+1,bn),this.turn,this.branch,this.msgIndex);
+			},
+			branchDel() {
+				if(!confirm(`Are you sure you wish to delete the whole branch? It will delete this message and everything below "growing" from it.`)) return;
+				this.$root.branchDel(this.turn,this.branch,this.msgIndex);
+			},
+			delShow(m) {
+				this.m.delShow=m>0?1:0;
+				for(let i=this.turn+1;i<=this.turnEnd;i++) { //>
+					this.$root.msga(i).delShow=m;
+					this.$root.brancha(i).delShow=m;
+				}
+			},
+			mvShow(m) {
+				this.m.delShow=m>0?1:0;
+				const v=m==0?0:2;
+				for(let i=this.turn+1;i<=this.turnEnd;i++) { //>
+					this.$root.msga(i).delShow=v;
+					this.$root.brancha(i).delShow=v;
+				}
+			},
+			msgFilterRow() {
+				if(this.$root.msgFilterDo(this.m)) {
+					return "filterGray"
+				}
+				return '';
+			},
+			branchMvStart() {
+				this.$root.branchMoving={self:{},src:[this.turn,this.branch,this.msgIndex]};
+
+				let turn=this.turn+1,br={[this.branch]:{[this.msgIndex]:true}};
+				this.$root.branchMoving.self[this.$root.tbmId(this.turn,this.branch,this.msgIndex)]=true;
+				while(this.$root.turns[turn]!=undefined) {
+					const tr=this.$root.turns[turn];
+					const tree=tr.tree;
+					if(tree==undefined) break;
+					
+					let br2={};
+					for(let bp in br) {
+						if(!tree.hasOwnProperty(bp)) continue;
+						for(let mp in br[bp]) {
+							//this.$root.w({bp:bp,mp:mp,turn:turn,tree:tree,tr:tree.hasOwnProperty(bp+''),tr2:tree[bp]});
+							if(!tree[bp].hasOwnProperty(mp)) continue;
+							let b=tree[bp][mp];
+							if(!tr.branches[b].msgs.length) continue;
+							this.$root.w(`turn: bp/bm:${bp}/${mp} ${turn} branch: ${b}`);
+							br2[b]={};
+							for(let m=0;m<tr.branches[b].msgs.length;m++) { //>
+								const id=this.$root.tbmId(turn,b,m);
+								this.$root.branchMoving.self[id]=true;
+								br2[b][m]=true;
+							}
+						}
+					}
+					br=br2;
+					turn++;
+				}
+			},
+			branchMvCancel() {
+				this.$root.branchMoving=false;
+			},
+			branchMvEnd() {
+				let d=this.$root.branchMoving.src;
+				this.$root.branchMv(d[0],d[1],d[2],this.turn,this.branch);
+				this.branchMvCancel();
+			},
 		}
 	});
 
