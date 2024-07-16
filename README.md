@@ -173,7 +173,7 @@ This release took a lot of time and efforts were spread in time, so there might 
 * Design of the settings page changed internally, now you may resize textareas if you wish to edit something conveniently there.
 * A lot of internal refactoring of the template, to make message showing a separate thing.
 * Upon character role change (ai<->user) all unfinished side-messages are now erased, as they don't make sense in a new role.
-* Message status is not shown at the bottom, to see what's going on: waiting (for ollama to reply), generating - model generates a reply, error - some error happened, embedding - converting prompt to embeddings and searchign for relevant parts in memory.
+* Message status is now shown at the bottom, to see what's going on: waiting (for ollama to reply), generating - model generates a reply, error - some error happened, embedding - converting prompt to embeddings and searchign for relevant parts in memory.
 * Bottom menu was expanding the layout which resulted in visually smaller possible font after "scaling up" of UI. i've renamed most of the buttons and added titles, so upon mouseovering they do show explanations now. And now it fits original 800px width :).
 * Now there is a way to clear the chat (F8). It will erase all messages, keeping the characters intact.
 * Upon start and old chats loading, during the pulling of the models list there is now a waiting screen, showing the amount of models loaded.
