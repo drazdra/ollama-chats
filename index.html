@@ -6548,7 +6548,7 @@ When there is no appropriate data, the value is empty. Variable names case sensi
 				//we will get the message type according to the current one.
 				//if it's user, we will get next user message, if it's ai, we will get ai one.
 
-				if(this.msgRole(this.msga(turn))==='u') {
+				if(this.msgRole(this.msga(turn))==='u'||turn==1) {
 					this.chatUserSide(turn,null,uid,aid);
 					this.working=0;
 					return;
@@ -7198,6 +7198,7 @@ When there is no appropriate data, the value is empty. Variable names case sensi
 					ftRaw	=this.chatTmplRow('','','',[]);
 				}
 			} else {
+				this.w(`Taking final message from the last turn.`);
 				ftRaw	=ms.final[ms.finalTurn];
 				ft		=final[ms.finalTurn];
 			}
