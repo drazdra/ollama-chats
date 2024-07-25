@@ -155,6 +155,8 @@ Character generator. Allows you to easily generate a complicated personality of 
 ## Changes (v1.9.10 2024.07.22)
 Minor bugfix release.
 * Moving of messages when it increases the turns number was breaking things, fixed.
+* Disabled moving of "waiting" for input messages
+* Fixed moving of messages within of the same branch
 * Added a setting to overwrite data on switching from trinity mode to default one, so you may auto move all of your edits if you wish that.
 
 ## Changes (v1.9.9 2024.07.16)

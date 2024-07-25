@@ -1140,7 +1140,9 @@
 								&nbsp;&nbsp;
 							</span>
 							<span v-else>
-								(<span @click='branchMvStart()' class='del' title="You can move the branch growing from this place (everything to the bottom from here including side-replies) to any place in the chat. Well, apart from moving it into itself, that's a prohibited magic.">Mv</span>)
+								<template v-if='!this.msgSide()'>
+									(<span @click='branchMvStart()' class='del' title="You can move the branch growing from this place (everything to the bottom from here including side-replies) to any place in the chat. Well, apart from moving it into itself, that's a prohibited magic.">Mv</span>)
+								</template>
 								<span title='Delete the whole branch' @mouseEnter='this.delShow(1)' @mouseLeave='this.delShow(0)'>
 									(<span class='del' @click='this.branchDel()'>X</span>)
 								</span>
@@ -5712,10 +5714,12 @@ When there is no appropriate data, the value is empty. Variable names case sensi
 			this.branchu(0);
 		},
 		branchAdd(n,t,bp,mp) {
-			console.log({branchAdd:'start',turn:t,n:n,bp:bp,mp:mp});
 			this.w({branchAdd:'start',turn:t,n:n,bp:bp,mp:mp});
 			this.msgSideWipe(null);
-			if((t+1)>=this.turns.length) {
+
+			this.branchu(0); //dirty patch
+
+			if((t+1)>this.turns.length) {
 				this.turnnew(t-1,-1,this.group);
 				this.turns[t].branches=[];
 			}
@@ -5723,9 +5727,12 @@ When there is no appropriate data, the value is empty. Variable names case sensi
 			this.turns[t].branches.push(n.branch);
 			let br=this.turns[t].branches[b];
 			this.treeuDo(this.turns[t].tree,bp,mp,b);
+			//this.branchu(t);
 			this.w({turn:t,bp:bp,mp:mp,b:b,newTree:this.turns[t].tree})
 			for(let m=0;m<br.msgs.length;m++) { //>
-				if(!br.msgs[m].hasOwnProperty('nested')) continue;
+				if(!br.msgs[m].hasOwnProperty('nested')) {
+					continue;
+				}
 				this.branchAdd(n.branch.msgs[m].nested,t+1,b,m);
 				delete br.msgs[m].nested;
 			}
@@ -5749,7 +5756,7 @@ When there is no appropriate data, the value is empty. Variable names case sensi
 		},
 		branchDel(t,bp,mp) {
 			if(!this.delAtWork(this.$data)) return;
-			this.w({debug:t,bp:bp})
+			this.w({branchDel:'start',t:t,bp:bp,mp:mp});
 
 			this.branchDelNext(t+1,bp,mp);
 			//we need to delete the message at this turn,
@@ -5822,16 +5829,20 @@ When there is no appropriate data, the value is empty. Variable names case sensi
 			if(t>=this.turns.length) return;
 
 			if(this.turns[t].branches.length==0) {
+				this.w({turndel:'no branches',turn:t,brLen:this.turns[t].branches.length});
 				this.turns.splice(t);
 				return true;
 			}
 			let count=0;
 			for(const b of this.turns[t].branches) {
 				count+=b.msgs.length;
-				//this.w({msgsl:b.msgs.length,turn:t,b:b})
+				//this.w({turndelcount:'goes', msgsl:b.msgs.length,turn:t,b:b})
 			}
 
-			if(!count) this.turns.splice(t);
+			if(!count) {
+				this.w({turndel:'no msgs',turn:t,brLen:this.turns[t].branches.length,msgs:count});
+				this.turns.splice(t);
+			}
 
 			return count==0?true:false
 		},
@@ -6078,6 +6089,8 @@ When there is no appropriate data, the value is empty. Variable names case sensi
 			this.w(`adding new branch at ${turn}`)
 			if(!this.turns[turn]) return;
 			const prev	=this.turns[turn-1];
+			this.w(`prev branch: ${prev.branch}`);
+
 			const prevm =prev.branches[prev.branch].msg;
 			let bnew		=0;
 			let b				='';
@@ -7924,6 +7937,9 @@ app.component(
 					this.$root.msga(i).delShow=v;
 					this.$root.brancha(i).delShow=v;
 				}
+			},
+			msgSide() {
+				return this.$root.msgSide(this.m);
 			},
 			msgFilterRow() {
 				if(this.$root.msgFilterDo(this.m)) {
