@@ -6644,7 +6644,7 @@ When there is no appropriate data, the value is empty. Variable names case sensi
 				
 				t.w({body:opt});
 				t.msgStatusSetDo(m,'waiting');
-				let res='',buf='',r=''; t.msgContentSet(m,trt,'',true);
+				let res='',buf='',r='',bufValue=''; t.msgContentSet(m,trt,'',true);
 				
 				try {
 					r=await fetch(t.url()+endpoint[ep].url,{
@@ -6664,6 +6664,7 @@ When there is no appropriate data, the value is empty. Variable names case sensi
 
 				const reader	=r.body.getReader();
 				const decoder	=new TextDecoder('utf-8');
+				let errorJson	=false;
 
 				main: while(true) {
 					const {done,value}=await reader.read();
@@ -6681,27 +6682,44 @@ When there is no appropriate data, the value is empty. Variable names case sensi
 					
 					if(t.cancel) {
 						t.w('cancelling');
+						errorJson=false;
 						t.msgContentAdd(m,trt,buf,true);
 						reader.cancel();
 						reader.releaseLock();
 						break;
 					}
     
-					//careful here, if there is some proxy halving stream, it may break :)
-					const chnks=decoder.decode(value).trim().split('\n');
-					//t.w({cnks:chnks})
-					
-					for (const ch of chnks) {
-						try { res=JSON.parse(ch) } catch (error) {
-							t.w({'error':error,data:ch});
-							t.connectionErr=`${error}`; //weird but lol
-							t.connection=0;
-							t.msgContentAdd(m,trt,error,true);
-							break main;
-						}
+					bufValue+=decoder.decode(value);
 
+					errorJson=false;
+					const splitter='\n',parsed=[];
+					const chnks=bufValue.split(splitter);
+					t.w({cnks:chnks})
+
+					for (let CH=0;CH<chnks.length;CH++) { //>
+						let ch=chnks[CH];
+						if(!ch.length) continue;
+
+						try { 
+							parsed.push(JSON.parse(ch));
+							this.w({bv:bufValue,chl:ch.length,ch:ch});
+							bufValue=bufValue.substr(ch.length+1);
+							this.w({bvCutten:bufValue});
+							this.w(`parsed a new chunk of ${ch.length} bytes`);
+						} catch (error) {
+							console.error(error);
+							this.w({error:`error parsing json ${error}, chunk ${CH} let's try to get next part of the data and try again.`,chunk:ch});
+							t.w({bufValLenAtRetry:bufValue.length,bf:bufValue});
+							errorJson=error;
+							break;
+						}
+					}
+					this.w(`parsed a ${parsed.length} chunks, processing`);
+					//bufValue='';
+					for(let res of parsed) {
 						let rf=res;
 						for(const p of endpoint[ep].resp) { rf=rf[p] }
+
 						buf+=rf;
 						
 						//t.w(`${buf} ${rn}`)
@@ -6735,6 +6753,14 @@ When there is no appropriate data, the value is empty. Variable names case sensi
 					content=content.replace(remoji,'');
 				}
 				t.msgContentSet(m,trt,content,true);
+
+				if(errorJson!=false) {
+					t.w({'error':errorJson});
+					t.connectionErr=`${errorJson}`; //weird but lol
+					t.connection=0;
+					t.msgContentAdd(m,trt,errorJson,true);
+					break trt;
+				}
 
 				if(trt!=false) this.chatFinalPush(ms.final,{
 					nId:			m.nId,
