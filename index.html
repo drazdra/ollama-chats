@@ -6694,16 +6694,21 @@ When there is no appropriate data, the value is empty. Variable names case sensi
 					errorJson=false;
 					const splitter='\n',parsed=[];
 					const chnks=bufValue.split(splitter);
-					t.w({cnks:chnks})
+					t.w({cnks:chnks});
+					let offset=0;
 
 					for (let CH=0;CH<chnks.length;CH++) { //>
 						let ch=chnks[CH];
-						if(!ch.length) continue;
+						if(!ch.length) {
+							offset+=splitter.length;
+							continue;
+						}
 
 						try { 
 							parsed.push(JSON.parse(ch));
 							this.w({bv:bufValue,chl:ch.length,ch:ch});
-							bufValue=bufValue.substr(ch.length+1);
+							bufValue=bufValue.substr(ch.length+splitter.length+offset);
+							offset=0;
 							this.w({bvCutten:bufValue});
 							this.w(`parsed a new chunk of ${ch.length} bytes`);
 						} catch (error) {
